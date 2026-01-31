@@ -83,11 +83,22 @@ namespace OutfitRoom
 
         private void ResetOutfit()
         {
-            state.ResetOutfit(
+            state.ResetToApplied(
                 categoryManager.ShirtIds,
                 categoryManager.PantsIds,
                 categoryManager.HatIds
             );
+        }
+
+        private void ApplyOutfit()
+        {
+            state.SaveAppliedOutfit();
+        }
+
+        private void RevertAndClose()
+        {
+            state.RevertToApplied();
+            exitThisMenu();
         }
 
         // --- Input handling ---
@@ -153,6 +164,14 @@ namespace OutfitRoom
                 }
             }
 
+            // Apply button
+            if (uiBuilder.ApplyButton.containsPoint(x, y))
+            {
+                ApplyOutfit();
+                if (playSound) Game1.playSound("coin");
+                return;
+            }
+
             // Reset button
             if (uiBuilder.ResetButton.containsPoint(x, y))
             {
@@ -161,10 +180,10 @@ namespace OutfitRoom
                 return;
             }
 
-            // Close button
+            // Close button - reverts to applied outfit and closes
             if (uiBuilder.CloseButton.containsPoint(x, y))
             {
-                exitThisMenu();
+                RevertAndClose();
                 if (playSound) Game1.playSound("bigDeSelect");
             }
         }
@@ -187,6 +206,19 @@ namespace OutfitRoom
             }
         }
 
+        public override void receiveKeyPress(Keys key)
+        {
+            // Handle Escape or menu button to close with revert
+            if (key == Keys.Escape || Game1.options.doesInputListContain(Game1.options.menuButton, key))
+            {
+                RevertAndClose();
+                Game1.playSound("bigDeSelect");
+                return;
+            }
+
+            base.receiveKeyPress(key);
+        }
+
         // --- Drawing ---
 
         public override void draw(SpriteBatch b)
@@ -200,7 +232,8 @@ namespace OutfitRoom
             // === LEFT PANEL: Player Preview ===
             uiBuilder.DrawPlayerPreview(b);
 
-            // Draw reset button
+            // Draw apply and reset buttons
+            uiBuilder.DrawApplyButton(b);
             uiBuilder.DrawResetButton(b);
 
             // === RIGHT PANEL: Category Tabs & Item List ===

@@ -10,11 +10,9 @@ namespace OutfitRoom
     /// </summary>
     public class OutfitUIBuilder
     {
-        // Fixed layout constants - scaled only by Game1.options.uiScale like vanilla menus
-        private const int MENU_WIDTH = 700;
-        private const int MENU_HEIGHT = 550;
-        private const int LEFT_PANEL_WIDTH = 180;
-        private const int SLOT_SIZE_BASE = 64; // Standard inventory slot size
+        // Fixed layout constants
+        private const int MENU_HEIGHT = 700;
+        private const int SLOT_SIZE_BASE = 72;
         private const int SLOT_GAP = 4;
         private const int TAB_WIDTH = 80;
         private const int TAB_HEIGHT = 40;
@@ -35,6 +33,7 @@ namespace OutfitRoom
         public ClickableTextureComponent ScrollUpButton { get; private set; } = null!;
         public ClickableTextureComponent ScrollDownButton { get; private set; } = null!;
         public ClickableTextureComponent ResetButton { get; private set; } = null!;
+        public ClickableTextureComponent ApplyButton { get; private set; } = null!;
         public ClickableTextureComponent CloseButton { get; private set; } = null!;
         public List<ClickableComponent> ItemSlots { get; private set; } = new();
         public Rectangle PortraitBox { get; private set; }
@@ -67,8 +66,8 @@ namespace OutfitRoom
             int gridWidth = COLUMNS * SLOT_SIZE + (COLUMNS - 1) * SLOT_GAP;  // 336
             int portraitWidth = 128;
             int portraitHeight = 192;
-            int gapBetweenPanels = 24;
-            int sidePadding = 32;
+            int gapBetweenPanels = 100;
+            int sidePadding = 70;
 
             // Calculate menu width based on actual content
             int contentWidth = portraitWidth + gapBetweenPanels + gridWidth + PADDING * 2;
@@ -148,11 +147,22 @@ namespace OutfitRoom
                 4f
             );
 
-            // Reset button - sized to fit text with texture box borders (borders are ~12px each side)
-            int resetButtonWidth = 100;
-            int resetButtonHeight = 48;
+            // Apply and Reset buttons - side by side below the portrait
+            int buttonWidth = 110;
+            int buttonHeight = 60;
+            int buttonGap = 8;
+            int totalButtonsWidth = buttonWidth * 2 + buttonGap;
+            int buttonsStartX = leftPanelCenterX - totalButtonsWidth / 2;
+            int buttonsY = Y + Height - PADDING - buttonHeight - 8;
+
+            ApplyButton = new ClickableTextureComponent(
+                new Rectangle(buttonsStartX, buttonsY, buttonWidth, buttonHeight),
+                Game1.mouseCursors,
+                new Rectangle(432, 439, 9, 9),
+                4f
+            );
             ResetButton = new ClickableTextureComponent(
-                new Rectangle(leftPanelCenterX - resetButtonWidth / 2, Y + Height - PADDING - resetButtonHeight - 8, resetButtonWidth, resetButtonHeight),
+                new Rectangle(buttonsStartX + buttonWidth + buttonGap, buttonsY, buttonWidth, buttonHeight),
                 Game1.mouseCursors,
                 new Rectangle(432, 439, 9, 9),
                 4f
@@ -278,6 +288,26 @@ namespace OutfitRoom
                 ScrollUpButton.draw(b);
             if (scrollOffset < maxScroll)
                 ScrollDownButton.draw(b);
+        }
+
+        /// <summary>
+        /// Draws the apply button with its label.
+        /// </summary>
+        /// <param name="b">SpriteBatch to draw with.</param>
+        public void DrawApplyButton(SpriteBatch b)
+        {
+            // Draw button background using texture box
+            IClickableMenu.drawTextureBox(b, ApplyButton.bounds.X, ApplyButton.bounds.Y,
+                ApplyButton.bounds.Width, ApplyButton.bounds.Height, Color.White);
+
+            // Draw "Apply" text centered in button
+            string applyText = "Apply";
+            Vector2 textSize = Game1.smallFont.MeasureString(applyText);
+            Vector2 textPos = new Vector2(
+                ApplyButton.bounds.X + (ApplyButton.bounds.Width - textSize.X) / 2,
+                ApplyButton.bounds.Y + (ApplyButton.bounds.Height - textSize.Y) / 2
+            );
+            Utility.drawTextWithShadow(b, applyText, Game1.smallFont, textPos, Game1.textColor);
         }
 
         /// <summary>

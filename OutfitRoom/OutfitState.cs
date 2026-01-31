@@ -14,15 +14,15 @@ namespace OutfitRoom
         private int pantsIndex;
         private int hatIndex;
 
-        // Original outfit (for reset)
+        // Original outfit (captured when menu opens, for reverting on close)
         private readonly string originalShirt;
         private readonly string originalPants;
         private readonly int originalHat;
 
-        // Saved outfit (for Set)
-        private string savedShirt;
-        private string savedPants;
-        private int savedHat;
+        // Applied outfit (set when Apply is clicked, for Reset button)
+        private string appliedShirt;
+        private string appliedPants;
+        private int appliedHat;
 
         // Scroll position (row offset in the grid)
         private int scrollOffset = 0;
@@ -64,35 +64,19 @@ namespace OutfitRoom
         /// <summary>Gets the original hat ID.</summary>
         public int OriginalHat => originalHat;
 
-        /// <summary>Gets or sets the saved shirt ID.</summary>
-        public string SavedShirt
-        {
-            get => savedShirt;
-            set => savedShirt = value;
-        }
-
-        /// <summary>Gets or sets the saved pants ID.</summary>
-        public string SavedPants
-        {
-            get => savedPants;
-            set => savedPants = value;
-        }
-
-        /// <summary>Gets or sets the saved hat ID.</summary>
-        public int SavedHat
-        {
-            get => savedHat;
-            set => savedHat = value;
-        }
-
         /// <summary>
-        /// Creates a new OutfitState, capturing the player's current outfit as the original.
+        /// Creates a new OutfitState, capturing the player's current outfit as both original and applied.
         /// </summary>
         public OutfitState()
         {
             originalShirt = Game1.player.shirt.Value;
             originalPants = Game1.player.pants.Value;
             originalHat = GetHatIdFromItem(Game1.player.hat.Value);
+
+            // Applied starts as the original outfit
+            appliedShirt = originalShirt;
+            appliedPants = originalPants;
+            appliedHat = originalHat;
 
             // Initialize indices to match current outfit
             // (will be set later by the menu)
@@ -145,34 +129,57 @@ namespace OutfitRoom
         }
 
         /// <summary>
-        /// Resets the player's outfit to the original captured outfit.
+        /// Saves the current preview as the applied outfit.
+        /// </summary>
+        public void SaveAppliedOutfit()
+        {
+            appliedShirt = Game1.player.shirt.Value;
+            appliedPants = Game1.player.pants.Value;
+            appliedHat = GetHatIdFromItem(Game1.player.hat.Value);
+        }
+
+        /// <summary>
+        /// Resets the player's outfit to the last applied outfit (or original if nothing was applied).
         /// </summary>
         /// <param name="shirtIds">List of shirt IDs (for index lookup).</param>
         /// <param name="pantsIds">List of pants IDs (for index lookup).</param>
         /// <param name="hatIds">List of hat IDs (for index lookup).</param>
-        public void ResetOutfit(System.Collections.Generic.List<string> shirtIds,
+        public void ResetToApplied(System.Collections.Generic.List<string> shirtIds,
             System.Collections.Generic.List<string> pantsIds,
             System.Collections.Generic.List<int> hatIds)
         {
-            // Reset shirt
-            Game1.player.shirt.Value = originalShirt;
+            // Reset to applied outfit
+            Game1.player.shirt.Value = appliedShirt;
+            Game1.player.pants.Value = appliedPants;
 
-            // Reset pants
-            Game1.player.pants.Value = originalPants;
-
-            // Reset hat
-            if (originalHat < 0)
+            if (appliedHat < 0)
                 Game1.player.hat.Value = null;
             else
-                Game1.player.hat.Value = ItemRegistry.Create<Hat>("(H)" + originalHat);
+                Game1.player.hat.Value = ItemRegistry.Create<Hat>("(H)" + appliedHat);
 
             Game1.player.FarmerRenderer.MarkSpriteDirty();
 
-            // Reset indices
-            shirtIndex = Math.Max(0, shirtIds.IndexOf(originalShirt));
-            pantsIndex = Math.Max(0, pantsIds.IndexOf(originalPants));
-            hatIndex = Math.Max(0, hatIds.IndexOf(originalHat));
-            scrollOffset = 0;
+            // Reset indices to match applied outfit
+            shirtIndex = Math.Max(0, shirtIds.IndexOf(appliedShirt));
+            pantsIndex = Math.Max(0, pantsIds.IndexOf(appliedPants));
+            hatIndex = Math.Max(0, hatIds.IndexOf(appliedHat));
+        }
+
+        /// <summary>
+        /// Reverts the player's outfit to the applied state without changing indices.
+        /// Used when closing the menu to discard unsaved changes.
+        /// </summary>
+        public void RevertToApplied()
+        {
+            Game1.player.shirt.Value = appliedShirt;
+            Game1.player.pants.Value = appliedPants;
+
+            if (appliedHat < 0)
+                Game1.player.hat.Value = null;
+            else
+                Game1.player.hat.Value = ItemRegistry.Create<Hat>("(H)" + appliedHat);
+
+            Game1.player.FarmerRenderer.MarkSpriteDirty();
         }
 
         /// <summary>
