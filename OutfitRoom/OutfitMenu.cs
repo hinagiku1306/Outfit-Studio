@@ -21,7 +21,10 @@ namespace OutfitRoom
         private const int MENU_HEIGHT = 550;
         private const int LEFT_PANEL_WIDTH = 280;
         private const int RIGHT_PANEL_X_OFFSET = 320;
-        private const int VISIBLE_ITEMS = 6;
+        private const int COLUMNS_PER_ROW = 5;
+        private const int ROWS_VISIBLE = 3;
+        private const int VISIBLE_ITEMS = COLUMNS_PER_ROW * ROWS_VISIBLE; // 15
+        private const int ITEM_WIDTH = 80;
         private const int ITEM_HEIGHT = 48;
 
         // Spacing constants
@@ -46,6 +49,11 @@ namespace OutfitRoom
         private readonly string originalPants;
         private readonly int originalHat;
 
+        // Saved outfit (for Set)
+        private string savedShirt;
+        private string savedPants;
+        private int savedHat;
+
         // Scroll state
         private int scrollOffset = 0;
 
@@ -56,6 +64,7 @@ namespace OutfitRoom
         private readonly ClickableTextureComponent scrollUpButton;
         private readonly ClickableTextureComponent scrollDownButton;
         private readonly ClickableTextureComponent resetButton;
+        private readonly ClickableTextureComponent setButton;
         private readonly ClickableTextureComponent closeButton;
         private readonly List<ClickableComponent> itemSlots = new();
 
