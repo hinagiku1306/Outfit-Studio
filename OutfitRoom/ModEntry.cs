@@ -39,30 +39,14 @@ namespace OutfitRoom
                     setValue: value => config.ToggleMenuKey = value
                 );
 
-                gmcmApi.AddBoolOption(
-                    mod: ModManifest,
-                    name: () => "Enable Outfit Saving",
-                    tooltip: () => "Allow saving and loading of outfits.",
-                    getValue: () => config.EnableOutfitSaving,
-                    setValue: value => config.EnableOutfitSaving = value
-                );
-
                 gmcmApi.AddNumberOption(
                     mod: ModManifest,
-                    name: () => "Max Saved Outfits",
-                    tooltip: () => "Maximum number of outfits you can save.",
-                    getValue: () => config.MaxSavedOutfits,
-                    setValue: value => config.MaxSavedOutfits = value,
+                    name: () => "Max Columns",
+                    tooltip: () => "Maximum number of columns in the item grid.",
+                    getValue: () => config.MaxColumns,
+                    setValue: value => config.MaxColumns = value,
                     min: 1,
-                    max: 50
-                );
-
-                gmcmApi.AddBoolOption(
-                    mod: ModManifest,
-                    name: () => "Show Preview",
-                    tooltip: () => "Show a preview of the outfit before applying.",
-                    getValue: () => config.ShowPreview,
-                    setValue: value => config.ShowPreview = value
+                    max: 5
                 );
             }
         }

@@ -23,13 +23,16 @@ namespace OutfitRoom
         private const int BASE_BUTTON_LABEL_GAP = 4;
         private const int BASE_TAB_WIDTH = 100;
         private const int BASE_TAB_HEIGHT = 40;
-        private const int BASE_TITLE_HEIGHT = 50;
+        private const int BASE_TITLE_HEIGHT = 20;
         private const int BASE_TAB_MARGIN = 16;
         private const int BASE_BOTTOM_MARGIN = 80;
 
         // Scaled layout values (computed at construction)
         public int ITEM_HEIGHT { get; private set; }
+        public int ITEM_WIDTH { get; private set; }
         public int VISIBLE_ITEMS { get; private set; }
+        public int VISIBLE_ROWS { get; private set; }
+        public int COLUMNS { get; private set; }
         public int TAB_GAP { get; private set; }
         public int ITEM_SLOT_GAP { get; private set; }
         public int LIST_PADDING { get; private set; }
@@ -52,6 +55,7 @@ namespace OutfitRoom
         public int Width { get; private set; }
         public int Height { get; private set; }
         private float uiScale = 1f;
+        private readonly int maxColumns;
         private int titlePaddingTop;
 
         /// <summary>
@@ -77,8 +81,9 @@ namespace OutfitRoom
         /// <summary>
         /// Creates a new UI builder and initializes all UI components.
         /// </summary>
-        public OutfitUIBuilder()
+        public OutfitUIBuilder(int maxColumns)
         {
+            this.maxColumns = Math.Max(1, Math.Min(5, maxColumns));
             Recalculate();
         }
 
@@ -105,6 +110,7 @@ namespace OutfitRoom
             LIST_PADDING = Scale(BASE_LIST_PADDING, uiScale);
             BUTTON_LABEL_GAP = Scale(BASE_BUTTON_LABEL_GAP, uiScale);
             ITEM_HEIGHT = Scale(BASE_ITEM_HEIGHT, uiScale);
+            ITEM_WIDTH = Scale(BASE_ITEM_WIDTH, uiScale);
             titlePaddingTop = Scale(16, uiScale);
 
             // Calculate available height for item list
@@ -116,8 +122,8 @@ namespace OutfitRoom
             int listStartY = titleHeight + tabHeight + tabMargin;
             int availableHeight = Height - listStartY - bottomMargin - LIST_PADDING * 2;
 
-            // Calculate how many items can fit
-            VISIBLE_ITEMS = Math.Max(1, availableHeight / ITEM_HEIGHT);
+            // Calculate how many rows can fit
+            VISIBLE_ROWS = Math.Max(1, (availableHeight + ITEM_SLOT_GAP) / (ITEM_HEIGHT + ITEM_SLOT_GAP));
 
             // Scale right panel offset based on menu width
             int leftPanelWidth = Scale(BASE_LEFT_PANEL_WIDTH, uiScale);
@@ -155,21 +161,26 @@ namespace OutfitRoom
             // Item list dimensions
             int listX = rightPanelX;
             int listY = tabY + tabHeight + tabMargin;
-            int listWidth = Math.Max(1, Math.Min(Scale(BASE_ITEM_WIDTH, uiScale), Width - rightPanelXOffset - panelGap));
-            int listHeight = VISIBLE_ITEMS * ITEM_HEIGHT;
+            int listWidth = Math.Max(1, Width - rightPanelXOffset - panelGap);
+            int minSlotWidth = Math.Max(1, Scale(140, uiScale));
+            int possibleColumns = Math.Max(1, (listWidth + ITEM_SLOT_GAP) / (minSlotWidth + ITEM_SLOT_GAP));
+            COLUMNS = Math.Max(1, Math.Min(this.maxColumns, possibleColumns));
+            int slotWidth = Math.Max(1, (listWidth - (COLUMNS - 1) * ITEM_SLOT_GAP) / COLUMNS);
+            int listHeight = VISIBLE_ROWS * ITEM_HEIGHT + Math.Max(0, VISIBLE_ROWS - 1) * ITEM_SLOT_GAP;
+            VISIBLE_ITEMS = VISIBLE_ROWS * COLUMNS;
 
             // Scroll buttons
             int scrollButtonWidth = Scale(48, uiScale);
             int scrollButtonHeight = Scale(44, uiScale);
             float scrollButtonScale = 4f * uiScale;
             ScrollUpButton = new ClickableTextureComponent(
-                new Rectangle(listX + listWidth / 2 - scrollButtonWidth / 2, listY - Scale(10, uiScale), scrollButtonWidth, scrollButtonHeight),
+                new Rectangle(listX + listWidth / 2 - scrollButtonWidth / 2, listY - Scale(24, uiScale), scrollButtonWidth, scrollButtonHeight),
                 Game1.mouseCursors,
                 new Rectangle(421, 459, 12, 11),
                 scrollButtonScale
             );
             ScrollDownButton = new ClickableTextureComponent(
-                new Rectangle(listX + listWidth / 2 - scrollButtonWidth / 2, listY + listHeight + Scale(10, uiScale), scrollButtonWidth, scrollButtonHeight),
+                new Rectangle(listX + listWidth / 2 - scrollButtonWidth / 2, listY + listHeight + Scale(12, uiScale), scrollButtonWidth, scrollButtonHeight),
                 Game1.mouseCursors,
                 new Rectangle(421, 472, 12, 11),
                 scrollButtonScale
@@ -177,12 +188,17 @@ namespace OutfitRoom
 
             // Item slots - clear and rebuild
             ItemSlots.Clear();
-            for (int i = 0; i < VISIBLE_ITEMS; i++)
+            for (int row = 0; row < VISIBLE_ROWS; row++)
             {
-                ItemSlots.Add(new ClickableComponent(
-                    new Rectangle(listX, listY + i * ITEM_HEIGHT, listWidth, ITEM_HEIGHT - ITEM_SLOT_GAP),
-                    i.ToString()
-                ));
+                for (int col = 0; col < COLUMNS; col++)
+                {
+                    int slotX = listX + col * (slotWidth + ITEM_SLOT_GAP);
+                    int slotY = listY + row * (ITEM_HEIGHT + ITEM_SLOT_GAP);
+                    ItemSlots.Add(new ClickableComponent(
+                        new Rectangle(slotX, slotY, slotWidth, ITEM_HEIGHT),
+                        (row * COLUMNS + col).ToString()
+                    ));
+                }
             }
 
             // Reset button (left panel bottom)
@@ -244,11 +260,8 @@ namespace OutfitRoom
             b.Draw(Game1.daybg, PortraitBox, Color.White);
 
             // Draw farmer
-            Vector2 farmerSize = new Vector2(16 * 0.8f * uiScale, 32 * 0.8f * uiScale);
-            Vector2 farmerPos = new Vector2(
-                PortraitBox.X + (PortraitBox.Width - farmerSize.X) / 2f,
-                PortraitBox.Y + (PortraitBox.Height - farmerSize.Y) / 2f
-            );
+            Vector2 farmerPos = new Vector2(PortraitBox.Center.X, PortraitBox.Center.Y);
+            Vector2 farmerOrigin = new Vector2(8f, 16f);
             FarmerRenderer.isDrawingForUI = true;
             Game1.player.FarmerRenderer.draw(
                 b,
@@ -256,7 +269,7 @@ namespace OutfitRoom
                 0,
                 new Rectangle(0, 0, 16, 32),
                 farmerPos,
-                Vector2.Zero,
+                farmerOrigin,
                 0.8f * uiScale,
                 2,
                 Color.White,
@@ -280,17 +293,19 @@ namespace OutfitRoom
 
             int listX = ItemSlots[0].bounds.X;
             int listY = ItemSlots[0].bounds.Y;
-            int listWidth = ItemSlots[0].bounds.Width;
-            int listHeight = ItemSlots.Count * ITEM_HEIGHT;
+            int listWidth = (ItemSlots[COLUMNS - 1].bounds.Right - ItemSlots[0].bounds.Left);
+            int listHeight = VISIBLE_ROWS * ITEM_HEIGHT + Math.Max(0, VISIBLE_ROWS - 1) * ITEM_SLOT_GAP;
 
             // Draw background box
             IClickableMenu.drawTextureBox(b, listX - LIST_PADDING, listY - LIST_PADDING,
                 listWidth + LIST_PADDING * 2, listHeight + LIST_PADDING * 2, Color.White);
 
             // Draw scroll buttons (only if needed)
+            int totalRows = Math.Max(1, (int)Math.Ceiling(totalItems / (float)COLUMNS));
+            int maxScroll = Math.Max(0, totalRows - VISIBLE_ROWS);
             if (scrollOffset > 0)
                 ScrollUpButton.draw(b);
-            if (scrollOffset < totalItems - ItemSlots.Count)
+            if (scrollOffset < maxScroll)
                 ScrollDownButton.draw(b);
         }
 

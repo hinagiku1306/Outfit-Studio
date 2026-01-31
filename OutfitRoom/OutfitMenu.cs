@@ -29,7 +29,7 @@ namespace OutfitRoom
             categoryManager = new OutfitCategoryManager();
             itemRenderer = new OutfitItemRenderer();
             state = new OutfitState();
-            uiBuilder = new OutfitUIBuilder();
+            uiBuilder = new OutfitUIBuilder(mod.GetConfig().MaxColumns);
 
             // Set menu dimensions from UI builder
             width = uiBuilder.Width;
@@ -59,7 +59,8 @@ namespace OutfitRoom
             yPositionOnScreen = uiBuilder.Y;
 
             // Clamp scroll offset in case visible items changed
-            int maxScroll = Math.Max(0, GetCurrentListCount() - uiBuilder.VISIBLE_ITEMS);
+            int totalRows = Math.Max(1, (int)Math.Ceiling(GetCurrentListCount() / (float)uiBuilder.COLUMNS));
+            int maxScroll = Math.Max(0, totalRows - uiBuilder.VISIBLE_ROWS);
             if (state.ScrollOffset > maxScroll)
                 state.ScrollOffset = maxScroll;
         }
@@ -119,7 +120,8 @@ namespace OutfitRoom
             }
 
             // Scroll buttons
-            int maxScroll = Math.Max(0, GetCurrentListCount() - uiBuilder.VISIBLE_ITEMS);
+            int totalRows = Math.Max(1, (int)Math.Ceiling(GetCurrentListCount() / (float)uiBuilder.COLUMNS));
+            int maxScroll = Math.Max(0, totalRows - uiBuilder.VISIBLE_ROWS);
             if (uiBuilder.ScrollUpButton.containsPoint(x, y) && state.ScrollOffset > 0)
             {
                 state.ScrollOffset--;
@@ -138,7 +140,9 @@ namespace OutfitRoom
             {
                 if (uiBuilder.ItemSlots[i].containsPoint(x, y))
                 {
-                    int listIndex = state.ScrollOffset + i;
+                    int row = i / uiBuilder.COLUMNS;
+                    int col = i % uiBuilder.COLUMNS;
+                    int listIndex = state.ScrollOffset * uiBuilder.COLUMNS + row * uiBuilder.COLUMNS + col;
                     if (listIndex < GetCurrentListCount())
                     {
                         SetCurrentIndex(listIndex);
@@ -169,7 +173,8 @@ namespace OutfitRoom
         {
             base.receiveScrollWheelAction(direction);
 
-            int maxScroll = Math.Max(0, GetCurrentListCount() - uiBuilder.VISIBLE_ITEMS);
+            int totalRows = Math.Max(1, (int)Math.Ceiling(GetCurrentListCount() / (float)uiBuilder.COLUMNS));
+            int maxScroll = Math.Max(0, totalRows - uiBuilder.VISIBLE_ROWS);
             if (direction > 0 && state.ScrollOffset > 0)
             {
                 state.ScrollOffset--;
@@ -191,9 +196,6 @@ namespace OutfitRoom
 
             // Draw menu box
             drawTextureBox(b, xPositionOnScreen, yPositionOnScreen, width, height, Color.White);
-
-            // Draw title
-            uiBuilder.DrawTitle(b);
 
             // === LEFT PANEL: Player Preview ===
             uiBuilder.DrawPlayerPreview(b);
@@ -219,7 +221,9 @@ namespace OutfitRoom
 
             for (int i = 0; i < uiBuilder.VISIBLE_ITEMS; i++)
             {
-                int listIndex = state.ScrollOffset + i;
+                int row = i / uiBuilder.COLUMNS;
+                int col = i % uiBuilder.COLUMNS;
+                int listIndex = state.ScrollOffset * uiBuilder.COLUMNS + row * uiBuilder.COLUMNS + col;
                 if (listIndex >= listCount)
                     break;
 

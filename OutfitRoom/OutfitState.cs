@@ -24,7 +24,7 @@ namespace OutfitRoom
         private string savedPants;
         private int savedHat;
 
-        // Scroll position
+        // Scroll position (row offset in the grid)
         private int scrollOffset = 0;
 
         /// <summary>Gets or sets the current shirt index.</summary>
