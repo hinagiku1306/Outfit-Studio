@@ -45,15 +45,15 @@ namespace OutfitRoom
             // Check if the item ID exists before creating
             if (!ItemRegistry.Exists(qualifiedId))
             {
-                // Draw placeholder for missing item
-                DrawMissingItemIndicator(b, slot);
+                // Log missing item instead of drawing placeholder
+                LogMissingItem(qualifiedId, "Item does not exist in registry");
                 return;
             }
 
             Item item = ItemRegistry.Create(qualifiedId);
             if (item == null)
             {
-                DrawMissingItemIndicator(b, slot);
+                LogMissingItem(qualifiedId, "Failed to create item");
                 return;
             }
 
@@ -67,15 +67,18 @@ namespace OutfitRoom
         }
 
         /// <summary>
-        /// Draws a "?" indicator for items that fail to load.
+        /// Logs information about a missing item to the console.
         /// </summary>
-        private void DrawMissingItemIndicator(SpriteBatch b, Rectangle slot)
+        private void LogMissingItem(string qualifiedId, string reason)
         {
-            Vector2 textPos = new Vector2(
-                slot.X + (slot.Width - Game1.smallFont.MeasureString("?").X) / 2,
-                slot.Y + (slot.Height - Game1.smallFont.LineSpacing) / 2
-            );
-            Utility.drawTextWithShadow(b, "?", Game1.smallFont, textPos, Color.Red);
+            // Parse item type and ID
+            string itemType = qualifiedId.StartsWith("(S)") ? "Shirt" :
+                            qualifiedId.StartsWith("(P)") ? "Pants" :
+                            qualifiedId.StartsWith("(H)") ? "Hat" : "Unknown";
+            string itemId = qualifiedId.Length > 3 ? qualifiedId[3..] : qualifiedId;
+
+            // Log to console (uses standard output which SMAPI captures)
+            Console.WriteLine($"[OutfitRoom] Skipping missing item: {itemType} '{itemId}' - {reason}");
         }
 
         /// <summary>
@@ -118,6 +121,32 @@ namespace OutfitRoom
                     break;
             }
             return null;
+        }
+
+        /// <summary>
+        /// Gets the sprite texture and source rectangle for a tab icon.
+        /// Uses a representative sprite for each category.
+        /// </summary>
+        public (Texture2D texture, Rectangle sourceRect) GetTabSpriteInfo(OutfitCategoryManager.Category category,
+            List<string> shirtIds, List<string> pantsIds, List<int> hatIds)
+        {
+            switch (category)
+            {
+                case OutfitCategoryManager.Category.Shirts:
+                    // Use the first shirt sprite (top-left of shirt texture)
+                    return (FarmerRenderer.shirtsTexture, new Rectangle(0, 0, 8, 8));
+
+                case OutfitCategoryManager.Category.Pants:
+                    // Use the first pants sprite (top-left of pants texture)
+                    return (FarmerRenderer.pantsTexture, new Rectangle(0, 0, 16, 16));
+
+                case OutfitCategoryManager.Category.Hats:
+                    // Use the first hat sprite (index 0 in hat texture - the red cap)
+                    return (FarmerRenderer.hatsTexture, new Rectangle(0, 0, 20, 20));
+
+                default:
+                    return (Game1.staminaRect, new Rectangle(0, 0, 1, 1));
+            }
         }
     }
 }

@@ -245,12 +245,14 @@ namespace OutfitRoom
             uiBuilder.DrawResetButton(b);
 
             // === RIGHT PANEL: Category Tabs & Item List ===
-            // Draw category tabs
-            uiBuilder.DrawTab(b, uiBuilder.ShirtsTab, "Shirts",
+            // Draw category tabs with text labels
+            uiBuilder.DrawTabWithText(b, uiBuilder.ShirtsTab, "Shirts",
                 categoryManager.CurrentCategory == OutfitCategoryManager.Category.Shirts);
-            uiBuilder.DrawTab(b, uiBuilder.PantsTab, "Pants",
+
+            uiBuilder.DrawTabWithText(b, uiBuilder.PantsTab, "Pants",
                 categoryManager.CurrentCategory == OutfitCategoryManager.Category.Pants);
-            uiBuilder.DrawTab(b, uiBuilder.HatsTab, "Hats",
+
+            uiBuilder.DrawTabWithText(b, uiBuilder.HatsTab, "Hats",
                 categoryManager.CurrentCategory == OutfitCategoryManager.Category.Hats);
 
             // Draw item list background and scroll buttons
@@ -274,7 +276,7 @@ namespace OutfitRoom
                 // Highlight selected item
                 if (isSelected)
                 {
-                    b.Draw(Game1.staminaRect, slot, Color.Orange * 0.4f);
+                    b.Draw(Game1.staminaRect, slot, Color.Green * 0.3f);
                 }
 
                 // Hover highlight
@@ -290,6 +292,12 @@ namespace OutfitRoom
 
             // Draw close button
             uiBuilder.DrawCloseButton(b);
+
+            // Set hand cursor when hovering over clickable elements
+            if (uiBuilder.IsHoveringClickable(Game1.getMouseX(), Game1.getMouseY()))
+            {
+                Game1.mouseCursor = 1;
+            }
 
             // Draw cursor
             drawMouse(b);

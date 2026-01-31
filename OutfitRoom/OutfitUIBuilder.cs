@@ -82,8 +82,11 @@ namespace OutfitRoom
             VISIBLE_ROWS = Math.Max(1, (availableHeight + ItemSlotGap) / (SLOT_SIZE + ItemSlotGap));
             VISIBLE_ITEMS = VISIBLE_ROWS * COLUMNS;
 
-            // Portrait box - centered in left panel area
-            int portraitY = Y + ContentBoxPadding + TitleAreaHeight + (Height - TitleAreaHeight - ContentBoxPadding * 2 - BottomButtonAreaHeight - CharacterPreviewHeight) / 2;
+            // Portrait box - centered with buttons as a group
+            int totalGroupHeight = CharacterPreviewHeight + GapBetweenPortraitAndButtons + (TabAndButtonHeight * 2) + TabAndButtonGap;
+            int availableVerticalSpace = Height - (ContentBoxPadding + TitleAreaHeight) - ContentBoxPadding;
+            int portraitY = Y + ContentBoxPadding + TitleAreaHeight + (availableVerticalSpace - totalGroupHeight) / 2;
+
             PortraitBox = new Rectangle(
                 leftPanelCenterX - CharacterPreviewWidth / 2,
                 portraitY,
@@ -91,17 +94,20 @@ namespace OutfitRoom
                 CharacterPreviewHeight
             );
 
-            // Category tabs - aligned with grid
+            // Category tabs - center-aligned with grid
+            int totalTabsWidth = TabAndButtonWidth * 3 + TabAndButtonGap * 2;
+            int tabsStartX = rightPanelX + (gridWidth - totalTabsWidth) / 2 - 10;
+
             ShirtsTab = new ClickableComponent(
-                new Rectangle(rightPanelX, tabY, TabAndButtonWidth, TabAndButtonHeight),
+                new Rectangle(tabsStartX, tabY, TabAndButtonWidth, TabAndButtonHeight),
                 "Shirts"
             );
             PantsTab = new ClickableComponent(
-                new Rectangle(rightPanelX + TabAndButtonWidth + TabAndButtonGap, tabY, TabAndButtonWidth, TabAndButtonHeight),
+                new Rectangle(tabsStartX + TabAndButtonWidth + TabAndButtonGap, tabY, TabAndButtonWidth, TabAndButtonHeight),
                 "Pants"
             );
             HatsTab = new ClickableComponent(
-                new Rectangle(rightPanelX + (TabAndButtonWidth + TabAndButtonGap) * 2, tabY, TabAndButtonWidth, TabAndButtonHeight),
+                new Rectangle(tabsStartX + (TabAndButtonWidth + TabAndButtonGap) * 2, tabY, TabAndButtonWidth, TabAndButtonHeight),
                 "Hats"
             );
 
@@ -122,7 +128,7 @@ namespace OutfitRoom
             }
 
             // Scroll buttons (right side of the grid, vertically stacked)
-            int scrollButtonX = rightPanelX + gridWidth + ContentBoxPadding;
+            int scrollButtonX = rightPanelX + gridWidth + ContentBoxPadding + ScrollArrowLeftGap;
             int totalScrollHeight = ScrollArrowButtonSize * 2 + ScrollArrowVerticalGap;
             int scrollButtonStartY = gridY + (gridHeight - totalScrollHeight) / 2;
 
@@ -139,19 +145,19 @@ namespace OutfitRoom
                 4f
             );
 
-            // Apply and Reset buttons - side by side below the portrait
-            int totalButtonsWidth = TabAndButtonWidth * 2 + TabAndButtonGap;
-            int buttonsStartX = leftPanelCenterX - totalButtonsWidth / 2;
-            int buttonsY = Y + Height - ContentBoxPadding - TabAndButtonHeight - CloseButtonEdgeMargin;
+            // Apply and Reset buttons - stacked vertically below the portrait
+            int buttonsStartX = leftPanelCenterX - TabAndButtonWidth / 2;
+            int applyButtonY = PortraitBox.Bottom + GapBetweenPortraitAndButtons;
+            int resetButtonY = applyButtonY + TabAndButtonHeight + TabAndButtonGap;
 
             ApplyButton = new ClickableTextureComponent(
-                new Rectangle(buttonsStartX, buttonsY, TabAndButtonWidth, TabAndButtonHeight),
+                new Rectangle(buttonsStartX, applyButtonY, TabAndButtonWidth, TabAndButtonHeight),
                 Game1.mouseCursors,
                 new Rectangle(432, 439, 9, 9),
                 4f
             );
             ResetButton = new ClickableTextureComponent(
-                new Rectangle(buttonsStartX + TabAndButtonWidth + TabAndButtonGap, buttonsY, TabAndButtonWidth, TabAndButtonHeight),
+                new Rectangle(buttonsStartX, resetButtonY, TabAndButtonWidth, TabAndButtonHeight),
                 Game1.mouseCursors,
                 new Rectangle(432, 439, 9, 9),
                 4f
@@ -167,22 +173,15 @@ namespace OutfitRoom
         }
 
         /// <summary>
-        /// Draws a category tab using the same style as Apply/Reset buttons with hover effect.
+        /// Draws a category tab with text.
         /// </summary>
-        public void DrawTab(SpriteBatch b, ClickableComponent tab, string label, bool isActive)
+        public void DrawTabWithText(SpriteBatch b, ClickableComponent tab, string label, bool isActive)
         {
-            bool isHovered = tab.containsPoint(Game1.getMouseX(), Game1.getMouseY());
-
-            Color boxColor;
-            if (isActive)
-                boxColor = Color.Orange;
-            else if (isHovered)
-                boxColor = Color.Wheat;
-            else
-                boxColor = Color.White;
+            // Keep box (and its shadow) at full opacity, only dim the text when inactive
+            Color textColor = isActive ? Game1.textColor : Game1.textColor * TabOpacity;
 
             IClickableMenu.drawTextureBox(b, tab.bounds.X, tab.bounds.Y,
-                tab.bounds.Width, tab.bounds.Height, boxColor);
+                tab.bounds.Width, tab.bounds.Height, Color.White);
 
             Vector2 labelSize = Game1.smallFont.MeasureString(label);
             Utility.drawTextWithShadow(b, label, Game1.smallFont,
@@ -190,7 +189,38 @@ namespace OutfitRoom
                     tab.bounds.X + (tab.bounds.Width - labelSize.X) / 2,
                     tab.bounds.Y + (tab.bounds.Height - labelSize.Y) / 2
                 ),
-                Game1.textColor);
+                textColor);
+        }
+
+        /// <summary>
+        /// Draws a category tab with an item sprite icon.
+        /// </summary>
+        public void DrawTabWithSprite(SpriteBatch b, ClickableComponent tab, Texture2D texture, Rectangle sourceRect, bool isActive, float spriteScale = 2f)
+        {
+            int mouseX = Game1.getMouseX();
+            int mouseY = Game1.getMouseY();
+            bool isHovered = tab.containsPoint(mouseX, mouseY);
+
+            if (isHovered)
+            {
+                Game1.mouseCursor = 1; // Hand cursor
+            }
+
+            Color boxColor = isActive ? Color.White : Color.White * 0.5f;
+
+            IClickableMenu.drawTextureBox(b, tab.bounds.X, tab.bounds.Y,
+                tab.bounds.Width, tab.bounds.Height, boxColor);
+
+            // Calculate sprite size and position to center it
+            float scaledWidth = sourceRect.Width * spriteScale;
+            float scaledHeight = sourceRect.Height * spriteScale;
+            Vector2 spritePos = new Vector2(
+                tab.bounds.X + (tab.bounds.Width - scaledWidth) / 2,
+                tab.bounds.Y + (tab.bounds.Height - scaledHeight) / 2
+            );
+
+            // Draw the sprite centered in the tab
+            b.Draw(texture, spritePos, sourceRect, Color.White, 0f, Vector2.Zero, spriteScale, SpriteEffects.None, 0.87f);
         }
 
         /// <summary>
@@ -201,10 +231,10 @@ namespace OutfitRoom
             // Draw sky background (day or night based on time)
             b.Draw((Game1.timeOfDay >= NightTimeStartHour) ? Game1.nightbg : Game1.daybg, PortraitBox, Color.White);
 
-            // Draw farmer at standard scale
+            // Draw farmer anchored from bottom (matches vanilla CharacterCustomization)
             Vector2 farmerPos = new Vector2(
-                PortraitBox.Center.X - FarmerSpriteWidth / 2,
-                PortraitBox.Center.Y - FarmerSpriteHeight / 2
+                PortraitBox.Center.X - FarmerPreviewCenterOffset,
+                PortraitBox.Bottom - FarmerPreviewBottomOffset
             );
 
             FarmerRenderer.isDrawingForUI = true;
@@ -272,6 +302,7 @@ namespace OutfitRoom
                 bool upHovered = ScrollUpButton.containsPoint(mouseX, mouseY);
                 if (upHovered)
                 {
+                    Game1.mouseCursor = 1; // Hand cursor
                     float originalScale = ScrollUpButton.scale;
                     ScrollUpButton.scale = originalScale + ButtonHoverScaleIncrease;
                     ScrollUpButton.draw(b, Color.Yellow, 0.86f);
@@ -287,6 +318,7 @@ namespace OutfitRoom
                 bool downHovered = ScrollDownButton.containsPoint(mouseX, mouseY);
                 if (downHovered)
                 {
+                    Game1.mouseCursor = 1; // Hand cursor
                     float originalScale = ScrollDownButton.scale;
                     ScrollDownButton.scale = originalScale + ButtonHoverScaleIncrease;
                     ScrollDownButton.draw(b, Color.Yellow, 0.86f);
@@ -300,24 +332,42 @@ namespace OutfitRoom
         }
 
         /// <summary>
+        /// Helper method to draw a text button with label and hover effect (same as tab style).
+        /// </summary>
+        private void DrawTextButton(SpriteBatch b, ClickableComponent button, string label, Color? hoverColor = null)
+        {
+            int mouseX = Game1.getMouseX();
+            int mouseY = Game1.getMouseY();
+            bool isHovered = button.containsPoint(mouseX, mouseY);
+
+            // Change cursor when hovering
+            if (isHovered)
+            {
+                Game1.mouseCursor = 1; // Hand cursor
+            }
+
+            // Draw button box (same as tabs)
+            IClickableMenu.drawTextureBox(b, button.bounds.X, button.bounds.Y,
+                button.bounds.Width, button.bounds.Height, Color.White);
+
+            // Draw centered text
+            Vector2 textSize = Game1.smallFont.MeasureString(label);
+            Vector2 textPos = new Vector2(
+                button.bounds.X + (button.bounds.Width - textSize.X) / 2,
+                button.bounds.Y + (button.bounds.Height - textSize.Y) / 2
+            );
+
+            // Use hover color if hovering, otherwise default text color
+            Color textColor = (isHovered && hoverColor.HasValue) ? hoverColor.Value : Game1.textColor;
+            Utility.drawTextWithShadow(b, label, Game1.smallFont, textPos, textColor);
+        }
+
+        /// <summary>
         /// Draws the apply button with its label and hover effect.
         /// </summary>
         public void DrawApplyButton(SpriteBatch b)
         {
-            bool isHovered = ApplyButton.containsPoint(Game1.getMouseX(), Game1.getMouseY());
-            Color boxColor = isHovered ? Color.LightGreen : Color.White;
-
-            IClickableMenu.drawTextureBox(b, ApplyButton.bounds.X, ApplyButton.bounds.Y,
-                ApplyButton.bounds.Width, ApplyButton.bounds.Height, boxColor);
-
-            string applyText = "Apply";
-            Vector2 textSize = Game1.smallFont.MeasureString(applyText);
-            Vector2 textPos = new Vector2(
-                ApplyButton.bounds.X + (ApplyButton.bounds.Width - textSize.X) / 2,
-                ApplyButton.bounds.Y + (ApplyButton.bounds.Height - textSize.Y) / 2
-            );
-            Color textColor = isHovered ? Color.DarkGreen : Game1.textColor;
-            Utility.drawTextWithShadow(b, applyText, Game1.smallFont, textPos, textColor);
+            DrawTextButton(b, ApplyButton, "Apply", null);
         }
 
         /// <summary>
@@ -325,20 +375,7 @@ namespace OutfitRoom
         /// </summary>
         public void DrawResetButton(SpriteBatch b)
         {
-            bool isHovered = ResetButton.containsPoint(Game1.getMouseX(), Game1.getMouseY());
-            Color boxColor = isHovered ? Color.LightCoral : Color.White;
-
-            IClickableMenu.drawTextureBox(b, ResetButton.bounds.X, ResetButton.bounds.Y,
-                ResetButton.bounds.Width, ResetButton.bounds.Height, boxColor);
-
-            string resetText = "Reset";
-            Vector2 textSize = Game1.smallFont.MeasureString(resetText);
-            Vector2 textPos = new Vector2(
-                ResetButton.bounds.X + (ResetButton.bounds.Width - textSize.X) / 2,
-                ResetButton.bounds.Y + (ResetButton.bounds.Height - textSize.Y) / 2
-            );
-            Color textColor = isHovered ? Color.DarkRed : Game1.textColor;
-            Utility.drawTextWithShadow(b, resetText, Game1.smallFont, textPos, textColor);
+            DrawTextButton(b, ResetButton, "Reset", null);
         }
 
         /// <summary>
@@ -346,12 +383,16 @@ namespace OutfitRoom
         /// </summary>
         public void DrawCloseButton(SpriteBatch b)
         {
-            bool isHovered = CloseButton.containsPoint(Game1.getMouseX(), Game1.getMouseY());
+            int mouseX = Game1.getMouseX();
+            int mouseY = Game1.getMouseY();
+            bool isHovered = CloseButton.containsPoint(mouseX, mouseY);
+
             if (isHovered)
             {
+                Game1.mouseCursor = 1; // Hand cursor
                 float originalScale = CloseButton.scale;
                 CloseButton.scale = originalScale + ButtonHoverScaleIncrease;
-                CloseButton.draw(b, Color.Red, 0.86f);
+                CloseButton.draw(b);
                 CloseButton.scale = originalScale;
             }
             else
@@ -414,6 +455,32 @@ namespace OutfitRoom
         public static void DrawOverlay(SpriteBatch b)
         {
             b.Draw(Game1.fadeToBlackRect, Game1.graphics.GraphicsDevice.Viewport.Bounds, Color.Black * BackgroundOverlayOpacity);
+        }
+
+        /// <summary>
+        /// Checks if the mouse is hovering over any clickable UI element.
+        /// </summary>
+        public bool IsHoveringClickable(int mouseX, int mouseY)
+        {
+            if (ShirtsTab.containsPoint(mouseX, mouseY) ||
+                PantsTab.containsPoint(mouseX, mouseY) ||
+                HatsTab.containsPoint(mouseX, mouseY) ||
+                ApplyButton.containsPoint(mouseX, mouseY) ||
+                ResetButton.containsPoint(mouseX, mouseY) ||
+                CloseButton.containsPoint(mouseX, mouseY) ||
+                ScrollUpButton.containsPoint(mouseX, mouseY) ||
+                ScrollDownButton.containsPoint(mouseX, mouseY))
+            {
+                return true;
+            }
+
+            foreach (var slot in ItemSlots)
+            {
+                if (slot.containsPoint(mouseX, mouseY))
+                    return true;
+            }
+
+            return false;
         }
     }
 }
