@@ -203,31 +203,51 @@ namespace OutfitRoom
         /// <param name="b">SpriteBatch to draw with.</param>
         public void DrawPlayerPreview(SpriteBatch b)
         {
-            // Draw sky background
-            b.Draw(Game1.daybg, PortraitBox, Color.White);
+            // Draw sky background (day or night based on time)
+            b.Draw((Game1.timeOfDay >= 1900) ? Game1.nightbg : Game1.daybg, PortraitBox, Color.White);
 
-            // Draw farmer centered in portrait box
-            // Farmer sprite is 16x32, scale by 4 = 64x128 display size
-            // Position at center of portrait box, origin at sprite center (8, 16)
-            float farmerScale = 4f;
-            Vector2 farmerPos = new Vector2(PortraitBox.Center.X, PortraitBox.Center.Y);
-            Vector2 farmerOrigin = new Vector2(8f, 16f); // Center of 16x32 sprite
+            // Draw farmer using vanilla approach from InventoryPage
+            // Farmer sprite is 16x32 at base, renders at ~64x128 pixels (4x internal zoom)
+            // Position is top-left corner since origin is Vector2.Zero
+            Vector2 farmerPos = new Vector2(
+                PortraitBox.Center.X - 32,  // Center horizontally (64px wide / 2)
+                PortraitBox.Center.Y - 64   // Center vertically (128px tall / 2)
+            );
 
             FarmerRenderer.isDrawingForUI = true;
             Game1.player.FarmerRenderer.draw(
                 b,
-                new FarmerSprite.AnimationFrame(0, 0, false, false),
-                0,
-                new Rectangle(0, 0, 16, 32),
+                new FarmerSprite.AnimationFrame(0, Game1.player.bathingClothes.Value ? 108 : 0, secondaryArm: false, flip: false),
+                Game1.player.bathingClothes.Value ? 108 : 0,
+                new Rectangle(0, Game1.player.bathingClothes.Value ? 576 : 0, 16, 32),
                 farmerPos,
-                farmerOrigin,
+                Vector2.Zero,
                 0.8f,
                 2,
                 Color.White,
                 0f,
-                farmerScale,
+                1f,
                 Game1.player
             );
+
+            // Apply night overlay if needed (same as vanilla)
+            if (Game1.timeOfDay >= 1900)
+            {
+                Game1.player.FarmerRenderer.draw(
+                    b,
+                    new FarmerSprite.AnimationFrame(0, Game1.player.bathingClothes.Value ? 108 : 0, secondaryArm: false, flip: false),
+                    Game1.player.bathingClothes.Value ? 108 : 0,
+                    new Rectangle(0, Game1.player.bathingClothes.Value ? 576 : 0, 16, 32),
+                    farmerPos,
+                    Vector2.Zero,
+                    0.8f,
+                    2,
+                    Color.DarkBlue * 0.3f,
+                    0f,
+                    1f,
+                    Game1.player
+                );
+            }
             FarmerRenderer.isDrawingForUI = false;
         }
 
