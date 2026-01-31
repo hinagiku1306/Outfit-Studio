@@ -168,6 +168,7 @@ namespace OutfitRoom
             if (uiBuilder.ApplyButton.containsPoint(x, y))
             {
                 ApplyOutfit();
+                uiBuilder.ShowSavedMessage();
                 if (playSound) Game1.playSound("coin");
                 return;
             }
@@ -219,6 +220,12 @@ namespace OutfitRoom
             base.receiveKeyPress(key);
         }
 
+        public override void update(GameTime time)
+        {
+            base.update(time);
+            uiBuilder.Update((float)time.ElapsedGameTime.TotalMilliseconds);
+        }
+
         // --- Drawing ---
 
         public override void draw(SpriteBatch b)
@@ -231,6 +238,7 @@ namespace OutfitRoom
 
             // === LEFT PANEL: Player Preview ===
             uiBuilder.DrawPlayerPreview(b);
+            uiBuilder.DrawSavedMessage(b);
 
             // Draw apply and reset buttons
             uiBuilder.DrawApplyButton(b);

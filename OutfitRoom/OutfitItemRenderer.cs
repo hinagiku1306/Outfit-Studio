@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using StardewValley;
+using static OutfitRoom.OutfitLayoutConstants;
 
 namespace OutfitRoom
 {
@@ -23,7 +24,7 @@ namespace OutfitRoom
         public void DrawItemSprite(SpriteBatch b, OutfitCategoryManager.Category category, int listIndex,
             Rectangle slot, List<string> shirtIds, List<string> pantsIds, List<int> hatIds)
         {
-            string qualifiedId = GetQualifiedItemId(category, listIndex, shirtIds, pantsIds, hatIds);
+            string? qualifiedId = GetQualifiedItemId(category, listIndex, shirtIds, pantsIds, hatIds);
 
             if (qualifiedId != null)
             {
@@ -41,16 +42,40 @@ namespace OutfitRoom
         /// </summary>
         private void DrawItemUsingVanillaMethod(SpriteBatch b, string qualifiedId, Rectangle slot)
         {
+            // Check if the item ID exists before creating
+            if (!ItemRegistry.Exists(qualifiedId))
+            {
+                // Draw placeholder for missing item
+                DrawMissingItemIndicator(b, slot);
+                return;
+            }
+
             Item item = ItemRegistry.Create(qualifiedId);
             if (item == null)
+            {
+                DrawMissingItemIndicator(b, slot);
                 return;
+            }
 
-            // Calculate position to center the item in the slot
-            // drawInMenu expects top-left position; standard scale is 1f for 64x64 slots
-            Vector2 position = new Vector2(slot.X, slot.Y);
+            // Center the item in the slot
+            int offsetX = (slot.Width - DrawnItemSize) / 2;
+            int offsetY = (slot.Height - DrawnItemSize) / 2;
+            Vector2 position = new Vector2(slot.X + offsetX, slot.Y + offsetY);
 
             // Use vanilla drawInMenu - renders at standard inventory size
             item.drawInMenu(b, position, 1f);
+        }
+
+        /// <summary>
+        /// Draws a "?" indicator for items that fail to load.
+        /// </summary>
+        private void DrawMissingItemIndicator(SpriteBatch b, Rectangle slot)
+        {
+            Vector2 textPos = new Vector2(
+                slot.X + (slot.Width - Game1.smallFont.MeasureString("?").X) / 2,
+                slot.Y + (slot.Height - Game1.smallFont.LineSpacing) / 2
+            );
+            Utility.drawTextWithShadow(b, "?", Game1.smallFont, textPos, Color.Red);
         }
 
         /// <summary>
@@ -68,7 +93,7 @@ namespace OutfitRoom
         /// <summary>
         /// Returns the qualified item ID for the given category and index, or null if none.
         /// </summary>
-        private string GetQualifiedItemId(OutfitCategoryManager.Category category, int listIndex,
+        private string? GetQualifiedItemId(OutfitCategoryManager.Category category, int listIndex,
             List<string> shirtIds, List<string> pantsIds, List<int> hatIds)
         {
             switch (category)

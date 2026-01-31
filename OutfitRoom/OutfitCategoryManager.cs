@@ -111,7 +111,7 @@ namespace OutfitRoom
         }
 
         /// <summary>Get the qualified item ID for an item at the given index in the current category.</summary>
-        public string GetQualifiedItemId(int listIndex)
+        public string? GetQualifiedItemId(int listIndex)
         {
             switch (CurrentCategory)
             {

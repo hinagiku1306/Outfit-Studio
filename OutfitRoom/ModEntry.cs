@@ -9,8 +9,8 @@ namespace OutfitRoom
 {
     public class ModEntry : Mod
     {
-        private ModConfig config;
-        private OutfitMenu menu;
+        private ModConfig config = null!;
+        private OutfitMenu? menu;
 
         public override void Entry(IModHelper helper)
         {
@@ -19,7 +19,7 @@ namespace OutfitRoom
             helper.Events.GameLoop.GameLaunched += OnGameLaunched;
         }
 
-        private void OnGameLaunched(object sender, GameLaunchedEventArgs e)
+        private void OnGameLaunched(object? sender, GameLaunchedEventArgs e)
         {
             // Set up Generic Mod Config Menu integration if available
             var gmcmApi = Helper.ModRegistry.GetApi<IGenericModConfigMenuApi>("spacechase0.GenericModConfigMenu");
@@ -41,7 +41,7 @@ namespace OutfitRoom
             }
         }
 
-        private void OnButtonsChanged(object sender, ButtonsChangedEventArgs e)
+        private void OnButtonsChanged(object? sender, ButtonsChangedEventArgs e)
         {
             if (!Context.IsWorldReady || !Context.IsPlayerFree)
                 return;
