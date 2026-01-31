@@ -6,6 +6,5 @@ namespace OutfitRoom
     public class ModConfig
     {
         public KeybindList ToggleMenuKey { get; set; } = KeybindList.Parse("O");
-        public int MaxColumns { get; set; } = 4;
     }
 }

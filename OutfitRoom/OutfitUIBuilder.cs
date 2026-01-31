@@ -10,33 +10,23 @@ namespace OutfitRoom
     /// </summary>
     public class OutfitUIBuilder
     {
-        // Base layout constants (at 1x UI scale)
-        private const int BASE_MENU_WIDTH = 700;
-        private const int BASE_MENU_HEIGHT = 500;
-        private const int BASE_LEFT_PANEL_WIDTH = 200;
-        private const int BASE_RIGHT_PANEL_X_OFFSET = 240;
-        private const int BASE_ITEM_WIDTH = 400;
-        private const int BASE_ITEM_HEIGHT = 48;
-        private const int BASE_TAB_GAP = 12;
-        private const int BASE_ITEM_SLOT_GAP = 4;
-        private const int BASE_LIST_PADDING = 12;
-        private const int BASE_BUTTON_LABEL_GAP = 4;
-        private const int BASE_TAB_WIDTH = 100;
-        private const int BASE_TAB_HEIGHT = 40;
-        private const int BASE_TITLE_HEIGHT = 20;
-        private const int BASE_TAB_MARGIN = 16;
-        private const int BASE_BOTTOM_MARGIN = 80;
+        // Fixed layout constants - scaled only by Game1.options.uiScale like vanilla menus
+        private const int MENU_WIDTH = 700;
+        private const int MENU_HEIGHT = 550;
+        private const int LEFT_PANEL_WIDTH = 180;
+        private const int SLOT_SIZE_BASE = 64; // Standard inventory slot size
+        private const int SLOT_GAP = 4;
+        private const int TAB_WIDTH = 80;
+        private const int TAB_HEIGHT = 40;
+        private const int TAB_GAP_BASE = 8;
+        private const int PADDING = 16;
+        private const int OUTFIT_PANEL_COLUMNS = 5;
 
-        // Scaled layout values (computed at construction)
-        public int ITEM_HEIGHT { get; private set; }
-        public int ITEM_WIDTH { get; private set; }
+        // Computed layout values
+        public int SLOT_SIZE { get; private set; }
         public int VISIBLE_ITEMS { get; private set; }
         public int VISIBLE_ROWS { get; private set; }
         public int COLUMNS { get; private set; }
-        public int TAB_GAP { get; private set; }
-        public int ITEM_SLOT_GAP { get; private set; }
-        public int LIST_PADDING { get; private set; }
-        public int BUTTON_LABEL_GAP { get; private set; }
 
         // UI Components
         public ClickableComponent ShirtsTab { get; private set; } = null!;
@@ -54,36 +44,12 @@ namespace OutfitRoom
         public int Y { get; private set; }
         public int Width { get; private set; }
         public int Height { get; private set; }
-        private float uiScale = 1f;
-        private readonly int maxColumns;
-        private int titlePaddingTop;
-
-        /// <summary>
-        /// Calculates menu dimensions based on viewport and UI scale.
-        /// </summary>
-        public static (int width, int height, int x, int y) CalculateMenuDimensions()
-        {
-            // Get viewport dimensions (already accounts for UI scale)
-            int viewportWidth = Game1.uiViewport.Width;
-            int viewportHeight = Game1.uiViewport.Height;
-
-            // Calculate menu size with margins (80% of viewport, capped at base size)
-            int menuWidth = Math.Min(BASE_MENU_WIDTH, (int)(viewportWidth * 0.85f));
-            int menuHeight = Math.Min(BASE_MENU_HEIGHT, (int)(viewportHeight * 0.85f));
-
-            // Center on screen
-            int x = (viewportWidth - menuWidth) / 2;
-            int y = (viewportHeight - menuHeight) / 2;
-
-            return (menuWidth, menuHeight, x, y);
-        }
 
         /// <summary>
         /// Creates a new UI builder and initializes all UI components.
         /// </summary>
-        public OutfitUIBuilder(int maxColumns)
+        public OutfitUIBuilder()
         {
-            this.maxColumns = Math.Max(1, Math.Min(5, maxColumns));
             Recalculate();
         }
 
@@ -93,131 +59,112 @@ namespace OutfitRoom
         /// </summary>
         public void Recalculate()
         {
-            var (menuWidth, menuHeight, menuX, menuY) = CalculateMenuDimensions();
+            // Use fixed slot size like vanilla inventory
+            SLOT_SIZE = SLOT_SIZE_BASE;
+            COLUMNS = OUTFIT_PANEL_COLUMNS;
 
-            X = menuX;
-            Y = menuY;
-            Width = menuWidth;
-            Height = menuHeight;
+            // Calculate actual content dimensions first
+            int gridWidth = COLUMNS * SLOT_SIZE + (COLUMNS - 1) * SLOT_GAP;  // 336
+            int portraitWidth = 128;
+            int portraitHeight = 192;
+            int gapBetweenPanels = 24;
+            int sidePadding = 32;
 
-            float scaleX = (float)Width / BASE_MENU_WIDTH;
-            float scaleY = (float)Height / BASE_MENU_HEIGHT;
-            uiScale = Math.Min(scaleX, scaleY);
+            // Calculate menu width based on actual content
+            int contentWidth = portraitWidth + gapBetweenPanels + gridWidth + PADDING * 2;
+            Width = contentWidth + sidePadding * 2;
+            Height = MENU_HEIGHT;
 
-            // Initialize scaled spacing constants
-            TAB_GAP = Scale(BASE_TAB_GAP, uiScale);
-            ITEM_SLOT_GAP = Scale(BASE_ITEM_SLOT_GAP, uiScale);
-            LIST_PADDING = Scale(BASE_LIST_PADDING, uiScale);
-            BUTTON_LABEL_GAP = Scale(BASE_BUTTON_LABEL_GAP, uiScale);
-            ITEM_HEIGHT = Scale(BASE_ITEM_HEIGHT, uiScale);
-            ITEM_WIDTH = Scale(BASE_ITEM_WIDTH, uiScale);
-            titlePaddingTop = Scale(16, uiScale);
+            // Center menu on screen
+            X = (Game1.uiViewport.Width - Width) / 2;
+            Y = (Game1.uiViewport.Height - Height) / 2;
 
-            // Calculate available height for item list
-            int titleHeight = Scale(BASE_TITLE_HEIGHT, uiScale);
-            int tabHeight = Scale(BASE_TAB_HEIGHT, uiScale);
-            int tabMargin = Scale(BASE_TAB_MARGIN, uiScale);
-            int bottomMargin = Scale(BASE_BOTTOM_MARGIN, uiScale);
+            // Calculate panel positions (centered within menu)
+            int contentStartX = X + sidePadding;
+            int leftPanelCenterX = contentStartX + portraitWidth / 2;
+            int rightPanelX = contentStartX + portraitWidth + gapBetweenPanels;
 
-            int listStartY = titleHeight + tabHeight + tabMargin;
-            int availableHeight = Height - listStartY - bottomMargin - LIST_PADDING * 2;
+            // Vertical layout
+            int titleHeight = 48;
+            int tabY = Y + PADDING + titleHeight;
+            int gridY = tabY + TAB_HEIGHT + PADDING;
 
-            // Calculate how many rows can fit
-            VISIBLE_ROWS = Math.Max(1, (availableHeight + ITEM_SLOT_GAP) / (ITEM_HEIGHT + ITEM_SLOT_GAP));
+            // Calculate visible rows based on available height
+            int availableHeight = Height - (gridY - Y) - PADDING - 60;
+            VISIBLE_ROWS = Math.Max(1, (availableHeight + SLOT_GAP) / (SLOT_SIZE + SLOT_GAP));
+            VISIBLE_ITEMS = VISIBLE_ROWS * COLUMNS;
 
-            // Scale right panel offset based on menu width
-            int leftPanelWidth = Scale(BASE_LEFT_PANEL_WIDTH, uiScale);
-            int rightPanelXOffset = Scale(BASE_RIGHT_PANEL_X_OFFSET, uiScale);
-            int panelGap = Math.Max(1, rightPanelXOffset - leftPanelWidth);
-
-            // Player portrait box (left panel, centered)
-            int portraitWidth = Scale(128, uiScale);
-            int portraitHeight = Scale(192, uiScale);
+            // Portrait box - centered in left panel area
+            int portraitY = Y + PADDING + titleHeight + (Height - titleHeight - PADDING * 2 - 60 - portraitHeight) / 2;
             PortraitBox = new Rectangle(
-                X + (leftPanelWidth - portraitWidth) / 2 + Scale(20, uiScale),
-                Y + titleHeight + Scale(20, uiScale),
+                leftPanelCenterX - portraitWidth / 2,
+                portraitY,
                 portraitWidth,
                 portraitHeight
             );
 
-            // Category tabs (right panel top)
-            int tabY = Y + titleHeight;
-            int tabWidth = Scale(BASE_TAB_WIDTH, uiScale);
-            int rightPanelX = X + rightPanelXOffset;
-
+            // Category tabs - aligned with grid
             ShirtsTab = new ClickableComponent(
-                new Rectangle(rightPanelX, tabY, tabWidth, tabHeight),
+                new Rectangle(rightPanelX, tabY, TAB_WIDTH, TAB_HEIGHT),
                 "Shirts"
             );
             PantsTab = new ClickableComponent(
-                new Rectangle(rightPanelX + tabWidth + TAB_GAP, tabY, tabWidth, tabHeight),
+                new Rectangle(rightPanelX + TAB_WIDTH + TAB_GAP_BASE, tabY, TAB_WIDTH, TAB_HEIGHT),
                 "Pants"
             );
             HatsTab = new ClickableComponent(
-                new Rectangle(rightPanelX + (tabWidth + TAB_GAP) * 2, tabY, tabWidth, tabHeight),
+                new Rectangle(rightPanelX + (TAB_WIDTH + TAB_GAP_BASE) * 2, tabY, TAB_WIDTH, TAB_HEIGHT),
                 "Hats"
             );
 
-            // Item list dimensions
-            int listX = rightPanelX;
-            int listY = tabY + tabHeight + tabMargin;
-            int listWidth = Math.Max(1, Width - rightPanelXOffset - panelGap);
-            int minSlotWidth = Math.Max(1, Scale(140, uiScale));
-            int possibleColumns = Math.Max(1, (listWidth + ITEM_SLOT_GAP) / (minSlotWidth + ITEM_SLOT_GAP));
-            COLUMNS = Math.Max(1, Math.Min(this.maxColumns, possibleColumns));
-            int slotWidth = Math.Max(1, (listWidth - (COLUMNS - 1) * ITEM_SLOT_GAP) / COLUMNS);
-            int listHeight = VISIBLE_ROWS * ITEM_HEIGHT + Math.Max(0, VISIBLE_ROWS - 1) * ITEM_SLOT_GAP;
-            VISIBLE_ITEMS = VISIBLE_ROWS * COLUMNS;
-
-            // Scroll buttons
-            int scrollButtonWidth = Scale(48, uiScale);
-            int scrollButtonHeight = Scale(44, uiScale);
-            float scrollButtonScale = 4f * uiScale;
-            ScrollUpButton = new ClickableTextureComponent(
-                new Rectangle(listX + listWidth / 2 - scrollButtonWidth / 2, listY - Scale(24, uiScale), scrollButtonWidth, scrollButtonHeight),
-                Game1.mouseCursors,
-                new Rectangle(421, 459, 12, 11),
-                scrollButtonScale
-            );
-            ScrollDownButton = new ClickableTextureComponent(
-                new Rectangle(listX + listWidth / 2 - scrollButtonWidth / 2, listY + listHeight + Scale(12, uiScale), scrollButtonWidth, scrollButtonHeight),
-                Game1.mouseCursors,
-                new Rectangle(421, 472, 12, 11),
-                scrollButtonScale
-            );
-
-            // Item slots - clear and rebuild
+            // Item slots grid
+            int gridHeight = VISIBLE_ROWS * SLOT_SIZE + Math.Max(0, VISIBLE_ROWS - 1) * SLOT_GAP;
             ItemSlots.Clear();
             for (int row = 0; row < VISIBLE_ROWS; row++)
             {
                 for (int col = 0; col < COLUMNS; col++)
                 {
-                    int slotX = listX + col * (slotWidth + ITEM_SLOT_GAP);
-                    int slotY = listY + row * (ITEM_HEIGHT + ITEM_SLOT_GAP);
+                    int slotX = rightPanelX + col * (SLOT_SIZE + SLOT_GAP);
+                    int slotY = gridY + row * (SLOT_SIZE + SLOT_GAP);
                     ItemSlots.Add(new ClickableComponent(
-                        new Rectangle(slotX, slotY, slotWidth, ITEM_HEIGHT),
+                        new Rectangle(slotX, slotY, SLOT_SIZE, SLOT_SIZE),
                         (row * COLUMNS + col).ToString()
                     ));
                 }
             }
 
-            // Reset button (left panel bottom)
-            int resetWidth = Scale(84, uiScale);
-            int resetHeight = Scale(44, uiScale);
-            ResetButton = new ClickableTextureComponent(
-                new Rectangle(X + leftPanelWidth / 2 - resetWidth / 2, Y + Height - Scale(70, uiScale), resetWidth, resetHeight),
+            // Scroll buttons (above and below the grid)
+            int scrollButtonSize = 44;
+            ScrollUpButton = new ClickableTextureComponent(
+                new Rectangle(rightPanelX + gridWidth / 2 - scrollButtonSize / 2, gridY - scrollButtonSize - 4, scrollButtonSize, scrollButtonSize),
                 Game1.mouseCursors,
-                new Rectangle(294, 428, 21, 11),
-                4f * uiScale
+                new Rectangle(421, 459, 12, 11),
+                4f
+            );
+            ScrollDownButton = new ClickableTextureComponent(
+                new Rectangle(rightPanelX + gridWidth / 2 - scrollButtonSize / 2, gridY + gridHeight + 4, scrollButtonSize, scrollButtonSize),
+                Game1.mouseCursors,
+                new Rectangle(421, 472, 12, 11),
+                4f
+            );
+
+            // Reset button - sized to fit text with texture box borders (borders are ~12px each side)
+            int resetButtonWidth = 100;
+            int resetButtonHeight = 48;
+            ResetButton = new ClickableTextureComponent(
+                new Rectangle(leftPanelCenterX - resetButtonWidth / 2, Y + Height - PADDING - resetButtonHeight - 8, resetButtonWidth, resetButtonHeight),
+                Game1.mouseCursors,
+                new Rectangle(432, 439, 9, 9),
+                4f
             );
 
             // Close button (top right)
-            int closeSize = Scale(48, uiScale);
+            int closeSize = 48;
             CloseButton = new ClickableTextureComponent(
-                new Rectangle(X + Width - closeSize - Scale(12, uiScale), Y + Scale(10, uiScale), closeSize, closeSize),
+                new Rectangle(X + Width - closeSize - 8, Y + 8, closeSize, closeSize),
                 Game1.mouseCursors,
                 new Rectangle(337, 494, 12, 12),
-                4f * uiScale
+                4f
             );
         }
 
@@ -259,9 +206,13 @@ namespace OutfitRoom
             // Draw sky background
             b.Draw(Game1.daybg, PortraitBox, Color.White);
 
-            // Draw farmer
+            // Draw farmer centered in portrait box
+            // Farmer sprite is 16x32, scale by 4 = 64x128 display size
+            // Position at center of portrait box, origin at sprite center (8, 16)
+            float farmerScale = 4f;
             Vector2 farmerPos = new Vector2(PortraitBox.Center.X, PortraitBox.Center.Y);
-            Vector2 farmerOrigin = new Vector2(8f, 16f);
+            Vector2 farmerOrigin = new Vector2(8f, 16f); // Center of 16x32 sprite
+
             FarmerRenderer.isDrawingForUI = true;
             Game1.player.FarmerRenderer.draw(
                 b,
@@ -270,11 +221,11 @@ namespace OutfitRoom
                 new Rectangle(0, 0, 16, 32),
                 farmerPos,
                 farmerOrigin,
-                0.8f * uiScale,
+                0.8f,
                 2,
                 Color.White,
                 0f,
-                1f,
+                farmerScale,
                 Game1.player
             );
             FarmerRenderer.isDrawingForUI = false;
@@ -294,11 +245,11 @@ namespace OutfitRoom
             int listX = ItemSlots[0].bounds.X;
             int listY = ItemSlots[0].bounds.Y;
             int listWidth = (ItemSlots[COLUMNS - 1].bounds.Right - ItemSlots[0].bounds.Left);
-            int listHeight = VISIBLE_ROWS * ITEM_HEIGHT + Math.Max(0, VISIBLE_ROWS - 1) * ITEM_SLOT_GAP;
+            int listHeight = VISIBLE_ROWS * SLOT_SIZE + Math.Max(0, VISIBLE_ROWS - 1) * SLOT_GAP;
 
             // Draw background box
-            IClickableMenu.drawTextureBox(b, listX - LIST_PADDING, listY - LIST_PADDING,
-                listWidth + LIST_PADDING * 2, listHeight + LIST_PADDING * 2, Color.White);
+            IClickableMenu.drawTextureBox(b, listX - PADDING, listY - PADDING,
+                listWidth + PADDING * 2, listHeight + PADDING * 2, Color.White);
 
             // Draw scroll buttons (only if needed)
             int totalRows = Math.Max(1, (int)Math.Ceiling(totalItems / (float)COLUMNS));
@@ -315,14 +266,18 @@ namespace OutfitRoom
         /// <param name="b">SpriteBatch to draw with.</param>
         public void DrawResetButton(SpriteBatch b)
         {
-            ResetButton.draw(b);
-            Vector2 resetLabelSize = Game1.smallFont.MeasureString("Reset");
-            Utility.drawTextWithShadow(b, "Reset", Game1.smallFont,
-                new Vector2(
-                    ResetButton.bounds.X + (ResetButton.bounds.Width - resetLabelSize.X) / 2,
-                    ResetButton.bounds.Y + ResetButton.bounds.Height + BUTTON_LABEL_GAP
-                ),
-                Game1.textColor);
+            // Draw button background using texture box
+            IClickableMenu.drawTextureBox(b, ResetButton.bounds.X, ResetButton.bounds.Y,
+                ResetButton.bounds.Width, ResetButton.bounds.Height, Color.White);
+
+            // Draw "Reset" text centered in button
+            string resetText = "Reset";
+            Vector2 textSize = Game1.smallFont.MeasureString(resetText);
+            Vector2 textPos = new Vector2(
+                ResetButton.bounds.X + (ResetButton.bounds.Width - textSize.X) / 2,
+                ResetButton.bounds.Y + (ResetButton.bounds.Height - textSize.Y) / 2
+            );
+            Utility.drawTextWithShadow(b, resetText, Game1.smallFont, textPos, Game1.textColor);
         }
 
         /// <summary>
@@ -343,7 +298,7 @@ namespace OutfitRoom
             string title = "Outfit Room";
             Vector2 titleSize = Game1.dialogueFont.MeasureString(title);
             Utility.drawTextWithShadow(b, title, Game1.dialogueFont,
-                new Vector2(X + (Width - titleSize.X) / 2, Y + titlePaddingTop),
+                new Vector2(X + (Width - titleSize.X) / 2, Y + PADDING),
                 Game1.textColor);
         }
 
@@ -354,11 +309,6 @@ namespace OutfitRoom
         public static void DrawOverlay(SpriteBatch b)
         {
             b.Draw(Game1.fadeToBlackRect, Game1.graphics.GraphicsDevice.Viewport.Bounds, Color.Black * 0.6f);
-        }
-
-        private static int Scale(int value, float scale)
-        {
-            return Math.Max(1, (int)Math.Round(value * scale));
         }
     }
 }

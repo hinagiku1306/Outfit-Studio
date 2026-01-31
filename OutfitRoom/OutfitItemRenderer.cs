@@ -1,7 +1,7 @@
+using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using StardewValley;
-using StardewValley.ItemTypeDefinitions;
 
 namespace OutfitRoom
 {
@@ -11,25 +11,23 @@ namespace OutfitRoom
     public class OutfitItemRenderer
     {
         /// <summary>
-        /// Draws a clothing item sprite in the given slot rectangle.
+        /// Draws a clothing item sprite in the given slot rectangle using vanilla inventory rendering.
         /// </summary>
         /// <param name="b">SpriteBatch to draw with.</param>
         /// <param name="category">Category of the item.</param>
         /// <param name="listIndex">Index in the category list.</param>
         /// <param name="slot">Rectangle defining the slot area.</param>
-        /// <param name="isSelected">Whether the item is currently selected.</param>
         /// <param name="shirtIds">List of shirt IDs (for shirts category).</param>
         /// <param name="pantsIds">List of pants IDs (for pants category).</param>
         /// <param name="hatIds">List of hat IDs (for hats category).</param>
         public void DrawItemSprite(SpriteBatch b, OutfitCategoryManager.Category category, int listIndex,
-            Rectangle slot, bool isSelected, System.Collections.Generic.List<string> shirtIds,
-            System.Collections.Generic.List<string> pantsIds, System.Collections.Generic.List<int> hatIds)
+            Rectangle slot, List<string> shirtIds, List<string> pantsIds, List<int> hatIds)
         {
             string qualifiedId = GetQualifiedItemId(category, listIndex, shirtIds, pantsIds, hatIds);
 
             if (qualifiedId != null)
             {
-                DrawQualifiedItem(b, qualifiedId, slot, isSelected);
+                DrawItemUsingVanillaMethod(b, qualifiedId, slot);
             }
             else if (category == OutfitCategoryManager.Category.Hats && listIndex == 0)
             {
@@ -39,33 +37,20 @@ namespace OutfitRoom
         }
 
         /// <summary>
-        /// Draws a qualified item (shirt, pants, or hat) in the slot.
+        /// Draws an item using the vanilla drawInMenu method like inventory slots.
         /// </summary>
-        private void DrawQualifiedItem(SpriteBatch b, string qualifiedId, Rectangle slot, bool isSelected)
+        private void DrawItemUsingVanillaMethod(SpriteBatch b, string qualifiedId, Rectangle slot)
         {
-            ParsedItemData itemData = ItemRegistry.GetDataOrErrorItem(qualifiedId);
-            Texture2D texture = itemData.GetTexture();
-            Rectangle sourceRect = itemData.GetSourceRect();
+            Item item = ItemRegistry.Create(qualifiedId);
+            if (item == null)
+                return;
 
-            int padding = Math.Max(2, slot.Height / 6);
-            int maxWidth = Math.Max(1, slot.Width - padding * 2);
-            int maxHeight = Math.Max(1, slot.Height - padding * 2);
+            // Calculate position to center the item in the slot
+            // drawInMenu expects top-left position; standard scale is 1f for 64x64 slots
+            Vector2 position = new Vector2(slot.X, slot.Y);
 
-            // Calculate scale to fit in slot while maintaining aspect ratio
-            float scale = Math.Min(
-                (float)maxWidth / sourceRect.Width,
-                (float)maxHeight / sourceRect.Height
-            );
-
-            // Center sprite in slot
-            Vector2 position = new Vector2(
-                slot.X + (slot.Width - sourceRect.Width * scale) / 2f,
-                slot.Y + (slot.Height - sourceRect.Height * scale) / 2f
-            );
-
-            // Draw with selection tint
-            Color tint = isSelected ? Color.White : Color.White * 0.9f;
-            b.Draw(texture, position, sourceRect, tint, 0f, Vector2.Zero, scale, SpriteEffects.None, 0.9f);
+            // Use vanilla drawInMenu - renders at standard inventory size
+            item.drawInMenu(b, position, 1f);
         }
 
         /// <summary>
@@ -84,8 +69,7 @@ namespace OutfitRoom
         /// Returns the qualified item ID for the given category and index, or null if none.
         /// </summary>
         private string GetQualifiedItemId(OutfitCategoryManager.Category category, int listIndex,
-            System.Collections.Generic.List<string> shirtIds, System.Collections.Generic.List<string> pantsIds,
-            System.Collections.Generic.List<int> hatIds)
+            List<string> shirtIds, List<string> pantsIds, List<int> hatIds)
         {
             switch (category)
             {

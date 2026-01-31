@@ -38,16 +38,6 @@ namespace OutfitRoom
                     getValue: () => config.ToggleMenuKey,
                     setValue: value => config.ToggleMenuKey = value
                 );
-
-                gmcmApi.AddNumberOption(
-                    mod: ModManifest,
-                    name: () => "Max Columns",
-                    tooltip: () => "Maximum number of columns in the item grid.",
-                    getValue: () => config.MaxColumns,
-                    setValue: value => config.MaxColumns = value,
-                    min: 1,
-                    max: 5
-                );
             }
         }
 

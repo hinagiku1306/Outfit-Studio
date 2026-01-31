@@ -29,7 +29,7 @@ namespace OutfitRoom
             categoryManager = new OutfitCategoryManager();
             itemRenderer = new OutfitItemRenderer();
             state = new OutfitState();
-            uiBuilder = new OutfitUIBuilder(mod.GetConfig().MaxColumns);
+            uiBuilder = new OutfitUIBuilder();
 
             // Set menu dimensions from UI builder
             width = uiBuilder.Width;
@@ -244,8 +244,7 @@ namespace OutfitRoom
 
                 // Draw item sprite
                 itemRenderer.DrawItemSprite(b, categoryManager.CurrentCategory, listIndex,
-                    slot, isSelected,
-                    categoryManager.ShirtIds, categoryManager.PantsIds, categoryManager.HatIds);
+                    slot, categoryManager.ShirtIds, categoryManager.PantsIds, categoryManager.HatIds);
             }
 
             // Draw close button
