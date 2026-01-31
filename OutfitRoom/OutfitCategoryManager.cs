@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using StardewModdingAPI;
 using StardewValley;
 
 namespace OutfitRoom
@@ -9,6 +10,14 @@ namespace OutfitRoom
     /// </summary>
     public class OutfitCategoryManager
     {
+        /// <summary>
+        /// Tracks which invalid items have been logged to prevent spam.
+        /// </summary>
+        private static readonly HashSet<string> loggedInvalidItems = new();
+
+        /// <summary>SMAPI monitor for logging.</summary>
+        private readonly IMonitor monitor;
+
         /// <summary>The current selected category.</summary>
         public Category CurrentCategory { get; set; } = Category.Shirts;
 
@@ -27,8 +36,9 @@ namespace OutfitRoom
         /// <summary>
         /// Initialize and populate the clothing lists from game data.
         /// </summary>
-        public OutfitCategoryManager()
+        public OutfitCategoryManager(IMonitor monitor)
         {
+            this.monitor = monitor;
             LoadShirts();
             LoadPants();
             LoadHats();
@@ -39,7 +49,17 @@ namespace OutfitRoom
         {
             ShirtIds.Clear();
             foreach (var id in Game1.shirtData.Keys)
-                ShirtIds.Add(id);
+            {
+                string qualifiedId = "(S)" + id;
+                if (ItemRegistry.Exists(qualifiedId))
+                {
+                    ShirtIds.Add(id);
+                }
+                else
+                {
+                    LogInvalidItem(qualifiedId, "Shirt", id);
+                }
+            }
         }
 
         /// <summary>Load all pants IDs from Game1.pantsData.</summary>
@@ -47,17 +67,80 @@ namespace OutfitRoom
         {
             PantsIds.Clear();
             foreach (var id in Game1.pantsData.Keys)
-                PantsIds.Add(id);
+            {
+                string qualifiedId = "(P)" + id;
+                if (ItemRegistry.Exists(qualifiedId))
+                {
+                    PantsIds.Add(id);
+                }
+                else
+                {
+                    LogInvalidItem(qualifiedId, "Pants", id);
+                }
+            }
         }
 
         /// <summary>Load all hat IDs (including -1 for no hat).</summary>
         private void LoadHats()
         {
             HatIds.Clear();
-            HatIds.Add(-1); // no hat option
+            HatIds.Add(-1); // no hat option (always valid)
             int maxHats = FarmerRenderer.hatsTexture.Height / 80 * 12;
             for (int i = 0; i < maxHats; i++)
-                HatIds.Add(i);
+            {
+                string qualifiedId = "(H)" + i;
+                if (ItemRegistry.Exists(qualifiedId))
+                {
+                    HatIds.Add(i);
+                }
+                else
+                {
+                    LogInvalidItem(qualifiedId, "Hat", i.ToString());
+                }
+            }
+        }
+
+        /// <summary>
+        /// Logs invalid items that were filtered out during loading.
+        /// Only logs each unique item once to prevent spam.
+        /// </summary>
+        private void LogInvalidItem(string qualifiedId, string itemType, string itemId)
+        {
+            // Only log each invalid item once
+            if (!loggedInvalidItems.Add(qualifiedId))
+            {
+                return; // Already logged this item
+            }
+
+            // Try to get the item name and source mod
+            string itemName = itemId;
+            string modSource = "Unknown";
+
+            // Check if this is a modded item (contains underscore, common pattern: ModId_ItemId)
+            if (itemId.Contains('_'))
+            {
+                modSource = itemId.Split('_')[0];
+            }
+            // Check if this looks like a vanilla numeric ID
+            else if (int.TryParse(itemId, out _))
+            {
+                modSource = "Vanilla (possibly)";
+            }
+
+            try
+            {
+                var itemData = ItemRegistry.GetDataOrErrorItem(qualifiedId);
+                if (itemData != null && !string.IsNullOrEmpty(itemData.DisplayName))
+                {
+                    itemName = itemData.DisplayName;
+                }
+            }
+            catch
+            {
+                // If we can't get display name, just use the ID
+            }
+
+            monitor.Log($"Filtered invalid item during load: {itemType} '{itemName}' (ID: {itemId}) from mod '{modSource}'", LogLevel.Trace);
         }
 
         /// <summary>Get the count of items in the current category.</summary>

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using StardewModdingAPI;
 using StardewValley;
 using static OutfitRoom.OutfitLayoutConstants;
 
@@ -11,6 +12,21 @@ namespace OutfitRoom
     /// </summary>
     public class OutfitItemRenderer
     {
+        /// <summary>
+        /// Tracks which missing items have already been logged to prevent spam.
+        /// </summary>
+        private static readonly HashSet<string> loggedMissingItems = new();
+
+        /// <summary>SMAPI monitor for logging.</summary>
+        private readonly IMonitor monitor;
+
+        /// <summary>
+        /// Creates a new item renderer.
+        /// </summary>
+        public OutfitItemRenderer(IMonitor monitor)
+        {
+            this.monitor = monitor;
+        }
         /// <summary>
         /// Draws a clothing item sprite in the given slot rectangle using vanilla inventory rendering.
         /// </summary>
@@ -39,22 +55,20 @@ namespace OutfitRoom
 
         /// <summary>
         /// Draws an item using the vanilla drawInMenu method like inventory slots.
+        /// Items that don't exist or fail to create are skipped entirely (not drawn).
         /// </summary>
         private void DrawItemUsingVanillaMethod(SpriteBatch b, string qualifiedId, Rectangle slot)
         {
             // Check if the item ID exists before creating
             if (!ItemRegistry.Exists(qualifiedId))
             {
-                // Log missing item instead of drawing placeholder
-                LogMissingItem(qualifiedId, "Item does not exist in registry");
-                return;
+                return; // Don't draw anything
             }
 
             Item item = ItemRegistry.Create(qualifiedId);
             if (item == null)
             {
-                LogMissingItem(qualifiedId, "Failed to create item");
-                return;
+                return; // Don't draw anything
             }
 
             // Center the item in the slot
@@ -68,17 +82,52 @@ namespace OutfitRoom
 
         /// <summary>
         /// Logs information about a missing item to the console.
+        /// Only logs each unique item once to prevent spam.
         /// </summary>
         private void LogMissingItem(string qualifiedId, string reason)
         {
+            // Only log each missing item once
+            if (!loggedMissingItems.Add(qualifiedId))
+            {
+                return; // Already logged this item
+            }
+
             // Parse item type and ID
             string itemType = qualifiedId.StartsWith("(S)") ? "Shirt" :
                             qualifiedId.StartsWith("(P)") ? "Pants" :
                             qualifiedId.StartsWith("(H)") ? "Hat" : "Unknown";
             string itemId = qualifiedId.Length > 3 ? qualifiedId[3..] : qualifiedId;
 
-            // Log to console (uses standard output which SMAPI captures)
-            Console.WriteLine($"[OutfitRoom] Skipping missing item: {itemType} '{itemId}' - {reason}");
+            // Try to get the item name and source mod from registry
+            string itemName = itemId;
+            string modSource = "Unknown";
+
+            // Check if this is a modded item (contains underscore, common pattern: ModId_ItemId)
+            if (itemId.Contains('_'))
+            {
+                modSource = itemId.Split('_')[0];
+            }
+            // Check if this looks like a vanilla numeric ID
+            else if (int.TryParse(itemId, out _))
+            {
+                modSource = "Vanilla";
+            }
+
+            try
+            {
+                var itemData = ItemRegistry.GetDataOrErrorItem(qualifiedId);
+                if (itemData != null && !string.IsNullOrEmpty(itemData.DisplayName))
+                {
+                    itemName = itemData.DisplayName;
+                }
+            }
+            catch
+            {
+                // If we can't get display name, just use the ID
+            }
+
+            // Log using SMAPI Monitor
+            monitor.Log($"Skipped missing item: {itemType} '{itemName}' (ID: {itemId}) from mod '{modSource}' - {reason}", LogLevel.Trace);
         }
 
         /// <summary>

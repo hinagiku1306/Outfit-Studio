@@ -26,8 +26,8 @@ namespace OutfitRoom
             this.mod = mod;
 
             // Initialize helper classes (UI builder calculates dimensions dynamically)
-            categoryManager = new OutfitCategoryManager();
-            itemRenderer = new OutfitItemRenderer();
+            categoryManager = new OutfitCategoryManager(mod.Monitor);
+            itemRenderer = new OutfitItemRenderer(mod.Monitor);
             state = new OutfitState();
             uiBuilder = new OutfitUIBuilder();
 
@@ -276,7 +276,7 @@ namespace OutfitRoom
                 // Highlight selected item
                 if (isSelected)
                 {
-                    b.Draw(Game1.staminaRect, slot, Color.Green * 0.3f);
+                    b.Draw(Game1.staminaRect, slot, Color.LimeGreen * 0.3f);
                 }
 
                 // Hover highlight
