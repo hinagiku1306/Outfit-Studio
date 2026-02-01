@@ -1,4 +1,4 @@
-namespace OutfitRoom
+namespace FittingRoom
 {
     /// <summary>
     /// Contains all layout constants for the OutfitMenu UI.

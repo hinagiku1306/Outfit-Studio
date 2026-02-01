@@ -1,10 +1,10 @@
 {
-    "Name": "Outfit Room",
+    "Name": "Fitting Room",
     "Author": "yuyu1204",
     "Version": "1.0.0",
     "Description": "Toggleable menu to change and test outfits.",
-    "UniqueID": "yuyu1204.OutfitRoom",
-    "EntryDll": "OutfitRoom.dll",
+    "UniqueID": "yuyu1204.FittingRoom",
+    "EntryDll": "FittingRoom.dll",
     "MinimumApiVersion": "4.0.0",
     "MinimumGameVersion": "1.6.0",
     "Dependencies": [

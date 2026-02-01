@@ -1,0 +1,18 @@
+{
+    "menu.title": "試着室",
+    "menu.tabs.shirts": "シャツ",
+    "menu.tabs.pants": "ボトム",
+    "menu.tabs.hats": "帽子",
+    "menu.buttons.apply": "適用",
+    "menu.buttons.reset": "リセット",
+    "menu.messages.saved": "保存しました！",
+    "menu.filter.all": "すべて",
+    "menu.filter.vanilla": "バニラ",
+    "menu.filter.unknown": "不明",
+    "menu.item.no-hat": "帽子なし",
+    "menu.item.mod-info": "MOD：{{modName}}",
+    "config.toggle-menu-key.name": "メニュー切り替えキー",
+    "config.toggle-menu-key.tooltip": "このキーを押すとメニューを開閉します。",
+    "config.toggle-item-info-key.name": "アイテム情報切り替えキー",
+    "config.toggle-item-info-key.tooltip": "メニュー内でこのキーを押すと、アイテム情報の表示を切り替えます。"
+}

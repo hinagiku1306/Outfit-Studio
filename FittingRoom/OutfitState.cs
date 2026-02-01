@@ -2,7 +2,7 @@ using System;
 using StardewValley;
 using StardewValley.Objects;
 
-namespace OutfitRoom
+namespace FittingRoom
 {
     /// <summary>
     /// Tracks the current outfit selection, original outfit, and saved outfit.
@@ -17,15 +17,18 @@ namespace OutfitRoom
         // Original outfit (captured when menu opens, for reverting on close)
         private readonly string originalShirt;
         private readonly string originalPants;
-        private readonly int originalHat;
+        private readonly string originalHat;
 
         // Applied outfit (set when Apply is clicked, for Reset button)
         private string appliedShirt;
         private string appliedPants;
-        private int appliedHat;
+        private string appliedHat;
 
         // Scroll position (row offset in the grid)
         private int scrollOffset = 0;
+
+        // Current mod filter (null = no filter active)
+        private string? currentModFilter = null;
 
         /// <summary>Gets or sets the current shirt index.</summary>
         public int ShirtIndex
@@ -55,6 +58,13 @@ namespace OutfitRoom
             set => scrollOffset = Math.Max(0, value);
         }
 
+        /// <summary>Gets or sets the current mod filter. Null means no filter is active.</summary>
+        public string? CurrentModFilter
+        {
+            get => currentModFilter;
+            set => currentModFilter = value;
+        }
+
         /// <summary>Gets the original shirt ID.</summary>
         public string OriginalShirt => originalShirt;
 
@@ -62,7 +72,7 @@ namespace OutfitRoom
         public string OriginalPants => originalPants;
 
         /// <summary>Gets the original hat ID.</summary>
-        public int OriginalHat => originalHat;
+        public string OriginalHat => originalHat;
 
         /// <summary>
         /// Creates a new OutfitState, capturing the player's current outfit as both original and applied.
@@ -95,7 +105,7 @@ namespace OutfitRoom
         public void ApplySelection(OutfitCategoryManager.Category category,
             System.Collections.Generic.List<string> shirtIds,
             System.Collections.Generic.List<string> pantsIds,
-            System.Collections.Generic.List<int> hatIds)
+            System.Collections.Generic.List<string> hatIds)
         {
             switch (category)
             {
@@ -118,8 +128,8 @@ namespace OutfitRoom
                 case OutfitCategoryManager.Category.Hats:
                     if (hatIndex >= 0 && hatIndex < hatIds.Count)
                     {
-                        int hatId = hatIds[hatIndex];
-                        if (hatId < 0)
+                        string hatId = hatIds[hatIndex];
+                        if (string.IsNullOrEmpty(hatId) || hatId == "-1")
                             Game1.player.hat.Value = null;
                         else
                             Game1.player.hat.Value = ItemRegistry.Create<Hat>("(H)" + hatId);
@@ -146,13 +156,13 @@ namespace OutfitRoom
         /// <param name="hatIds">List of hat IDs (for index lookup).</param>
         public void ResetToApplied(System.Collections.Generic.List<string> shirtIds,
             System.Collections.Generic.List<string> pantsIds,
-            System.Collections.Generic.List<int> hatIds)
+            System.Collections.Generic.List<string> hatIds)
         {
             // Reset to applied outfit
             Game1.player.shirt.Value = appliedShirt;
             Game1.player.pants.Value = appliedPants;
 
-            if (appliedHat < 0)
+            if (string.IsNullOrEmpty(appliedHat) || appliedHat == "-1")
                 Game1.player.hat.Value = null;
             else
                 Game1.player.hat.Value = ItemRegistry.Create<Hat>("(H)" + appliedHat);
@@ -174,7 +184,7 @@ namespace OutfitRoom
             Game1.player.shirt.Value = appliedShirt;
             Game1.player.pants.Value = appliedPants;
 
-            if (appliedHat < 0)
+            if (string.IsNullOrEmpty(appliedHat) || appliedHat == "-1")
                 Game1.player.hat.Value = null;
             else
                 Game1.player.hat.Value = ItemRegistry.Create<Hat>("(H)" + appliedHat);
@@ -216,28 +226,25 @@ namespace OutfitRoom
         }
 
         /// <summary>
-        /// Extracts the numeric hat ID from a Hat item.
+        /// Extracts the hat ID from a Hat item (unqualified ID).
         /// </summary>
         /// <param name="hat">The hat item, can be null.</param>
-        /// <returns>The hat ID, or -1 if no hat.</returns>
-        public static int GetHatIdFromItem(Hat hat)
+        /// <returns>The hat ID, or "-1" if no hat.</returns>
+        public static string GetHatIdFromItem(Hat hat)
         {
             if (hat == null)
-                return -1;
+                return "-1";
 
-            // ItemId is like "(H)5", extract the number
+            // ItemId is like "(H)5" or "(H)delloti.CP.DL_Hats_0", extract the unqualified ID
             string itemId = hat.ItemId;
             if (string.IsNullOrEmpty(itemId))
-                return -1;
+                return "-1";
 
             // Remove the "(H)" prefix if present
             if (itemId.StartsWith("(H)"))
-                itemId = itemId.Substring(3);
+                return itemId.Substring(3);
 
-            if (int.TryParse(itemId, out int hatId))
-                return hatId;
-
-            return -1;
+            return itemId;
         }
     }
 }

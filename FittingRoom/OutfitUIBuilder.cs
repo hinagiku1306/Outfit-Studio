@@ -1,10 +1,11 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using StardewModdingAPI;
 using StardewValley;
 using StardewValley.Menus;
-using static OutfitRoom.OutfitLayoutConstants;
+using static FittingRoom.OutfitLayoutConstants;
 
-namespace OutfitRoom
+namespace FittingRoom
 {
     /// <summary>
     /// Builds and manages UI components for the OutfitMenu.
@@ -21,13 +22,12 @@ namespace OutfitRoom
         public ClickableComponent ShirtsTab { get; private set; } = null!;
         public ClickableComponent PantsTab { get; private set; } = null!;
         public ClickableComponent HatsTab { get; private set; } = null!;
-        public ClickableTextureComponent ScrollUpButton { get; private set; } = null!;
-        public ClickableTextureComponent ScrollDownButton { get; private set; } = null!;
         public ClickableTextureComponent ResetButton { get; private set; } = null!;
         public ClickableTextureComponent ApplyButton { get; private set; } = null!;
         public ClickableTextureComponent CloseButton { get; private set; } = null!;
         public List<ClickableComponent> ItemSlots { get; private set; } = new();
         public Rectangle PortraitBox { get; private set; }
+        public ClickableComponent? ModFilterDropdown { get; private set; } = null;
 
         // Menu position and dimensions
         public int X { get; private set; }
@@ -57,10 +57,9 @@ namespace OutfitRoom
 
             // Calculate grid dimensions
             int gridWidth = COLUMNS * SLOT_SIZE + (COLUMNS - 1) * ItemSlotGap;
-            int scrollAreaWidth = ScrollArrowButtonSize + ContentBoxPadding;
 
             // Calculate menu width based on actual content
-            int contentWidth = CharacterPreviewWidth + GapBetweenPreviewAndGrid + gridWidth + ContentBoxPadding * 2 + scrollAreaWidth;
+            int contentWidth = CharacterPreviewWidth + GapBetweenPreviewAndGrid + gridWidth + ContentBoxPadding * 2;
             Width = contentWidth + MenuSidePadding * 2;
             Height = MenuTotalHeight;
 
@@ -94,21 +93,21 @@ namespace OutfitRoom
                 CharacterPreviewHeight
             );
 
-            // Category tabs - center-aligned with grid
+            // Category tabs - right-aligned with grid
             int totalTabsWidth = TabAndButtonWidth * 3 + TabAndButtonGap * 2;
-            int tabsStartX = rightPanelX + (gridWidth - totalTabsWidth) / 2 - 10;
+            int tabsStartX = rightPanelX + gridWidth - totalTabsWidth;
 
             ShirtsTab = new ClickableComponent(
                 new Rectangle(tabsStartX, tabY, TabAndButtonWidth, TabAndButtonHeight),
-                "Shirts"
+                TranslationCache.TabShirts
             );
             PantsTab = new ClickableComponent(
                 new Rectangle(tabsStartX + TabAndButtonWidth + TabAndButtonGap, tabY, TabAndButtonWidth, TabAndButtonHeight),
-                "Pants"
+                TranslationCache.TabPants
             );
             HatsTab = new ClickableComponent(
                 new Rectangle(tabsStartX + (TabAndButtonWidth + TabAndButtonGap) * 2, tabY, TabAndButtonWidth, TabAndButtonHeight),
-                "Hats"
+                TranslationCache.TabHats
             );
 
             // Item slots grid
@@ -126,24 +125,6 @@ namespace OutfitRoom
                     ));
                 }
             }
-
-            // Scroll buttons (right side of the grid, vertically stacked)
-            int scrollButtonX = rightPanelX + gridWidth + ContentBoxPadding + ScrollArrowLeftGap;
-            int totalScrollHeight = ScrollArrowButtonSize * 2 + ScrollArrowVerticalGap;
-            int scrollButtonStartY = gridY + (gridHeight - totalScrollHeight) / 2;
-
-            ScrollUpButton = new ClickableTextureComponent(
-                new Rectangle(scrollButtonX, scrollButtonStartY, ScrollArrowButtonSize, ScrollArrowButtonSize),
-                Game1.mouseCursors,
-                new Rectangle(421, 459, 12, 11),
-                4f
-            );
-            ScrollDownButton = new ClickableTextureComponent(
-                new Rectangle(scrollButtonX, scrollButtonStartY + ScrollArrowButtonSize + ScrollArrowVerticalGap, ScrollArrowButtonSize, ScrollArrowButtonSize),
-                Game1.mouseCursors,
-                new Rectangle(421, 472, 12, 11),
-                4f
-            );
 
             // Apply and Reset buttons - stacked vertically below the portrait
             int buttonsStartX = leftPanelCenterX - TabAndButtonWidth / 2;
@@ -169,6 +150,17 @@ namespace OutfitRoom
                 Game1.mouseCursors,
                 new Rectangle(337, 494, 12, 12),
                 4f
+            );
+
+            // Mod filter dropdown (positioned above the menu, no overlapping)
+            int dropdownWidth = gridWidth / 2; // Half the grid width
+            int dropdownHeight = TabAndButtonHeight; // Match category tab height
+            int dropdownX = rightPanelX;
+            int dropdownY = Y - dropdownHeight - ContentBoxPadding; // Above the menu
+
+            ModFilterDropdown = new ClickableComponent(
+                new Rectangle(dropdownX, dropdownY, dropdownWidth, dropdownHeight),
+                "ModFilterDropdown"
             );
         }
 
@@ -275,7 +267,7 @@ namespace OutfitRoom
         }
 
         /// <summary>
-        /// Draws the item list background and scroll buttons if needed.
+        /// Draws the item list background.
         /// </summary>
         public void DrawItemList(SpriteBatch b, int scrollOffset, int totalItems)
         {
@@ -290,45 +282,6 @@ namespace OutfitRoom
             // Draw background box
             IClickableMenu.drawTextureBox(b, listX - ContentBoxPadding, listY - ContentBoxPadding,
                 listWidth + ContentBoxPadding * 2, listHeight + ContentBoxPadding * 2, Color.White);
-
-            // Draw scroll buttons with hover effects (only if needed)
-            int totalRows = Math.Max(1, (int)Math.Ceiling(totalItems / (float)COLUMNS));
-            int maxScroll = Math.Max(0, totalRows - VISIBLE_ROWS);
-            int mouseX = Game1.getMouseX();
-            int mouseY = Game1.getMouseY();
-
-            if (scrollOffset > 0)
-            {
-                bool upHovered = ScrollUpButton.containsPoint(mouseX, mouseY);
-                if (upHovered)
-                {
-                    Game1.mouseCursor = 1; // Hand cursor
-                    float originalScale = ScrollUpButton.scale;
-                    ScrollUpButton.scale = originalScale + ButtonHoverScaleIncrease;
-                    ScrollUpButton.draw(b, Color.Yellow, 0.86f);
-                    ScrollUpButton.scale = originalScale;
-                }
-                else
-                {
-                    ScrollUpButton.draw(b);
-                }
-            }
-            if (scrollOffset < maxScroll)
-            {
-                bool downHovered = ScrollDownButton.containsPoint(mouseX, mouseY);
-                if (downHovered)
-                {
-                    Game1.mouseCursor = 1; // Hand cursor
-                    float originalScale = ScrollDownButton.scale;
-                    ScrollDownButton.scale = originalScale + ButtonHoverScaleIncrease;
-                    ScrollDownButton.draw(b, Color.Yellow, 0.86f);
-                    ScrollDownButton.scale = originalScale;
-                }
-                else
-                {
-                    ScrollDownButton.draw(b);
-                }
-            }
         }
 
         /// <summary>
@@ -367,7 +320,7 @@ namespace OutfitRoom
         /// </summary>
         public void DrawApplyButton(SpriteBatch b)
         {
-            DrawTextButton(b, ApplyButton, "Apply", null);
+            DrawTextButton(b, ApplyButton, TranslationCache.ButtonApply, null);
         }
 
         /// <summary>
@@ -375,7 +328,7 @@ namespace OutfitRoom
         /// </summary>
         public void DrawResetButton(SpriteBatch b)
         {
-            DrawTextButton(b, ResetButton, "Reset", null);
+            DrawTextButton(b, ResetButton, TranslationCache.ButtonReset, null);
         }
 
         /// <summary>
@@ -406,7 +359,7 @@ namespace OutfitRoom
         /// </summary>
         public void DrawTitle(SpriteBatch b)
         {
-            string title = "Outfit Room";
+            string title = TranslationCache.MenuTitle;
             Vector2 titleSize = Game1.dialogueFont.MeasureString(title);
             Utility.drawTextWithShadow(b, title, Game1.dialogueFont,
                 new Vector2(X + (Width - titleSize.X) / 2, Y + ContentBoxPadding),
@@ -439,7 +392,7 @@ namespace OutfitRoom
         {
             if (savedMessageTimer > 0)
             {
-                string message = "Saved!";
+                string message = TranslationCache.MessageSaved;
                 Vector2 textSize = Game1.smallFont.MeasureString(message);
                 Vector2 textPos = new Vector2(
                     PortraitBox.Center.X - textSize.X / 2,
@@ -458,6 +411,54 @@ namespace OutfitRoom
         }
 
         /// <summary>
+        /// Draws the mod filter dropdown button.
+        /// </summary>
+        /// <param name="b">SpriteBatch for drawing.</param>
+        /// <param name="currentFilter">The currently selected mod filter, or null for "All Items".</param>
+        /// <param name="isOpen">Whether the dropdown is currently open.</param>
+        public void DrawModFilterDropdown(SpriteBatch b, string? currentFilter, bool isOpen)
+        {
+            if (ModFilterDropdown == null)
+                return;
+
+            Rectangle bounds = ModFilterDropdown.bounds;
+            int mouseX = Game1.getMouseX();
+            int mouseY = Game1.getMouseY();
+            bool isHovered = bounds.Contains(mouseX, mouseY);
+
+            // Draw dropdown button background
+            IClickableMenu.drawTextureBox(b, bounds.X, bounds.Y, bounds.Width, bounds.Height,
+                isHovered || isOpen ? Color.Wheat : Color.White);
+
+            // Draw current selection text
+            string displayText = string.IsNullOrEmpty(currentFilter) ? TranslationCache.FilterAll : $"{currentFilter}";
+
+            // Truncate text if too long
+            Vector2 textSize = Game1.smallFont.MeasureString(displayText);
+            if (textSize.X > bounds.Width - 40)
+            {
+                while (textSize.X > bounds.Width - 40 && displayText.Length > 10)
+                {
+                    displayText = displayText.Substring(0, displayText.Length - 1);
+                    textSize = Game1.smallFont.MeasureString(displayText + "...");
+                }
+                displayText += "...";
+            }
+
+            Vector2 textPos = new Vector2(
+                bounds.X + 12,
+                bounds.Y + (bounds.Height - textSize.Y) / 2
+            );
+
+            Utility.drawTextWithShadow(b, displayText, Game1.smallFont, textPos, Game1.textColor);
+
+            if (isHovered)
+            {
+                Game1.mouseCursor = 1; // Hand cursor
+            }
+        }
+
+        /// <summary>
         /// Checks if the mouse is hovering over any clickable UI element.
         /// </summary>
         public bool IsHoveringClickable(int mouseX, int mouseY)
@@ -467,9 +468,12 @@ namespace OutfitRoom
                 HatsTab.containsPoint(mouseX, mouseY) ||
                 ApplyButton.containsPoint(mouseX, mouseY) ||
                 ResetButton.containsPoint(mouseX, mouseY) ||
-                CloseButton.containsPoint(mouseX, mouseY) ||
-                ScrollUpButton.containsPoint(mouseX, mouseY) ||
-                ScrollDownButton.containsPoint(mouseX, mouseY))
+                CloseButton.containsPoint(mouseX, mouseY))
+            {
+                return true;
+            }
+
+            if (ModFilterDropdown != null && ModFilterDropdown.containsPoint(mouseX, mouseY))
             {
                 return true;
             }

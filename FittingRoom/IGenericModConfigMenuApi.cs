@@ -2,7 +2,7 @@ using System;
 using StardewModdingAPI;
 using StardewModdingAPI.Utilities;
 
-namespace OutfitRoom
+namespace FittingRoom
 {
     public interface IGenericModConfigMenuApi
     {
