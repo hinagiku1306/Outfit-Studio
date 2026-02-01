@@ -643,6 +643,7 @@ namespace FittingRoom
         public override void emergencyShutDown()
         {
             filterManager.ClearSearchCaches();
+            uiBuilder.Cleanup();
             base.emergencyShutDown();
         }
     }

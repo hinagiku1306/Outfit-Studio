@@ -39,6 +39,18 @@ namespace FittingRoom
         // Saved message display
         private float savedMessageTimer = 0f;
 
+        // Farmer preview rendering resources
+        private RenderTarget2D? farmerRenderTarget = null;
+        private SpriteBatch? farmerSpriteBatch = null;
+
+        // Farmer preview constants (cached for performance)
+        private static readonly Rectangle FarmerDownFacingRect = new Rectangle(0, 0, 16, 32);
+        private static readonly Rectangle FarmerDownFacingBathingRect = new Rectangle(0, 576, 16, 32);
+        private static readonly Vector2 FarmerRenderPosition = new Vector2(32, 32);
+        private static readonly FarmerSprite.AnimationFrame StandingFrame = new FarmerSprite.AnimationFrame(0, 0, secondaryArm: false, flip: false);
+        private const int FarmerRenderWidth = BackgroundSourceWidth * 2;  // 128
+        private const int FarmerRenderHeight = BackgroundSourceHeight * 2; // 192
+
         /// <summary>
         /// Creates a new UI builder and initializes all UI components.
         /// </summary>
@@ -221,53 +233,76 @@ namespace FittingRoom
 
         /// <summary>
         /// Draws the player preview (background and farmer).
+        /// Uses RenderTarget2D to render farmer at 1x scale then scales the result.
         /// </summary>
         public void DrawPlayerPreview(SpriteBatch b)
         {
-            // Draw sky background (day or night based on time)
             b.Draw((Game1.timeOfDay >= NightTimeStartHour) ? Game1.nightbg : Game1.daybg, PortraitBox, Color.White);
 
-            // Draw farmer anchored from bottom (matches vanilla CharacterCustomization)
-            Vector2 farmerPos = new Vector2(
-                PortraitBox.Center.X - FarmerPreviewCenterOffset,
-                PortraitBox.Bottom - FarmerPreviewBottomOffset
-            );
+            InitializeFarmerRenderResources();
+
+            var renderTargets = Game1.graphics.GraphicsDevice.GetRenderTargets();
+            Game1.graphics.GraphicsDevice.SetRenderTarget(farmerRenderTarget);
+            Game1.graphics.GraphicsDevice.Clear(Color.Transparent);
+
+            Rectangle sourceRect = Game1.player.bathingClothes.Value ? FarmerDownFacingBathingRect : FarmerDownFacingRect;
+
+            farmerSpriteBatch!.Begin(SpriteSortMode.FrontToBack, BlendState.AlphaBlend, SamplerState.PointClamp, null, null);
 
             FarmerRenderer.isDrawingForUI = true;
+            DrawFarmerToRenderTarget(sourceRect, Color.White);
+
+            if (Game1.timeOfDay >= NightTimeStartHour)
+            {
+                DrawFarmerToRenderTarget(sourceRect, Color.DarkBlue * 0.3f);
+            }
+            FarmerRenderer.isDrawingForUI = false;
+
+            farmerSpriteBatch.End();
+
+            Game1.graphics.GraphicsDevice.SetRenderTargets(renderTargets);
+
+            b.Draw(farmerRenderTarget, PortraitBox, null, Color.White, 0f, Vector2.Zero, SpriteEffects.None, 0.5f);
+        }
+
+        private void InitializeFarmerRenderResources()
+        {
+            if (farmerRenderTarget == null || farmerRenderTarget.IsDisposed)
+            {
+                farmerRenderTarget = new RenderTarget2D(
+                    Game1.graphics.GraphicsDevice,
+                    FarmerRenderWidth,
+                    FarmerRenderHeight,
+                    false,
+                    SurfaceFormat.Color,
+                    DepthFormat.None,
+                    0,
+                    RenderTargetUsage.PreserveContents
+                );
+            }
+
+            if (farmerSpriteBatch == null || farmerSpriteBatch.IsDisposed)
+            {
+                farmerSpriteBatch = new SpriteBatch(Game1.graphics.GraphicsDevice);
+            }
+        }
+
+        private void DrawFarmerToRenderTarget(Rectangle sourceRect, Color color)
+        {
             Game1.player.FarmerRenderer.draw(
-                b,
-                new FarmerSprite.AnimationFrame(0, Game1.player.bathingClothes.Value ? 108 : 0, secondaryArm: false, flip: false),
-                Game1.player.bathingClothes.Value ? 108 : 0,
-                new Rectangle(0, Game1.player.bathingClothes.Value ? 576 : 0, 16, 32),
-                farmerPos,
+                farmerSpriteBatch!,
+                StandingFrame,
+                0,
+                sourceRect,
+                FarmerRenderPosition,
                 Vector2.Zero,
                 FarmerSpriteLayerDepth,
                 2,
-                Color.White,
+                color,
                 0f,
-                FarmerSpriteScale,
+                1f,
                 Game1.player
             );
-
-            // Apply night overlay if needed (same as vanilla)
-            if (Game1.timeOfDay >= NightTimeStartHour)
-            {
-                Game1.player.FarmerRenderer.draw(
-                    b,
-                    new FarmerSprite.AnimationFrame(0, Game1.player.bathingClothes.Value ? 108 : 0, secondaryArm: false, flip: false),
-                    Game1.player.bathingClothes.Value ? 108 : 0,
-                    new Rectangle(0, Game1.player.bathingClothes.Value ? 576 : 0, 16, 32),
-                    farmerPos,
-                    Vector2.Zero,
-                    FarmerSpriteLayerDepth,
-                    2,
-                    Color.DarkBlue * 0.3f,
-                    0f,
-                    FarmerSpriteScale,
-                    Game1.player
-                );
-            }
-            FarmerRenderer.isDrawingForUI = false;
         }
 
         /// <summary>
@@ -494,6 +529,24 @@ namespace FittingRoom
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Cleans up resources used by the UI builder.
+        /// </summary>
+        public void Cleanup()
+        {
+            if (farmerRenderTarget != null && !farmerRenderTarget.IsDisposed)
+            {
+                farmerRenderTarget.Dispose();
+                farmerRenderTarget = null;
+            }
+
+            if (farmerSpriteBatch != null && !farmerSpriteBatch.IsDisposed)
+            {
+                farmerSpriteBatch.Dispose();
+                farmerSpriteBatch = null;
+            }
         }
     }
 }

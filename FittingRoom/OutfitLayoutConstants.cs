@@ -30,10 +30,10 @@ namespace FittingRoom
         // ============================================================
 
         /// <summary>Width of the character preview background box.</summary>
-        public const int CharacterPreviewWidth = 128;
+        public const int CharacterPreviewWidth = (int)(128 * FarmerSpriteScale);
 
         /// <summary>Height of the character preview background box.</summary>
-        public const int CharacterPreviewHeight = 192;
+        public const int CharacterPreviewHeight = (int)(192 * FarmerSpriteScale);
 
         /// <summary>Horizontal gap between character preview and item grid.</summary>
         public const int GapBetweenPreviewAndGrid = 100;
@@ -48,19 +48,13 @@ namespace FittingRoom
         public const float CharacterPreviewScale = 1f;
 
         /// <summary>Farmer sprite scale.</summary>
-        public const float FarmerSpriteScale = 1f;
+        public const float FarmerSpriteScale = 1.3f;
 
         /// <summary>Width of farmer sprite at standard scale.</summary>
         public const int FarmerSpriteWidth = 64;
 
         /// <summary>Height of farmer sprite at standard scale.</summary>
         public const int FarmerSpriteHeight = 128;
-
-        /// <summary>Horizontal offset for centering farmer (half of sprite width at 4x scale).</summary>
-        public const int FarmerPreviewCenterOffset = 32;
-
-        /// <summary>Vertical offset from bottom of portrait box to farmer position (vanilla value).</summary>
-        public const int FarmerPreviewBottomOffset = 160;
 
         /// <summary>Layer depth for farmer sprite rendering.</summary>
         public const float FarmerSpriteLayerDepth = 0.8f;
