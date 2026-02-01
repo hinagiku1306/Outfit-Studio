@@ -17,7 +17,7 @@ namespace FittingRoom
 
         public readonly List<string> ShirtIds = new();
         public readonly List<string> PantsIds = new();
-        public readonly List<string> HatIds = new(); // Includes "-1" for no hat
+        public readonly List<string> HatIds = new(); // Includes NoHatId for no hat
 
         public enum Category { Shirts, Pants, Hats }
 
@@ -51,7 +51,7 @@ namespace FittingRoom
         private void LoadHats()
         {
             HatIds.Clear();
-            HatIds.Add("-1"); // No hat option
+            HatIds.Add(OutfitLayoutConstants.NoHatId);
             foreach (var id in DataLoader.Hats(Game1.content).Keys)
             {
                 HatIds.Add(id);
@@ -126,7 +126,7 @@ namespace FittingRoom
                     if (listIndex >= 0 && listIndex < HatIds.Count)
                     {
                         string hatId = HatIds[listIndex];
-                        if (!string.IsNullOrEmpty(hatId) && hatId != "-1")
+                        if (!string.IsNullOrEmpty(hatId) && hatId != OutfitLayoutConstants.NoHatId)
                             return "(H)" + hatId;
                     }
                     break;

@@ -95,7 +95,7 @@ namespace FittingRoom
             // Map hats
             foreach (var hatId in hatIds)
             {
-                if (hatId != "-1") // Skip "no hat" option
+                if (hatId != OutfitLayoutConstants.NoHatId)
                 {
                     string modName = DetectModName("(H)" + hatId, hatId);
                     itemIdToModName[hatId] = modName;
@@ -480,7 +480,7 @@ namespace FittingRoom
                 case OutfitCategoryManager.Category.Hats:
                     foreach (var hatId in hatIds)
                     {
-                        if (hatId != "-1") // Skip "no hat"
+                        if (hatId != OutfitLayoutConstants.NoHatId)
                         {
                             string modName = GetModNameForHat(hatId);
                             modNames.Add(modName);
@@ -576,7 +576,7 @@ namespace FittingRoom
             var filtered = new List<string>();
             foreach (var hatId in hatIds)
             {
-                if (hatId == "-1" || GetModNameForHat(hatId) == modFilter)
+                if (hatId == OutfitLayoutConstants.NoHatId || GetModNameForHat(hatId) == modFilter)
                 {
                     filtered.Add(hatId);
                 }
@@ -599,7 +599,7 @@ namespace FittingRoom
             foreach (var id in itemIds)
             {
                 // Special handling for "No Hat" option
-                if (id == "-1")
+                if (id == OutfitLayoutConstants.NoHatId)
                 {
                     if (TranslationCache.ItemNoHat.Contains(searchText, StringComparison.OrdinalIgnoreCase))
                         filtered.Add(id);

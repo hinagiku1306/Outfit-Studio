@@ -186,7 +186,7 @@ namespace FittingRoom
                     if (listIndex >= 0 && listIndex < hatIds.Count)
                     {
                         string hatId = hatIds[listIndex];
-                        if (!string.IsNullOrEmpty(hatId) && hatId != "-1")
+                        if (!string.IsNullOrEmpty(hatId) && hatId != OutfitLayoutConstants.NoHatId)
                             return "(H)" + hatId;
                     }
                     break;

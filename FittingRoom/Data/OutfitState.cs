@@ -122,7 +122,7 @@ namespace FittingRoom
                     if (hatIndex >= 0 && hatIndex < hatIds.Count)
                     {
                         string hatId = hatIds[hatIndex];
-                        if (string.IsNullOrEmpty(hatId) || hatId == "-1")
+                        if (string.IsNullOrEmpty(hatId) || hatId == OutfitLayoutConstants.NoHatId)
                             Game1.player.hat.Value = null;
                         else
                             Game1.player.hat.Value = ItemRegistry.Create<Hat>("(H)" + hatId);
@@ -146,7 +146,7 @@ namespace FittingRoom
             Game1.player.shirt.Value = appliedShirt;
             Game1.player.pants.Value = appliedPants;
 
-            if (string.IsNullOrEmpty(appliedHat) || appliedHat == "-1")
+            if (string.IsNullOrEmpty(appliedHat) || appliedHat == OutfitLayoutConstants.NoHatId)
                 Game1.player.hat.Value = null;
             else
                 Game1.player.hat.Value = ItemRegistry.Create<Hat>("(H)" + appliedHat);
@@ -164,7 +164,7 @@ namespace FittingRoom
             Game1.player.shirt.Value = appliedShirt;
             Game1.player.pants.Value = appliedPants;
 
-            if (string.IsNullOrEmpty(appliedHat) || appliedHat == "-1")
+            if (string.IsNullOrEmpty(appliedHat) || appliedHat == OutfitLayoutConstants.NoHatId)
                 Game1.player.hat.Value = null;
             else
                 Game1.player.hat.Value = ItemRegistry.Create<Hat>("(H)" + appliedHat);
@@ -199,15 +199,15 @@ namespace FittingRoom
             }
         }
 
-        // Extracts unqualified ID from Hat item (returns "-1" for no hat)
+        // Extracts unqualified ID from Hat item (returns NoHatId for no hat)
         public static string GetHatIdFromItem(Hat hat)
         {
             if (hat == null)
-                return "-1";
+                return OutfitLayoutConstants.NoHatId;
 
             string itemId = hat.ItemId;
             if (string.IsNullOrEmpty(itemId))
-                return "-1";
+                return OutfitLayoutConstants.NoHatId;
 
             // Remove "(H)" prefix if present
             if (itemId.StartsWith("(H)"))

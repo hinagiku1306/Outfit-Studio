@@ -143,5 +143,12 @@ namespace FittingRoom
 
         /// <summary>Opacity of the dark background overlay (0-1).</summary>
         public const float BackgroundOverlayOpacity = 0.6f;
+
+        // ============================================================
+        // SPECIAL ITEM IDs
+        // ============================================================
+
+        /// <summary>Item ID representing "no hat" option.</summary>
+        public const string NoHatId = "-1";
     }
 }
