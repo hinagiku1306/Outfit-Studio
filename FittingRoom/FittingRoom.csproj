@@ -10,4 +10,9 @@
     <PackageReference Include="Pathoschild.Stardew.ModBuildConfig" Version="4.4.0" />
   </ItemGroup>
 
+  <!-- Prevent VSCode from auto-importing System.Drawing (conflicts with XNA types) -->
+  <ItemGroup>
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
+
 </Project>

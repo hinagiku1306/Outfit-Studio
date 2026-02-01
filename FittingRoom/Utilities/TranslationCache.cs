@@ -15,6 +15,8 @@ namespace FittingRoom
         public static string TabHats { get; private set; } = "";
         public static string ButtonApply { get; private set; } = "";
         public static string ButtonReset { get; private set; } = "";
+        public static string ButtonSave { get; private set; } = "";
+        public static string ButtonTemplates { get; private set; } = "";
         public static string MessageSaved { get; private set; } = "";
 
         // Filter options
@@ -25,6 +27,26 @@ namespace FittingRoom
         // Item info
         public static string ItemNoHat { get; private set; } = "";
         public static string ItemModInfoTemplate { get; private set; } = ""; // "Mod: {{modName}}"
+
+        // Templates overlay
+        public static string TemplatesTitle { get; private set; } = "";
+        public static string TemplatesFilter { get; private set; } = "";
+        public static string TemplatesSort { get; private set; } = "";
+        public static string TemplatesSearch { get; private set; } = "";
+        public static string TemplatesName { get; private set; } = "";
+        public static string TemplatesTags { get; private set; } = "";
+        public static string TemplatesShirt { get; private set; } = "";
+        public static string TemplatesPants { get; private set; } = "";
+        public static string TemplatesHat { get; private set; } = "";
+        public static string TemplatesButtonLoad { get; private set; } = "";
+        public static string TemplatesButtonApplyClose { get; private set; } = "";
+        public static string TemplatesButtonNew { get; private set; } = "";
+        public static string TemplatesButtonDuplicate { get; private set; } = "";
+        public static string TemplatesButtonRename { get; private set; } = "";
+        public static string TemplatesButtonDelete { get; private set; } = "";
+        public static string TemplatesButtonFavorite { get; private set; } = "";
+        public static string TemplatesDetailsLabel { get; private set; } = "";
+        public static string TemplatesPreviewLabel { get; private set; } = "";
 
         // Config (optional - only needed if GMCM is used)
         public static string ConfigToggleMenuKeyName { get; private set; } = "";
@@ -48,6 +70,8 @@ namespace FittingRoom
             TabHats = i18n.Get("menu.tabs.hats");
             ButtonApply = i18n.Get("menu.buttons.apply");
             ButtonReset = i18n.Get("menu.buttons.reset");
+            ButtonSave = i18n.Get("menu.buttons.save");
+            ButtonTemplates = i18n.Get("menu.buttons.templates");
             MessageSaved = i18n.Get("menu.messages.saved");
 
             FilterAll = i18n.Get("menu.filter.all");
@@ -56,6 +80,25 @@ namespace FittingRoom
 
             ItemNoHat = i18n.Get("menu.item.no-hat");
             ItemModInfoTemplate = i18n.Get("menu.item.mod-info");
+
+            TemplatesTitle = i18n.Get("templates.title");
+            TemplatesFilter = i18n.Get("templates.filter");
+            TemplatesSort = i18n.Get("templates.sort");
+            TemplatesSearch = i18n.Get("templates.search");
+            TemplatesName = i18n.Get("templates.name");
+            TemplatesTags = i18n.Get("templates.tags");
+            TemplatesShirt = i18n.Get("templates.shirt");
+            TemplatesPants = i18n.Get("templates.pants");
+            TemplatesHat = i18n.Get("templates.hat");
+            TemplatesButtonLoad = i18n.Get("templates.button.load");
+            TemplatesButtonApplyClose = i18n.Get("templates.button.apply-close");
+            TemplatesButtonNew = i18n.Get("templates.button.new");
+            TemplatesButtonDuplicate = i18n.Get("templates.button.duplicate");
+            TemplatesButtonRename = i18n.Get("templates.button.rename");
+            TemplatesButtonDelete = i18n.Get("templates.button.delete");
+            TemplatesButtonFavorite = i18n.Get("templates.button.favorite");
+            TemplatesDetailsLabel = i18n.Get("templates.details-label");
+            TemplatesPreviewLabel = i18n.Get("templates.preview-label");
 
             ConfigToggleMenuKeyName = i18n.Get("config.toggle-menu-key.name");
             ConfigToggleMenuKeyTooltip = i18n.Get("config.toggle-menu-key.tooltip");

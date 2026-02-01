@@ -1,11 +1,13 @@
 {
-    // Menu UI Message
+    // Main Menu
     "menu.title": "Fitting Room",
     "menu.tabs.shirts": "Shirts",
     "menu.tabs.pants": "Pants",
     "menu.tabs.hats": "Hats",
     "menu.buttons.apply": "Apply",
     "menu.buttons.reset": "Reset",
+    "menu.buttons.save": "Save",
+    "menu.buttons.templates": "Templates",
     "menu.messages.saved": "Saved!",
     "menu.filter.all": "All",
     "menu.filter.vanilla": "Vanilla",
@@ -21,5 +23,25 @@
     "config.reset-filter-on-tab-switch.name": "Reset Filter on Tab Switch",
     "config.reset-filter-on-tab-switch.tooltip": "If enabled, the filter will be cleared when switching between Clothing tabs.",
     "config.reset-search-on-tab-switch.name": "Reset Search on Tab Switch",
-    "config.reset-search-on-tab-switch.tooltip": "If enabled, the search text will be cleared when switching between Clothing tabs."
+    "config.reset-search-on-tab-switch.tooltip": "If enabled, the search text will be cleared when switching between Clothing tabs.",
+
+    // Template Menu
+    "templates.title": "Outfit Templates",
+    "templates.filter": "Filter",
+    "templates.sort": "Sort",
+    "templates.search": "Search...",
+    "templates.name": "Name:",
+    "templates.tags": "Tags:",
+    "templates.shirt": "Shirt:",
+    "templates.pants": "Pants:",
+    "templates.hat": "Hat:",
+    "templates.button.load": "Load",
+    "templates.button.apply-close": "Apply & Close",
+    "templates.button.new": "New",
+    "templates.button.duplicate": "Duplicate",
+    "templates.button.rename": "Rename",
+    "templates.button.delete": "Delete",
+    "templates.button.favorite": "★ Favorite",
+    "templates.details-label": "Template Details",
+    "templates.preview-label": "Preview"
 }

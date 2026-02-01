@@ -7,6 +7,7 @@ using StardewValley;
 using StardewValley.ItemTypeDefinitions;
 using StardewValley.Menus;
 using StardewValley.Objects;
+using static FittingRoom.OutfitLayoutConstants;
 
 namespace FittingRoom
 {
@@ -24,6 +25,7 @@ namespace FittingRoom
         private readonly ModEntry mod;
 
         private bool showItemInfo = false;
+        private TemplatesOverlay? templatesOverlay = null;
 
         public OutfitMenu(ModEntry mod, OutfitCategoryManager categoryManager, OutfitFilterManager filterManager, bool showItemInfo = false)
         {
@@ -115,6 +117,66 @@ namespace FittingRoom
             );
         }
 
+        /// <summary>
+        /// Gets the display name of the currently equipped item for a category.
+        /// </summary>
+        private string GetEquippedItemName(OutfitCategoryManager.Category category)
+        {
+            int currentIndex;
+            string itemId;
+
+            switch (category)
+            {
+                case OutfitCategoryManager.Category.Shirts:
+                    currentIndex = state.ShirtIndex;
+                    var shirtIds = GetCurrentShirtIds();
+                    if (currentIndex >= 0 && currentIndex < shirtIds.Count)
+                    {
+                        itemId = shirtIds[currentIndex];
+                        if (Game1.shirtData.TryGetValue(itemId, out var shirtData))
+                            return shirtData.DisplayName ?? itemId;
+                        return itemId;
+                    }
+                    return "";
+
+                case OutfitCategoryManager.Category.Pants:
+                    currentIndex = state.PantsIndex;
+                    var pantsIds = GetCurrentPantsIds();
+                    if (currentIndex >= 0 && currentIndex < pantsIds.Count)
+                    {
+                        itemId = pantsIds[currentIndex];
+                        if (Game1.pantsData.TryGetValue(itemId, out var pantsData))
+                            return pantsData.DisplayName ?? itemId;
+                        return itemId;
+                    }
+                    return "";
+
+                case OutfitCategoryManager.Category.Hats:
+                    currentIndex = state.HatIndex;
+                    var hatIds = GetCurrentHatIds();
+                    if (currentIndex >= 0 && currentIndex < hatIds.Count)
+                    {
+                        itemId = hatIds[currentIndex];
+                        if (itemId == OutfitLayoutConstants.NoHatId)
+                            return TranslationCache.ItemNoHat;
+
+                        try
+                        {
+                            var itemData = ItemRegistry.GetDataOrErrorItem("(H)" + itemId);
+                            return itemData.DisplayName ?? itemId;
+                        }
+                        catch
+                        {
+                            return itemId;
+                        }
+                    }
+                    return "";
+
+                default:
+                    return "";
+            }
+        }
+
         private void ResetOutfit()
         {
             state.ResetToApplied(
@@ -140,6 +202,20 @@ namespace FittingRoom
         public override void receiveLeftClick(int x, int y, bool playSound = true)
         {
             base.receiveLeftClick(x, y, playSound);
+
+            // Templates overlay handling - check first
+            if (templatesOverlay != null)
+            {
+                templatesOverlay.receiveLeftClick(x, y, playSound);
+
+                // Check if overlay was closed
+                if (templatesOverlay.readyToClose())
+                {
+                    templatesOverlay = null;
+                }
+
+                return; // Don't process main menu clicks when overlay is open
+            }
 
             // Handle dropdown option clicks
             if (dropdownManager.IsOpen)
@@ -286,6 +362,22 @@ namespace FittingRoom
                 return;
             }
 
+            // Save button (placeholder - just shows message)
+            if (uiBuilder.SaveButton.containsPoint(x, y))
+            {
+                uiBuilder.ShowSavedMessage();
+                if (playSound) Game1.playSound("coin");
+                return;
+            }
+
+            // Templates button - opens overlay
+            if (uiBuilder.TemplatesButton.containsPoint(x, y))
+            {
+                templatesOverlay = new TemplatesOverlay();
+                if (playSound) Game1.playSound("bigSelect");
+                return;
+            }
+
             // Close button - reverts to applied outfit and closes
             if (uiBuilder.CloseButton.containsPoint(x, y))
             {
@@ -325,6 +417,13 @@ namespace FittingRoom
 
         public override void receiveKeyPress(Keys key)
         {
+            // Handle templates overlay input
+            if (templatesOverlay != null)
+            {
+                templatesOverlay.receiveKeyPress(key);
+                return;
+            }
+
             // Handle dropdown scrolling when dropdown is open
             bool wasDropdownOpen = dropdownManager.IsOpen;
             if (dropdownManager.HandleKeyPress(key))
@@ -518,10 +617,10 @@ namespace FittingRoom
                 }
 
                 // Hover highlight
-                bool isHovering = uiBuilder.ItemSlots[i].containsPoint(Game1.getMouseX(), Game1.getMouseY());
-                if (isHovering)
+                bool isHovered = uiBuilder.ItemSlots[i].containsPoint(Game1.getMouseX(), Game1.getMouseY());
+                if (isHovered)
                 {
-                    b.Draw(Game1.staminaRect, slot, Color.White * 0.2f);
+                    b.Draw(Game1.staminaRect, slot, HoverEffectColor);
                     hoveredIndex = listIndex; // Track for tooltip rendering later
                 }
 
@@ -529,6 +628,10 @@ namespace FittingRoom
                 itemRenderer.DrawItemSprite(b, categoryManager.CurrentCategory, listIndex,
                     slot, GetCurrentShirtIds(), GetCurrentPantsIds(), GetCurrentHatIds());
             }
+
+            // Draw new buttons
+            uiBuilder.DrawSaveButton(b);
+            uiBuilder.DrawTemplatesButton(b);
 
             // Draw close button
             uiBuilder.DrawCloseButton(b);
@@ -539,20 +642,26 @@ namespace FittingRoom
                 Game1.mouseCursor = 1;
             }
 
-            // Draw dropdown options if open (AFTER everything else, on top)
+            // Draw dropdown options if open
             if (dropdownManager.IsOpen)
             {
                 DrawDropdownOptions(b);
             }
 
-            // Draw item info tooltip if toggle is active and hovering (AFTER everything else, on top)
+            // Draw item info tooltip if toggle is active and hovering
             if (showItemInfo && hoveredIndex >= 0)
             {
                 tooltipRenderer.DrawTooltip(b, hoveredIndex,
                     GetCurrentShirtIds(), GetCurrentPantsIds(), GetCurrentHatIds());
             }
 
-            // Draw cursor (must be last)
+            // Draw templates overlay if open
+            if (templatesOverlay != null)
+            {
+                templatesOverlay.draw(b);
+            }
+
+            // Draw cursor
             drawMouse(b);
         }
 
@@ -575,8 +684,8 @@ namespace FittingRoom
             int dropdownY = uiBuilder.ModFilterDropdown.bounds.Bottom;
             int dropdownWidth = uiBuilder.ModFilterDropdown.bounds.Width;
 
-            // Draw dropdown background (simple solid color box like CJB Item Spawner)
-            var bgColor = new Color(224, 203, 169); // Tan menu background color
+            // Draw dropdown background
+            var bgColor = Color.Wheat;
             b.Draw(Game1.staminaRect, new Rectangle(dropdownX, dropdownY, dropdownWidth, totalHeight), bgColor);
 
             // Draw border

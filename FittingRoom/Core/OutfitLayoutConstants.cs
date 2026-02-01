@@ -1,3 +1,5 @@
+using Microsoft.Xna.Framework;
+
 namespace FittingRoom
 {
     /// <summary>
@@ -16,6 +18,12 @@ namespace FittingRoom
         /// <summary>Horizontal padding from menu edge to content area.</summary>
         public const int MenuSidePadding = 70;
 
+        /// <summary>Top padding from menu edge to content area.</summary>
+        public const int MenuTopPadding = 20;
+
+        /// <summary>Bottom padding from menu edge to content area.</summary>
+        public const int MenuBottomPadding = 25;
+
         /// <summary>General inner padding used around content boxes.</summary>
         public const int ContentBoxPadding = 16;
 
@@ -23,7 +31,7 @@ namespace FittingRoom
         public const int TitleAreaHeight = 48;
 
         /// <summary>Height reserved at bottom for action buttons.</summary>
-        public const int BottomButtonAreaHeight = 60;
+        public const int BottomButtonAreaHeight = 80;
 
         // ============================================================
         // CHARACTER PREVIEW PANEL (Left Side)
@@ -60,7 +68,7 @@ namespace FittingRoom
         public const float FarmerSpriteLayerDepth = 0.8f;
 
         /// <summary>Gap between portrait box and buttons below it.</summary>
-        public const int GapBetweenPortraitAndButtons = 50;
+        public const int GapBetweenPortraitAndButtons = 30;
 
         /// <summary>Time of day when night background starts (24-hour format * 100).</summary>
         public const int NightTimeStartHour = 1900;
@@ -95,7 +103,13 @@ namespace FittingRoom
         public const int TabAndButtonGap = 8;
 
         /// <summary>Tab opacity.</summary>
-        public const float TabOpacity = 0.3f;
+        public const float TabOpacity = 0.2f;
+
+        /// <summary>Default hover effect color for tabs and buttons.</summary>
+        public static readonly Color HoverEffectColor = Color.Wheat * 0.3f;
+
+        /// <summary>Padding around equipped text area.</summary>
+        public const int TextPadding = 15;
 
         // ============================================================
         // SCROLL ARROWS
@@ -150,5 +164,79 @@ namespace FittingRoom
 
         /// <summary>Item ID representing "no hat" option.</summary>
         public const string NoHatId = "-1";
+
+        // ============================================================
+        // REVAMPED LAYOUT - TABS AT TOP
+        // ============================================================
+
+        /// <summary>Height reserved for tabs row at top of menu.</summary>
+        public const int TabAreaHeight = 70;
+
+        /// <summary>Gap between title and tabs.</summary>
+        public const int TabMarginTop = 8;
+
+        // ============================================================
+        // REVAMPED LAYOUT - EQUIPPED ITEMS DISPLAY
+        // ============================================================
+
+        /// <summary>Height reserved for equipped items text area.</summary>
+        public const int EquippedTextAreaHeight = 90;
+
+        /// <summary>Height per line of equipped text.</summary>
+        public const int EquippedTextLineHeight = 28;
+
+        // ============================================================
+        // REVAMPED LAYOUT - FILTER & SEARCH AT TOP OF GRID
+        // ============================================================
+
+        /// <summary>Height for filter/search controls row.</summary>
+        public const int FilterSearchAreaHeight = 70;
+
+        /// <summary>Gap between filter dropdown and search bar.</summary>
+        public const int FilterSearchGap = 12;
+
+        /// <summary>Fixed width for filter dropdown.</summary>
+        public const int FilterDropdownWidth = 200;
+
+        // ============================================================
+        // REVAMPED LAYOUT - NEW BOTTOM BUTTONS
+        // ============================================================
+
+        /// <summary>Width of Save button.</summary>
+        public const int SaveButtonWidth = 120;
+
+        /// <summary>Width of Templates button.</summary>
+        public const int TemplatesButtonWidth = 140;
+
+        /// <summary>Gap between bottom buttons.</summary>
+        public const int BottomButtonGap = 16;
+
+        // ============================================================
+        // TEMPLATES OVERLAY DIMENSIONS
+        // ============================================================
+
+        /// <summary>Total width of templates overlay window.</summary>
+        public const int TemplatesOverlayWidth = 1000;
+
+        /// <summary>Total height of templates overlay window.</summary>
+        public const int TemplatesOverlayHeight = 700;
+
+        /// <summary>Width of left panel (template list).</summary>
+        public const int TemplatesLeftPanelWidth = 550;
+
+        /// <summary>Width of right panel (preview + details).</summary>
+        public const int TemplatesRightPanelWidth = 400;
+
+        /// <summary>Gap between left and right panels.</summary>
+        public const int TemplatesPanelGap = 50;
+
+        /// <summary>Height of each template list item.</summary>
+        public const int TemplatesListItemHeight = 48;
+
+        /// <summary>Size of preview box in templates.</summary>
+        public const int TemplatesPreviewSize = 256;
+
+        /// <summary>Height of bottom button area in templates.</summary>
+        public const int TemplatesBottomButtonHeight = 70;
     }
 }

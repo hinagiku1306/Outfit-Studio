@@ -22,13 +22,20 @@ namespace FittingRoom
         public ClickableComponent ShirtsTab { get; private set; } = null!;
         public ClickableComponent PantsTab { get; private set; } = null!;
         public ClickableComponent HatsTab { get; private set; } = null!;
-        public ClickableTextureComponent ResetButton { get; private set; } = null!;
-        public ClickableTextureComponent ApplyButton { get; private set; } = null!;
+        public ClickableComponent ResetButton { get; private set; } = null!;
+        public ClickableComponent ApplyButton { get; private set; } = null!;
         public ClickableTextureComponent CloseButton { get; private set; } = null!;
         public List<ClickableComponent> ItemSlots { get; private set; } = new();
         public Rectangle PortraitBox { get; private set; }
         public ClickableComponent? ModFilterDropdown { get; private set; } = null;
         public ClickableComponent? SearchBar { get; private set; } = null;
+
+        // New buttons for revamped layout
+        public ClickableComponent SaveButton { get; private set; } = null!;
+        public ClickableComponent TemplatesButton { get; private set; } = null!;
+
+        // Equipped items text area
+        public Rectangle EquippedTextArea { get; private set; }
 
         // Menu position and dimensions
         public int X { get; private set; }
@@ -85,19 +92,37 @@ namespace FittingRoom
             int leftPanelCenterX = contentStartX + CharacterPreviewWidth / 2;
             int rightPanelX = contentStartX + CharacterPreviewWidth + GapBetweenPreviewAndGrid;
 
-            // Vertical layout
-            int tabY = Y + ContentBoxPadding + TitleAreaHeight;
-            int gridY = tabY + TabAndButtonHeight + ContentBoxPadding;
+            int tabY = Y + ContentBoxPadding + MenuTopPadding + TabMarginTop;
 
-            // Calculate visible rows based on available height
-            int availableHeight = Height - (gridY - Y) - ContentBoxPadding - BottomButtonAreaHeight;
-            VISIBLE_ROWS = Math.Max(1, (availableHeight + ItemSlotGap) / (SLOT_SIZE + ItemSlotGap));
-            VISIBLE_ITEMS = VISIBLE_ROWS * COLUMNS;
+            // Calculate dynamic widths for tabs based on text
+            int shirtTabWidth = CalculateButtonWidth(TranslationCache.TabShirts);
+            int pantsTabWidth = CalculateButtonWidth(TranslationCache.TabPants);
+            int hatsTabWidth = CalculateButtonWidth(TranslationCache.TabHats);
 
-            // Portrait box - centered with buttons as a group
+            int totalTabsWidth = shirtTabWidth + pantsTabWidth + hatsTabWidth + TabAndButtonGap * 2;
+            int tabsStartX = X + (Width - totalTabsWidth) / 2;
+
+            ShirtsTab = new ClickableComponent(
+                new Rectangle(tabsStartX, tabY, shirtTabWidth, TabAndButtonHeight),
+                TranslationCache.TabShirts
+            );
+            PantsTab = new ClickableComponent(
+                new Rectangle(tabsStartX + shirtTabWidth + TabAndButtonGap, tabY, pantsTabWidth, TabAndButtonHeight),
+                TranslationCache.TabPants
+            );
+            HatsTab = new ClickableComponent(
+                new Rectangle(tabsStartX + shirtTabWidth + pantsTabWidth + TabAndButtonGap * 2, tabY, hatsTabWidth, TabAndButtonHeight),
+                TranslationCache.TabHats
+            );
+
+            // Content panels start below tabs
+            int contentY = tabY + TabAndButtonHeight + ContentBoxPadding;
+
+            // Left panel: Portrait centered vertically with Apply/Reset buttons below
+            // Calculate total group height for vertical centering
             int totalGroupHeight = CharacterPreviewHeight + GapBetweenPortraitAndButtons + (TabAndButtonHeight * 2) + TabAndButtonGap;
-            int availableVerticalSpace = Height - (ContentBoxPadding + TitleAreaHeight) - ContentBoxPadding;
-            int portraitY = Y + ContentBoxPadding + TitleAreaHeight + (availableVerticalSpace - totalGroupHeight) / 2;
+            int availableVerticalSpace = Height - (contentY - Y) - ContentBoxPadding - MenuTopPadding;
+            int portraitY = contentY + (availableVerticalSpace - totalGroupHeight) / 2;
 
             PortraitBox = new Rectangle(
                 leftPanelCenterX - CharacterPreviewWidth / 2,
@@ -106,25 +131,50 @@ namespace FittingRoom
                 CharacterPreviewHeight
             );
 
-            // Category tabs - right-aligned with grid
-            int totalTabsWidth = TabAndButtonWidth * 3 + TabAndButtonGap * 2;
-            int tabsStartX = rightPanelX + gridWidth - totalTabsWidth;
+            // Apply and Reset buttons below portrait (centered in left panel)
+            // Calculate dynamic widths and use max so both buttons are same width
+            int applyButtonWidth = CalculateButtonWidth(TranslationCache.ButtonApply);
+            int resetButtonWidth = CalculateButtonWidth(TranslationCache.ButtonReset);
+            int buttonWidth = Math.Max(applyButtonWidth, resetButtonWidth);
 
-            ShirtsTab = new ClickableComponent(
-                new Rectangle(tabsStartX, tabY, TabAndButtonWidth, TabAndButtonHeight),
-                TranslationCache.TabShirts
+            int buttonsStartX = leftPanelCenterX - buttonWidth / 2;
+            int applyButtonY = PortraitBox.Bottom + GapBetweenPortraitAndButtons;
+            int resetButtonY = applyButtonY + TabAndButtonHeight + TabAndButtonGap;
+
+            ApplyButton = new ClickableComponent(
+                new Rectangle(buttonsStartX, applyButtonY, buttonWidth, TabAndButtonHeight),
+                TranslationCache.ButtonApply
             );
-            PantsTab = new ClickableComponent(
-                new Rectangle(tabsStartX + TabAndButtonWidth + TabAndButtonGap, tabY, TabAndButtonWidth, TabAndButtonHeight),
-                TranslationCache.TabPants
+            ResetButton = new ClickableComponent(
+                new Rectangle(buttonsStartX, resetButtonY, buttonWidth, TabAndButtonHeight),
+                TranslationCache.ButtonReset
             );
-            HatsTab = new ClickableComponent(
-                new Rectangle(tabsStartX + (TabAndButtonWidth + TabAndButtonGap) * 2, tabY, TabAndButtonWidth, TabAndButtonHeight),
-                TranslationCache.TabHats
+
+            // Right panel: Filter/Search controls at top, then item grid
+            int filterSearchY = contentY;
+
+            // Mod filter dropdown
+            ModFilterDropdown = new ClickableComponent(
+                new Rectangle(rightPanelX, filterSearchY, FilterDropdownWidth, TabAndButtonHeight),
+                "ModFilterDropdown"
             );
+
+            // Search bar next to filter
+            int searchBarWidth = gridWidth - FilterDropdownWidth - FilterSearchGap;
+            SearchBar = new ClickableComponent(
+                new Rectangle(rightPanelX + FilterDropdownWidth + FilterSearchGap, filterSearchY, searchBarWidth, TabAndButtonHeight),
+                "SearchBar"
+            );
+
+            // Item grid starts below filter/search
+            int gridY = filterSearchY + FilterSearchAreaHeight;
+
+            // Calculate visible rows based on available height
+            int availableHeight = Height - (gridY - Y) - ContentBoxPadding - BottomButtonAreaHeight;
+            VISIBLE_ROWS = Math.Max(1, (availableHeight + ItemSlotGap) / (SLOT_SIZE + ItemSlotGap));
+            VISIBLE_ITEMS = VISIBLE_ROWS * COLUMNS;
 
             // Item slots grid
-            int gridHeight = VISIBLE_ROWS * SLOT_SIZE + Math.Max(0, VISIBLE_ROWS - 1) * ItemSlotGap;
             ItemSlots.Clear();
             for (int row = 0; row < VISIBLE_ROWS; row++)
             {
@@ -139,22 +189,24 @@ namespace FittingRoom
                 }
             }
 
-            // Apply and Reset buttons - stacked vertically below the portrait
-            int buttonsStartX = leftPanelCenterX - TabAndButtonWidth / 2;
-            int applyButtonY = PortraitBox.Bottom + GapBetweenPortraitAndButtons;
-            int resetButtonY = applyButtonY + TabAndButtonHeight + TabAndButtonGap;
+            // Bottom buttons: Save and Templates (aligned to bottom-right) - dynamic widths
+            // Center buttons vertically within the BottomButtonAreaHeight
+            int bottomButtonY = Y + Height - BottomButtonAreaHeight - MenuBottomPadding + (BottomButtonAreaHeight - TabAndButtonHeight) / 2;
 
-            ApplyButton = new ClickableTextureComponent(
-                new Rectangle(buttonsStartX, applyButtonY, TabAndButtonWidth, TabAndButtonHeight),
-                Game1.mouseCursors,
-                new Rectangle(432, 439, 9, 9),
-                4f
+            // Calculate dynamic widths based on text
+            int templatesButtonWidth = CalculateButtonWidth(TranslationCache.ButtonTemplates);
+            int saveButtonWidth = CalculateButtonWidth(TranslationCache.ButtonSave);
+
+            // Templates button on the right
+            TemplatesButton = new ClickableComponent(
+                new Rectangle(X + Width - MenuSidePadding - templatesButtonWidth, bottomButtonY, templatesButtonWidth, TabAndButtonHeight),
+                TranslationCache.ButtonTemplates
             );
-            ResetButton = new ClickableTextureComponent(
-                new Rectangle(buttonsStartX, resetButtonY, TabAndButtonWidth, TabAndButtonHeight),
-                Game1.mouseCursors,
-                new Rectangle(432, 439, 9, 9),
-                4f
+
+            // Save button to the left of Templates
+            SaveButton = new ClickableComponent(
+                new Rectangle(TemplatesButton.bounds.X - saveButtonWidth - BottomButtonGap, bottomButtonY, saveButtonWidth, TabAndButtonHeight),
+                TranslationCache.ButtonSave
             );
 
             // Close button (top right)
@@ -163,29 +215,6 @@ namespace FittingRoom
                 Game1.mouseCursors,
                 new Rectangle(337, 494, 12, 12),
                 4f
-            );
-
-            // Search bar and mod filter dropdown layout
-            int searchBarWidth = (int)(Width * 0.35);
-            int dropdownWidth = (int)(Width * 0.4);
-            int gapBetweenControls = TabAndButtonGap;
-            int controlsY = Y - TabAndButtonHeight - ContentBoxPadding; // Above the menu
-
-            // Search bar
-            SearchBar = new ClickableComponent(
-                new Rectangle(rightPanelX, controlsY, searchBarWidth, TabAndButtonHeight),
-                "SearchBar"
-            );
-
-            // Mod filter dropdown
-            ModFilterDropdown = new ClickableComponent(
-                new Rectangle(
-                    rightPanelX + searchBarWidth + gapBetweenControls,
-                    controlsY,
-                    dropdownWidth,
-                    TabAndButtonHeight
-                ),
-                "ModFilterDropdown"
             );
         }
 
@@ -200,6 +229,12 @@ namespace FittingRoom
             IClickableMenu.drawTextureBox(b, tab.bounds.X, tab.bounds.Y,
                 tab.bounds.Width, tab.bounds.Height, Color.White);
 
+            // Draw hover effect
+            if (tab.containsPoint(Game1.getMouseX(), Game1.getMouseY()))
+            {
+                b.Draw(Game1.staminaRect, tab.bounds, HoverEffectColor);
+            }
+
             Vector2 labelSize = Game1.smallFont.MeasureString(label);
             Utility.drawTextWithShadow(b, label, Game1.smallFont,
                 new Vector2(
@@ -207,28 +242,6 @@ namespace FittingRoom
                     tab.bounds.Y + (tab.bounds.Height - labelSize.Y) / 2
                 ),
                 textColor);
-        }
-
-        /// <summary>
-        /// Draws a category tab with an item sprite icon.
-        /// </summary>
-        public void DrawTabWithSprite(SpriteBatch b, ClickableComponent tab, Texture2D texture, Rectangle sourceRect, bool isActive, float spriteScale = 2f)
-        {
-            Color boxColor = isActive ? Color.White : Color.White * 0.5f;
-
-            IClickableMenu.drawTextureBox(b, tab.bounds.X, tab.bounds.Y,
-                tab.bounds.Width, tab.bounds.Height, boxColor);
-
-            // Calculate sprite size and position to center it
-            float scaledWidth = sourceRect.Width * spriteScale;
-            float scaledHeight = sourceRect.Height * spriteScale;
-            Vector2 spritePos = new Vector2(
-                tab.bounds.X + (tab.bounds.Width - scaledWidth) / 2,
-                tab.bounds.Y + (tab.bounds.Height - scaledHeight) / 2
-            );
-
-            // Draw the sprite centered in the tab
-            b.Draw(texture, spritePos, sourceRect, Color.White, 0f, Vector2.Zero, spriteScale, SpriteEffects.None, 0.87f);
         }
 
         /// <summary>
@@ -324,7 +337,7 @@ namespace FittingRoom
         }
 
         /// <summary>
-        /// Helper method to draw a text button with label and hover effect (same as tab style).
+        /// Helper method to draw a text button with label and hover effect.
         /// </summary>
         private void DrawTextButton(SpriteBatch b, ClickableComponent button, string label, Color? hoverColor = null)
         {
@@ -332,9 +345,15 @@ namespace FittingRoom
             int mouseY = Game1.getMouseY();
             bool isHovered = button.containsPoint(mouseX, mouseY);
 
-            // Draw button box (same as tabs)
+            // Draw button box
             IClickableMenu.drawTextureBox(b, button.bounds.X, button.bounds.Y,
                 button.bounds.Width, button.bounds.Height, Color.White);
+
+            // Draw hover effect AFTER texture box so it overlays on top
+            if (isHovered)
+            {
+                b.Draw(Game1.staminaRect, button.bounds, hoverColor ?? HoverEffectColor);
+            }
 
             // Draw centered text
             Vector2 textSize = Game1.smallFont.MeasureString(label);
@@ -343,9 +362,7 @@ namespace FittingRoom
                 button.bounds.Y + (button.bounds.Height - textSize.Y) / 2
             );
 
-            // Use hover color if hovering, otherwise default text color
-            Color textColor = (isHovered && hoverColor.HasValue) ? hoverColor.Value : Game1.textColor;
-            Utility.drawTextWithShadow(b, label, Game1.smallFont, textPos, textColor);
+            Utility.drawTextWithShadow(b, label, Game1.smallFont, textPos, Game1.textColor);
         }
 
         /// <summary>
@@ -534,6 +551,82 @@ namespace FittingRoom
         /// <summary>
         /// Cleans up resources used by the UI builder.
         /// </summary>
+        /// <summary>
+        /// Draws the equipped items text (Shirt, Pants, Hat names) below preview.
+        /// </summary>
+        public void DrawEquippedItemsText(SpriteBatch b, string shirtName, string pantsName, string hatName)
+        {
+            int textX = EquippedTextArea.X + TextPadding;
+            int textY = EquippedTextArea.Y + TextPadding;
+
+            // Draw "Equipped:" label
+            Utility.drawTextWithShadow(b, "Equipped:", Game1.smallFont,
+                new Vector2(textX, textY), Game1.textColor);
+
+            // Draw item names with truncation if needed
+            int maxWidth = EquippedTextArea.Width - (TextPadding * 2);
+
+            textY += EquippedTextLineHeight;
+            string shirtText = TruncateText($"Shirt: {shirtName}", maxWidth);
+            Utility.drawTextWithShadow(b, shirtText, Game1.smallFont,
+                new Vector2(textX, textY), Game1.textColor);
+
+            textY += EquippedTextLineHeight;
+            string pantsText = TruncateText($"Pants: {pantsName}", maxWidth);
+            Utility.drawTextWithShadow(b, pantsText, Game1.smallFont,
+                new Vector2(textX, textY), Game1.textColor);
+
+            textY += EquippedTextLineHeight;
+            string hatText = TruncateText($"Hat: {hatName}", maxWidth);
+            Utility.drawTextWithShadow(b, hatText, Game1.smallFont,
+                new Vector2(textX, textY), Game1.textColor);
+        }
+
+        /// <summary>
+        /// Truncates text with ellipsis if it exceeds maxWidth.
+        /// </summary>
+        private string TruncateText(string text, int maxWidth)
+        {
+            if (Game1.smallFont.MeasureString(text).X <= maxWidth)
+                return text;
+
+            while (text.Length > 0 && Game1.smallFont.MeasureString(text + "...").X > maxWidth)
+            {
+                text = text.Substring(0, text.Length - 1);
+            }
+
+            return text + "...";
+        }
+
+        /// <summary>
+        /// Draws the Save button.
+        /// </summary>
+        public void DrawSaveButton(SpriteBatch b)
+        {
+            DrawTextButton(b, SaveButton, TranslationCache.ButtonSave, null);
+        }
+
+        /// <summary>
+        /// Draws the Templates button.
+        /// </summary>
+        public void DrawTemplatesButton(SpriteBatch b)
+        {
+            DrawTextButton(b, TemplatesButton, TranslationCache.ButtonTemplates, null);
+        }
+
+        /// <summary>
+        /// Calculates the width needed for a button based on its text content.
+        /// Uses fixed TabAndButtonWidth unless text requires more space.
+        /// </summary>
+        private int CalculateButtonWidth(string text)
+        {
+            Vector2 textSize = Game1.smallFont.MeasureString(text);
+            int calculatedWidth = (int)textSize.X + TextPadding * 2;
+
+            // Use fixed width unless calculated width exceeds it
+            return Math.Max(TabAndButtonWidth, calculatedWidth);
+        }
+
         public void Cleanup()
         {
             if (farmerRenderTarget != null && !farmerRenderTarget.IsDisposed)
