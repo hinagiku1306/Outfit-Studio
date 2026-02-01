@@ -56,7 +56,7 @@ namespace FittingRoom
                 modPrefixToName[mod.Manifest.UniqueID] = mod.Manifest.Name;
             }
 
-            monitor.Log($"Built mod prefix cache with {modPrefixToName.Count} entries", LogLevel.Debug);
+            DebugLogger.Log($"Built mod prefix cache with {modPrefixToName.Count} entries", LogLevel.Debug);
         }
 
         /// <summary>
@@ -97,7 +97,7 @@ namespace FittingRoom
                 }
             }
 
-            monitor.Log($"Loaded mod mapping for {itemIdToModName.Count} items", LogLevel.Debug);
+            DebugLogger.Log($"Loaded mod mapping for {itemIdToModName.Count} items", LogLevel.Debug);
         }
 
         /// <summary>
@@ -127,7 +127,7 @@ namespace FittingRoom
                 // 3. Try exact ModRegistry lookup first
                 if (modHelper != null && modPrefixToName.TryGetValue(unqualifiedId, out string? exactMatch))
                 {
-                    monitor.Log($"[Exact Match] ID: '{unqualifiedId}' → Filter: '{exactMatch}'", LogLevel.Trace);
+                    DebugLogger.Log($"[Exact Match] ID: '{unqualifiedId}' → Filter: '{exactMatch}'", LogLevel.Trace);
                     return exactMatch;
                 }
 
@@ -159,7 +159,7 @@ namespace FittingRoom
 
                     if (bestMatch != null)
                     {
-                        monitor.Log($"[Prefix Match] ID: '{unqualifiedId}' → Filter: '{bestMatch}'", LogLevel.Trace);
+                        DebugLogger.Log($"[Prefix Match] ID: '{unqualifiedId}' → Filter: '{bestMatch}'", LogLevel.Trace);
                         return bestMatch;
                     }
 
@@ -182,7 +182,7 @@ namespace FittingRoom
                         // If we found exactly one mod with this partial prefix, use it
                         if (candidates.Count == 1)
                         {
-                            monitor.Log($"[Partial Prefix Match] ID: '{unqualifiedId}' → Partial: '{partialPrefix}' → Filter: '{candidates[0].Value}'", LogLevel.Trace);
+                            DebugLogger.Log($"[Partial Prefix Match] ID: '{unqualifiedId}' → Partial: '{partialPrefix}' → Filter: '{candidates[0].Value}'", LogLevel.Trace);
                             return candidates[0].Value;
                         }
 
@@ -220,7 +220,7 @@ namespace FittingRoom
                                         // If both have ver2 or neither have ver2, this is a strong match
                                         if (itemHasVer2 == modHasVer2)
                                         {
-                                            monitor.Log($"[Partial Prefix Match] ID: '{unqualifiedId}' → Matched: '{candidate.Key}' ('{normalizedItemPart}' ~ '{normalizedModPart}', version match) → Filter: '{candidate.Value}'", LogLevel.Trace);
+                                            DebugLogger.Log($"[Partial Prefix Match] ID: '{unqualifiedId}' → Matched: '{candidate.Key}' ('{normalizedItemPart}' ~ '{normalizedModPart}', version match) → Filter: '{candidate.Value}'", LogLevel.Trace);
                                             return candidate.Value;
                                         }
                                     }
@@ -230,12 +230,12 @@ namespace FittingRoom
                             // If we found a third-segment match but no version match, use that match
                             if (thirdSegmentMatch.HasValue)
                             {
-                                monitor.Log($"[Partial Prefix Match] ID: '{unqualifiedId}' → Matched: '{thirdSegmentMatch.Value.Key}' (third segment match, no version preference) → Filter: '{thirdSegmentMatch.Value.Value}'", LogLevel.Trace);
+                                DebugLogger.Log($"[Partial Prefix Match] ID: '{unqualifiedId}' → Matched: '{thirdSegmentMatch.Value.Key}' (third segment match, no version preference) → Filter: '{thirdSegmentMatch.Value.Value}'", LogLevel.Trace);
                                 return thirdSegmentMatch.Value.Value;
                             }
 
                             // No good match found, use first candidate
-                            monitor.Log($"[Partial Prefix Match] ID: '{unqualifiedId}' → Multiple matches, using first: '{candidates[0].Key}' → Filter: '{candidates[0].Value}'", LogLevel.Trace);
+                            DebugLogger.Log($"[Partial Prefix Match] ID: '{unqualifiedId}' → Multiple matches, using first: '{candidates[0].Key}' → Filter: '{candidates[0].Value}'", LogLevel.Trace);
                             return candidates[0].Value;
                         }
                     }
@@ -271,7 +271,7 @@ namespace FittingRoom
                 }
 
                 // 6. Final fallback: use "Other" category
-                monitor.Log($"[Final Fallback] ID: '{unqualifiedId}' → Filter: 'Other'", LogLevel.Trace);
+                DebugLogger.Log($"[Final Fallback] ID: '{unqualifiedId}' → Filter: 'Other'", LogLevel.Trace);
                 return "Other";
             }
             catch (Exception ex)
@@ -300,7 +300,7 @@ namespace FittingRoom
                 string logMsg = string.IsNullOrEmpty(extraLogInfo)
                     ? $"[{context}] ID: '{unqualifiedId}' → ModID: '{modId}' → Filter: '{modName}'"
                     : $"[{context}] ID: '{unqualifiedId}' → {extraLogInfo} → Filter: '{modName}'";
-                monitor.Log(logMsg, LogLevel.Trace);
+                DebugLogger.Log(logMsg, LogLevel.Trace);
                 return modName;
             }
             return null;
@@ -320,7 +320,7 @@ namespace FittingRoom
             string logMsg = string.IsNullOrEmpty(extraLogInfo)
                 ? $"[{context}] ID: '{unqualifiedId}' → Filter: '{detectedName}'"
                 : $"[{context}] ID: '{unqualifiedId}' → {extraLogInfo} → Filter: '{detectedName}'";
-            monitor.Log(logMsg, LogLevel.Trace);
+            DebugLogger.Log(logMsg, LogLevel.Trace);
             return detectedName;
         }
 

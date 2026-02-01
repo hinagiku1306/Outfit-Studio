@@ -20,6 +20,9 @@ namespace FittingRoom
         {
             config = helper.ReadConfig<ModConfig>();
 
+            // Initialize debug logger early
+            DebugLogger.Initialize(Monitor, config);
+
             // Initialize translation cache early to avoid repeated I/O calls
             TranslationCache.Initialize(helper.Translation);
 

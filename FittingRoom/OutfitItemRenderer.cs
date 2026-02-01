@@ -181,7 +181,7 @@ namespace FittingRoom
             string modDisplayText = modName != UNKNOWN && modName != modSource
                 ? $"'{modName}' ({modSource})"
                 : $"'{modSource}'";
-            monitor.Log($"Skipped missing item: {itemType} '{itemName}' (ID: {itemId}) from mod {modDisplayText} - {reason}", LogLevel.Trace);
+            DebugLogger.Log($"Skipped missing item: {itemType} '{itemName}' (ID: {itemId}) from mod {modDisplayText} - {reason}", LogLevel.Trace);
         }
 
         /// <summary>
