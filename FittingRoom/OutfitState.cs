@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using StardewValley;
 using StardewValley.Objects;
 
@@ -27,8 +28,8 @@ namespace FittingRoom
         // Scroll position (row offset in the grid)
         private int scrollOffset = 0;
 
-        // Current mod filter (null = no filter active)
-        private string? currentModFilter = null;
+        // Mod filters per category (null = no filter active for that category)
+        private readonly Dictionary<OutfitCategoryManager.Category, string?> modFilters = new();
 
         /// <summary>Gets or sets the current shirt index.</summary>
         public int ShirtIndex
@@ -58,11 +59,16 @@ namespace FittingRoom
             set => scrollOffset = Math.Max(0, value);
         }
 
-        /// <summary>Gets or sets the current mod filter. Null means no filter is active.</summary>
-        public string? CurrentModFilter
+        /// <summary>Gets the mod filter for the specified category. Null means no filter is active.</summary>
+        public string? GetModFilter(OutfitCategoryManager.Category category)
         {
-            get => currentModFilter;
-            set => currentModFilter = value;
+            return modFilters.TryGetValue(category, out var filter) ? filter : null;
+        }
+
+        /// <summary>Sets the mod filter for the specified category. Null means no filter is active.</summary>
+        public void SetModFilter(OutfitCategoryManager.Category category, string? filter)
+        {
+            modFilters[category] = filter;
         }
 
         /// <summary>Gets the original shirt ID.</summary>

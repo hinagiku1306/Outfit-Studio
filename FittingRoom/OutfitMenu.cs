@@ -18,22 +18,15 @@ namespace FittingRoom
         private readonly OutfitItemRenderer itemRenderer;
         private readonly OutfitState state;
         private readonly OutfitUIBuilder uiBuilder;
+        private readonly OutfitDropdownManager dropdownManager;
+        private readonly OutfitTooltipRenderer tooltipRenderer;
+        private readonly ContinuousScrollHandler continuousScrollHandler;
 
         // Reference to mod (for config if needed)
         private readonly ModEntry mod;
 
-        // Dropdown filter state
-        private bool dropdownOpen = false;
-        private List<ClickableComponent> dropdownOptions = new();
-
         // Item info toggle state
         private bool showItemInfo = false;
-
-        // Scroll hold state for continuous scrolling
-        private int scrollHoldTimer = 0;
-        private int lastScrollTime = 0;
-        private const int ScrollHoldDelay = 100;
-        private const int InitialScrollDelay = 400;
 
         public OutfitMenu(ModEntry mod, OutfitCategoryManager categoryManager, OutfitFilterManager filterManager, bool showItemInfo = false)
         {
@@ -50,6 +43,9 @@ namespace FittingRoom
             itemRenderer = new OutfitItemRenderer(mod.Monitor, mod.Helper.ModRegistry);
             state = new OutfitState();
             uiBuilder = new OutfitUIBuilder();
+            dropdownManager = new OutfitDropdownManager(filterManager, categoryManager, state, uiBuilder);
+            tooltipRenderer = new OutfitTooltipRenderer(filterManager, categoryManager);
+            continuousScrollHandler = new ContinuousScrollHandler(initialDelay: 400, repeatDelay: 100);
 
             // Set menu dimensions from UI builder
             width = uiBuilder.Width;
@@ -83,6 +79,11 @@ namespace FittingRoom
             int maxScroll = Math.Max(0, totalRows - uiBuilder.VISIBLE_ROWS);
             if (state.ScrollOffset > maxScroll)
                 state.ScrollOffset = maxScroll;
+
+            if (dropdownManager.IsOpen)
+            {
+                dropdownManager.BuildOptions();
+            }
         }
 
         // --- Helper methods for readability ---
@@ -92,13 +93,13 @@ namespace FittingRoom
             categoryManager.ShirtIds,
             categoryManager.PantsIds,
             categoryManager.HatIds,
-            state.CurrentModFilter);
+            state.GetModFilter(categoryManager.CurrentCategory));
         private int GetCurrentIndex() => state.GetCurrentIndex(categoryManager.CurrentCategory);
         private void SetCurrentIndex(int index) => state.SetCurrentIndex(categoryManager.CurrentCategory, index);
 
-        private List<string> GetCurrentShirtIds() => filterManager.GetFilteredShirtIds(categoryManager.ShirtIds, state.CurrentModFilter);
-        private List<string> GetCurrentPantsIds() => filterManager.GetFilteredPantsIds(categoryManager.PantsIds, state.CurrentModFilter);
-        private List<string> GetCurrentHatIds() => filterManager.GetFilteredHatIds(categoryManager.HatIds, state.CurrentModFilter);
+        private List<string> GetCurrentShirtIds() => filterManager.GetFilteredShirtIds(categoryManager.ShirtIds, state.GetModFilter(OutfitCategoryManager.Category.Shirts));
+        private List<string> GetCurrentPantsIds() => filterManager.GetFilteredPantsIds(categoryManager.PantsIds, state.GetModFilter(OutfitCategoryManager.Category.Pants));
+        private List<string> GetCurrentHatIds() => filterManager.GetFilteredHatIds(categoryManager.HatIds, state.GetModFilter(OutfitCategoryManager.Category.Hats));
 
         private void ApplyCurrentSelection()
         {
@@ -137,48 +138,42 @@ namespace FittingRoom
             base.receiveLeftClick(x, y, playSound);
 
             // Handle dropdown option clicks
-            if (dropdownOpen)
+            if (dropdownManager.IsOpen)
             {
-                for (int i = 0; i < dropdownOptions.Count; i++)
+                string? selectedMod = dropdownManager.HandleClick(x, y, out bool clickedOption);
+                if (clickedOption)
                 {
-                    if (dropdownOptions[i].containsPoint(x, y))
-                    {
-                        string selectedMod = dropdownOptions[i].name;
-                        if (selectedMod == TranslationCache.FilterAll)
-                        {
-                            state.CurrentModFilter = null;
-                        }
-                        else
-                        {
-                            state.CurrentModFilter = selectedMod;
-                        }
-                        state.ScrollOffset = 0;
-                        dropdownOpen = false;
-                        if (playSound) Game1.playSound("smallSelect");
-                        return;
-                    }
+                    state.SetModFilter(categoryManager.CurrentCategory, selectedMod);
+                    state.ScrollOffset = 0;
+                    if (playSound) Game1.playSound("smallSelect");
+                    return;
                 }
                 // Clicked outside dropdown, close it
-                dropdownOpen = false;
+                dropdownManager.Close();
+                continuousScrollHandler.Reset(); // Reset scroll state when closing dropdown
                 return;
             }
 
             // Handle dropdown button click
             if (uiBuilder.ModFilterDropdown != null && uiBuilder.ModFilterDropdown.containsPoint(x, y))
             {
-                ToggleDropdown();
+                dropdownManager.Toggle();
+                continuousScrollHandler.Reset(); // Reset scroll state when toggling dropdown
                 if (playSound) Game1.playSound("smallSelect");
                 return;
             }
 
-            // Category tabs (reset filter when switching to a different category)
+            // Category tabs
             if (uiBuilder.ShirtsTab.containsPoint(x, y))
             {
                 if (categoryManager.CurrentCategory != OutfitCategoryManager.Category.Shirts)
                 {
                     categoryManager.CurrentCategory = OutfitCategoryManager.Category.Shirts;
                     state.ScrollOffset = 0;
-                    state.CurrentModFilter = null;
+                    if (mod.GetConfig().ResetFilterOnTabSwitch)
+                    {
+                        state.SetModFilter(categoryManager.CurrentCategory, null);
+                    }
                     if (playSound) Game1.playSound("smallSelect");
                 }
                 return;
@@ -189,7 +184,10 @@ namespace FittingRoom
                 {
                     categoryManager.CurrentCategory = OutfitCategoryManager.Category.Pants;
                     state.ScrollOffset = 0;
-                    state.CurrentModFilter = null;
+                    if (mod.GetConfig().ResetFilterOnTabSwitch)
+                    {
+                        state.SetModFilter(categoryManager.CurrentCategory, null);
+                    }
                     if (playSound) Game1.playSound("smallSelect");
                 }
                 return;
@@ -200,7 +198,10 @@ namespace FittingRoom
                 {
                     categoryManager.CurrentCategory = OutfitCategoryManager.Category.Hats;
                     state.ScrollOffset = 0;
-                    state.CurrentModFilter = null;
+                    if (mod.GetConfig().ResetFilterOnTabSwitch)
+                    {
+                        state.SetModFilter(categoryManager.CurrentCategory, null);
+                    }
                     if (playSound) Game1.playSound("smallSelect");
                 }
                 return;
@@ -253,6 +254,17 @@ namespace FittingRoom
         {
             base.receiveScrollWheelAction(direction);
 
+            // Handle dropdown scrolling if open (block item grid scrolling when dropdown is open)
+            if (dropdownManager.IsOpen)
+            {
+                if (dropdownManager.HandleScrollWheel(direction))
+                {
+                    Game1.playSound("shiny4");
+                }
+                return; // Always consume scroll events when dropdown is open
+            }
+
+            // Original item grid scrolling logic
             int totalRows = Math.Max(1, (int)Math.Ceiling(GetCurrentListCount() / (float)uiBuilder.COLUMNS));
             int maxScroll = Math.Max(0, totalRows - uiBuilder.VISIBLE_ROWS);
             if (direction > 0 && state.ScrollOffset > 0)
@@ -269,6 +281,19 @@ namespace FittingRoom
 
         public override void receiveKeyPress(Keys key)
         {
+            // Handle dropdown scrolling when dropdown is open
+            bool wasDropdownOpen = dropdownManager.IsOpen;
+            if (dropdownManager.HandleKeyPress(key))
+            {
+                // Reset scroll state if dropdown was just closed (e.g., via Escape key)
+                if (wasDropdownOpen && !dropdownManager.IsOpen)
+                {
+                    continuousScrollHandler.Reset();
+                }
+                Game1.playSound("shiny4");
+                return;
+            }
+
             // Handle scrolling with arrow keys and WASD
             int totalRows = Math.Max(1, (int)Math.Ceiling(GetCurrentListCount() / (float)uiBuilder.COLUMNS));
             int maxScroll = Math.Max(0, totalRows - uiBuilder.VISIBLE_ROWS);
@@ -328,59 +353,6 @@ namespace FittingRoom
             base.receiveKeyPress(key);
         }
 
-        private void ToggleDropdown()
-        {
-            dropdownOpen = !dropdownOpen;
-
-            if (dropdownOpen)
-            {
-                BuildDropdownOptions();
-            }
-        }
-
-        private void BuildDropdownOptions()
-        {
-            dropdownOptions.Clear();
-
-            if (uiBuilder.ModFilterDropdown == null)
-                return;
-
-            // Get unique mods for current category
-            var mods = filterManager.GetUniqueModsForCategory(
-                categoryManager.CurrentCategory,
-                categoryManager.ShirtIds,
-                categoryManager.PantsIds,
-                categoryManager.HatIds);
-
-            mods.Insert(0, TranslationCache.FilterAll);
-
-            // Move "Vanilla" filter to position 1 (right after "All")
-            string vanillaFilter = TranslationCache.FilterVanilla;
-            int vanillaIndex = mods.IndexOf(vanillaFilter);
-            if (vanillaIndex > 1) // Only move if it's not already at position 1
-            {
-                mods.RemoveAt(vanillaIndex);
-                mods.Insert(1, vanillaFilter);
-            }
-
-            // Build clickable options
-            int optionHeight = 32;
-            int dropdownY = uiBuilder.ModFilterDropdown.bounds.Bottom;
-
-            for (int i = 0; i < mods.Count; i++)
-            {
-                dropdownOptions.Add(new ClickableComponent(
-                    new Rectangle(
-                        uiBuilder.ModFilterDropdown.bounds.X,
-                        dropdownY + (i * optionHeight),
-                        uiBuilder.ModFilterDropdown.bounds.Width,
-                        optionHeight
-                    ),
-                    mods[i]
-                ));
-            }
-        }
-
         public override void update(GameTime time)
         {
             base.update(time);
@@ -396,75 +368,32 @@ namespace FittingRoom
             }
 
             // Handle continuous scrolling when keys are held down
-            var keyboard = Keyboard.GetState();
-            int totalRows = Math.Max(1, (int)Math.Ceiling(GetCurrentListCount() / (float)uiBuilder.COLUMNS));
-            int maxScroll = Math.Max(0, totalRows - uiBuilder.VISIBLE_ROWS);
-
-            bool scrollKeyHeld = false;
-            int scrollDirection = 0; // -1 for up, 1 for down
-
-            // Check if any scroll keys are held
-            if (keyboard.IsKeyDown(Keys.Up) || keyboard.IsKeyDown(Keys.W))
+            int scrollAmount = continuousScrollHandler.Update(time, uiBuilder.VISIBLE_ROWS, out bool shouldPlaySound);
+            if (scrollAmount != 0)
             {
-                scrollKeyHeld = true;
-                scrollDirection = -1;
-            }
-            else if (keyboard.IsKeyDown(Keys.Down) || keyboard.IsKeyDown(Keys.S))
-            {
-                scrollKeyHeld = true;
-                scrollDirection = 1;
-            }
-            else if (keyboard.IsKeyDown(Keys.Left) || keyboard.IsKeyDown(Keys.A))
-            {
-                scrollKeyHeld = true;
-                scrollDirection = -uiBuilder.VISIBLE_ROWS; // Page up
-            }
-            else if (keyboard.IsKeyDown(Keys.Right) || keyboard.IsKeyDown(Keys.D))
-            {
-                scrollKeyHeld = true;
-                scrollDirection = uiBuilder.VISIBLE_ROWS; // Page down
-            }
-
-            if (scrollKeyHeld)
-            {
-                scrollHoldTimer += (int)time.ElapsedGameTime.TotalMilliseconds;
-
-                // Only start continuous scrolling after initial delay (to avoid double-trigger with receiveKeyPress)
-                if (scrollHoldTimer >= InitialScrollDelay)
+                if (dropdownManager.IsOpen)
                 {
-                    // Check if enough time has passed since last scroll
-                    int timeSinceLastScroll = scrollHoldTimer - lastScrollTime;
-                    if (timeSinceLastScroll >= ScrollHoldDelay)
+                    // Scroll dropdown when it's open
+                    if (dropdownManager.HandleScrollAmount(scrollAmount))
                     {
-                        // Apply scroll based on direction
-                        if (scrollDirection < 0) // Scroll up
-                        {
-                            int newOffset = state.ScrollOffset + scrollDirection;
-                            if (newOffset >= 0 && newOffset != state.ScrollOffset)
-                            {
-                                state.ScrollOffset = Math.Max(0, newOffset);
-                                lastScrollTime = scrollHoldTimer;
-                                Game1.playSound("shiny4");
-                            }
-                        }
-                        else if (scrollDirection > 0) // Scroll down
-                        {
-                            int newOffset = state.ScrollOffset + scrollDirection;
-                            if (newOffset <= maxScroll && newOffset != state.ScrollOffset)
-                            {
-                                state.ScrollOffset = Math.Min(maxScroll, newOffset);
-                                lastScrollTime = scrollHoldTimer;
-                                Game1.playSound("shiny4");
-                            }
-                        }
+                        if (shouldPlaySound) Game1.playSound("shiny4");
                     }
                 }
-            }
-            else
-            {
-                // Reset timers when no scroll keys are held
-                scrollHoldTimer = 0;
-                lastScrollTime = 0;
+                else
+                {
+                    // Scroll item grid when dropdown is closed
+                    int totalRows = Math.Max(1, (int)Math.Ceiling(GetCurrentListCount() / (float)uiBuilder.COLUMNS));
+                    int maxScroll = Math.Max(0, totalRows - uiBuilder.VISIBLE_ROWS);
+
+                    int newOffset = state.ScrollOffset + scrollAmount;
+                    newOffset = Math.Clamp(newOffset, 0, maxScroll);
+
+                    if (newOffset != state.ScrollOffset)
+                    {
+                        state.ScrollOffset = newOffset;
+                        if (shouldPlaySound) Game1.playSound("shiny4");
+                    }
+                }
             }
         }
 
@@ -498,7 +427,7 @@ namespace FittingRoom
                 categoryManager.CurrentCategory == OutfitCategoryManager.Category.Hats);
 
             // Draw mod filter dropdown
-            uiBuilder.DrawModFilterDropdown(b, state.CurrentModFilter, dropdownOpen);
+            uiBuilder.DrawModFilterDropdown(b, state.GetModFilter(categoryManager.CurrentCategory), dropdownManager.IsOpen);
 
             // Draw item list background and scroll buttons
             uiBuilder.DrawItemList(b, state.ScrollOffset, GetCurrentListCount());
@@ -542,13 +471,13 @@ namespace FittingRoom
             uiBuilder.DrawCloseButton(b);
 
             // Set hand cursor when hovering over clickable elements
-            if (uiBuilder.IsHoveringClickable(Game1.getMouseX(), Game1.getMouseY()) || dropdownOpen)
+            if (uiBuilder.IsHoveringClickable(Game1.getMouseX(), Game1.getMouseY()) || dropdownManager.IsOpen)
             {
                 Game1.mouseCursor = 1;
             }
 
             // Draw dropdown options if open (AFTER everything else, on top)
-            if (dropdownOpen)
+            if (dropdownManager.IsOpen)
             {
                 DrawDropdownOptions(b);
             }
@@ -556,7 +485,8 @@ namespace FittingRoom
             // Draw item info tooltip if toggle is active and hovering (AFTER everything else, on top)
             if (showItemInfo && hoveredIndex >= 0)
             {
-                DrawItemTooltip(b, hoveredIndex);
+                tooltipRenderer.DrawTooltip(b, hoveredIndex,
+                    GetCurrentShirtIds(), GetCurrentPantsIds(), GetCurrentHatIds());
             }
 
             // Draw cursor (must be last)
@@ -565,137 +495,70 @@ namespace FittingRoom
 
         private void DrawDropdownOptions(SpriteBatch b)
         {
-            if (dropdownOptions.Count == 0)
+            if (dropdownManager.Options.Count == 0 || uiBuilder.ModFilterDropdown == null)
                 return;
 
             int mouseX = Game1.getMouseX();
             int mouseY = Game1.getMouseY();
 
-            // Calculate total dropdown height
-            int totalHeight = dropdownOptions.Count * dropdownOptions[0].bounds.Height;
-            int dropdownX = dropdownOptions[0].bounds.X;
-            int dropdownY = dropdownOptions[0].bounds.Y;
-            int dropdownWidth = dropdownOptions[0].bounds.Width;
+            // Calculate total dropdown height based on VISIBLE items
+            int visibleCount = dropdownManager.Options.Count(opt => opt.visible);
+            if (visibleCount == 0)
+                return;
 
-            // Draw dropdown background
-            IClickableMenu.drawTextureBox(b, dropdownX, dropdownY, dropdownWidth, totalHeight, Color.White);
+            // Get dropdown position from the dropdown button (not from options, which can have negative Y)
+            int totalHeight = visibleCount * dropdownManager.Options[0].bounds.Height;
+            int dropdownX = uiBuilder.ModFilterDropdown.bounds.X;
+            int dropdownY = uiBuilder.ModFilterDropdown.bounds.Bottom;
+            int dropdownWidth = uiBuilder.ModFilterDropdown.bounds.Width;
 
-            // Draw each option
-            foreach (var option in dropdownOptions)
+            // Draw dropdown background (simple solid color box like CJB Item Spawner)
+            var bgColor = new Color(224, 203, 169); // Tan menu background color
+            b.Draw(Game1.staminaRect, new Rectangle(dropdownX, dropdownY, dropdownWidth, totalHeight), bgColor);
+
+            // Draw border
+            var borderColor = Color.Black * 0.5f;
+            int borderWidth = 2;
+            b.Draw(Game1.staminaRect, new Rectangle(dropdownX, dropdownY, dropdownWidth, borderWidth), borderColor); // Top
+            b.Draw(Game1.staminaRect, new Rectangle(dropdownX, dropdownY + totalHeight - borderWidth, dropdownWidth, borderWidth), borderColor); // Bottom
+            b.Draw(Game1.staminaRect, new Rectangle(dropdownX, dropdownY, borderWidth, totalHeight), borderColor); // Left
+            b.Draw(Game1.staminaRect, new Rectangle(dropdownX + dropdownWidth - borderWidth, dropdownY, borderWidth, totalHeight), borderColor); // Right
+
+            // Draw each VISIBLE option
+            foreach (var option in dropdownManager.Options.Where(opt => opt.visible))
             {
                 bool isHovered = option.containsPoint(mouseX, mouseY);
 
                 // Draw hover highlight
                 if (isHovered)
                 {
-                    b.Draw(Game1.staminaRect, option.bounds, Color.Wheat * 0.5f);
+                    b.Draw(Game1.staminaRect, option.bounds, Color.Wheat * 0.3f);
+                }
+
+                // Truncate text with ellipsis if too long
+                string displayText = option.name;
+                Vector2 textSize = Game1.smallFont.MeasureString(displayText);
+                int maxTextWidth = option.bounds.Width - 24; // 12px padding on each side
+
+                if (textSize.X > maxTextWidth)
+                {
+                    // Truncate and add ellipsis
+                    while (textSize.X > maxTextWidth && displayText.Length > 3)
+                    {
+                        displayText = displayText.Substring(0, displayText.Length - 1);
+                        textSize = Game1.smallFont.MeasureString(displayText + "...");
+                    }
+                    displayText += "...";
                 }
 
                 // Draw option text
-                Vector2 textSize = Game1.smallFont.MeasureString(option.name);
                 Vector2 textPos = new Vector2(
                     option.bounds.X + 12,
-                    option.bounds.Y + 12 + (option.bounds.Height - textSize.Y) / 2
+                    option.bounds.Y + (option.bounds.Height - textSize.Y) / 2
                 );
 
-                Utility.drawTextWithShadow(b, option.name, Game1.smallFont, textPos,
+                Utility.drawTextWithShadow(b, displayText, Game1.smallFont, textPos,
                     isHovered ? Color.Black : Game1.textColor);
-            }
-        }
-
-        private void DrawItemTooltip(SpriteBatch b, int listIndex)
-        {
-            string itemName = "";
-            string description = "";
-            string modName = "";
-            Item? actualItem = null;
-
-            // Get item data
-            switch (categoryManager.CurrentCategory)
-            {
-                case OutfitCategoryManager.Category.Shirts:
-                    var shirtIds = GetCurrentShirtIds();
-                    if (listIndex >= 0 && listIndex < shirtIds.Count)
-                    {
-                        string id = shirtIds[listIndex];
-                        string qualifiedId = "(S)" + id;
-                        actualItem = ItemRegistry.Create(qualifiedId);
-                        if (actualItem != null)
-                        {
-                            itemName = actualItem.DisplayName;
-                            description = actualItem.getDescription();
-                        }
-                        modName = filterManager.GetModNameForItem(id);
-                    }
-                    break;
-
-                case OutfitCategoryManager.Category.Pants:
-                    var pantsIds = GetCurrentPantsIds();
-                    if (listIndex >= 0 && listIndex < pantsIds.Count)
-                    {
-                        string id = pantsIds[listIndex];
-                        string qualifiedId = "(P)" + id;
-                        actualItem = ItemRegistry.Create(qualifiedId);
-                        if (actualItem != null)
-                        {
-                            itemName = actualItem.DisplayName;
-                            description = actualItem.getDescription();
-                        }
-                        modName = filterManager.GetModNameForItem(id);
-                    }
-                    break;
-
-                case OutfitCategoryManager.Category.Hats:
-                    var hatIds = GetCurrentHatIds();
-                    if (listIndex >= 0 && listIndex < hatIds.Count)
-                    {
-                        string hatId = hatIds[listIndex];
-                        if (!string.IsNullOrEmpty(hatId) && hatId != "-1")
-                        {
-                            string qualifiedId = "(H)" + hatId;
-                            actualItem = ItemRegistry.Create(qualifiedId);
-                            if (actualItem != null)
-                            {
-                                itemName = actualItem.DisplayName;
-                                description = actualItem.getDescription();
-                            }
-                            modName = filterManager.GetModNameForHat(hatId);
-                        }
-                        else
-                        {
-                            itemName = TranslationCache.ItemNoHat;
-                            description = "";
-                        }
-                    }
-                    break;
-            }
-
-            // Draw using vanilla hover text method (for proper formatting with divider)
-            if (actualItem != null)
-            {
-                // Append mod name to description if present (skip vanilla items)
-                string fullDescription = description;
-                if (!string.IsNullOrEmpty(modName) && modName != TranslationCache.FilterVanilla)
-                {
-                    fullDescription += "\n\n" + TranslationCache.ItemModInfoTemplate.Replace("{{modName}}", modName);
-                }
-
-                // Use the vanilla drawHoverText that includes name, divider, and description
-                IClickableMenu.drawHoverText(b, fullDescription, Game1.smallFont, 0, 0, -1, itemName, -1, null, actualItem);
-            }
-            else if (!string.IsNullOrEmpty(itemName))
-            {
-                // Fallback for items without actual item instance (like No Hat)
-                string hoverText = itemName;
-                if (!string.IsNullOrEmpty(description))
-                {
-                    hoverText += "\n" + description;
-                }
-                if (!string.IsNullOrEmpty(modName) && modName != TranslationCache.FilterVanilla)
-                {
-                    hoverText += "\n\n" + TranslationCache.ItemModInfoTemplate.Replace("{{modName}}", modName);
-                }
-                IClickableMenu.drawToolTip(b, hoverText, "", null);
             }
         }
     }

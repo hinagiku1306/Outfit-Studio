@@ -152,9 +152,9 @@ namespace FittingRoom
                 4f
             );
 
-            // Mod filter dropdown (positioned above the menu, no overlapping)
-            int dropdownWidth = gridWidth / 2; // Half the grid width
-            int dropdownHeight = TabAndButtonHeight; // Match category tab height
+            // Mod filter dropdown
+            int dropdownWidth = (int) (Width * 0.4);
+            int dropdownHeight = TabAndButtonHeight;
             int dropdownX = rightPanelX;
             int dropdownY = Y - dropdownHeight - ContentBoxPadding; // Above the menu
 
@@ -189,15 +189,6 @@ namespace FittingRoom
         /// </summary>
         public void DrawTabWithSprite(SpriteBatch b, ClickableComponent tab, Texture2D texture, Rectangle sourceRect, bool isActive, float spriteScale = 2f)
         {
-            int mouseX = Game1.getMouseX();
-            int mouseY = Game1.getMouseY();
-            bool isHovered = tab.containsPoint(mouseX, mouseY);
-
-            if (isHovered)
-            {
-                Game1.mouseCursor = 1; // Hand cursor
-            }
-
             Color boxColor = isActive ? Color.White : Color.White * 0.5f;
 
             IClickableMenu.drawTextureBox(b, tab.bounds.X, tab.bounds.Y,
@@ -292,12 +283,6 @@ namespace FittingRoom
             int mouseX = Game1.getMouseX();
             int mouseY = Game1.getMouseY();
             bool isHovered = button.containsPoint(mouseX, mouseY);
-
-            // Change cursor when hovering
-            if (isHovered)
-            {
-                Game1.mouseCursor = 1; // Hand cursor
-            }
 
             // Draw button box (same as tabs)
             IClickableMenu.drawTextureBox(b, button.bounds.X, button.bounds.Y,
@@ -428,16 +413,17 @@ namespace FittingRoom
 
             // Draw dropdown button background
             IClickableMenu.drawTextureBox(b, bounds.X, bounds.Y, bounds.Width, bounds.Height,
-                isHovered || isOpen ? Color.Wheat : Color.White);
+                isOpen ? Color.Wheat : Color.White);
 
             // Draw current selection text
             string displayText = string.IsNullOrEmpty(currentFilter) ? TranslationCache.FilterAll : $"{currentFilter}";
 
             // Truncate text if too long
             Vector2 textSize = Game1.smallFont.MeasureString(displayText);
-            if (textSize.X > bounds.Width - 40)
+            int maxTextWidth = bounds.Width - 48;
+            if (textSize.X > maxTextWidth)
             {
-                while (textSize.X > bounds.Width - 40 && displayText.Length > 10)
+                while (textSize.X > maxTextWidth && displayText.Length > 10)
                 {
                     displayText = displayText.Substring(0, displayText.Length - 1);
                     textSize = Game1.smallFont.MeasureString(displayText + "...");
@@ -446,16 +432,11 @@ namespace FittingRoom
             }
 
             Vector2 textPos = new Vector2(
-                bounds.X + 12,
+                bounds.X + 20, // Increased left padding for better spacing
                 bounds.Y + (bounds.Height - textSize.Y) / 2
             );
 
             Utility.drawTextWithShadow(b, displayText, Game1.smallFont, textPos, Game1.textColor);
-
-            if (isHovered)
-            {
-                Game1.mouseCursor = 1; // Hand cursor
-            }
         }
 
         /// <summary>
