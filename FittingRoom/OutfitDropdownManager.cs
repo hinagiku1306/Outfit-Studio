@@ -26,7 +26,7 @@ namespace FittingRoom
         private int dropdownMaxVisibleItems = 0;
 
         // Constants
-        private const int MaxVisibleOptions = 7;
+        private const int MaxVisibleOptions = 5;
         private const int OptionVerticalPadding = 8; // Padding above and below text
 
         /// <summary>

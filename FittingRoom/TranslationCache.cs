@@ -31,6 +31,10 @@ namespace FittingRoom
         public static string ConfigToggleMenuKeyTooltip { get; private set; } = "";
         public static string ConfigToggleItemInfoKeyName { get; private set; } = "";
         public static string ConfigToggleItemInfoKeyTooltip { get; private set; } = "";
+        public static string ConfigResetFilterOnTabSwitchName { get; private set; } = "";
+        public static string ConfigResetFilterOnTabSwitchTooltip { get; private set; } = "";
+        public static string ConfigResetSearchOnTabSwitchName { get; private set; } = "";
+        public static string ConfigResetSearchOnTabSwitchTooltip { get; private set; } = "";
 
         /// <summary>
         /// Initialize all translations from the translation helper.
@@ -57,6 +61,10 @@ namespace FittingRoom
             ConfigToggleMenuKeyTooltip = i18n.Get("config.toggle-menu-key.tooltip");
             ConfigToggleItemInfoKeyName = i18n.Get("config.toggle-item-info-key.name");
             ConfigToggleItemInfoKeyTooltip = i18n.Get("config.toggle-item-info-key.tooltip");
+            ConfigResetFilterOnTabSwitchName = i18n.Get("config.reset-filter-on-tab-switch.name");
+            ConfigResetFilterOnTabSwitchTooltip = i18n.Get("config.reset-filter-on-tab-switch.tooltip");
+            ConfigResetSearchOnTabSwitchName = i18n.Get("config.reset-search-on-tab-switch.name");
+            ConfigResetSearchOnTabSwitchTooltip = i18n.Get("config.reset-search-on-tab-switch.tooltip");
         }
     }
 }

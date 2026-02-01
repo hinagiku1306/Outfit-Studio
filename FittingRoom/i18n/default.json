@@ -17,5 +17,9 @@
     "config.toggle-menu-key.name": "Toggle Menu Key",
     "config.toggle-menu-key.tooltip": "Press this key to open/close the menu.",
     "config.toggle-item-info-key.name": "Toggle Item Info Key",
-    "config.toggle-item-info-key.tooltip": "Press this key while in the menu to toggle item information display."
+    "config.toggle-item-info-key.tooltip": "Press this key while in the menu to toggle item information display.",
+    "config.reset-filter-on-tab-switch.name": "Reset Filter on Tab Switch",
+    "config.reset-filter-on-tab-switch.tooltip": "If enabled, the filter will be cleared when switching between Clothing tabs.",
+    "config.reset-search-on-tab-switch.name": "Reset Search on Tab Switch",
+    "config.reset-search-on-tab-switch.tooltip": "If enabled, the search text will be cleared when switching between Clothing tabs."
 }

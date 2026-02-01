@@ -19,6 +19,7 @@ namespace FittingRoom
         private readonly OutfitState state;
         private readonly OutfitUIBuilder uiBuilder;
         private readonly OutfitDropdownManager dropdownManager;
+        private readonly OutfitSearchManager searchManager;
         private readonly OutfitTooltipRenderer tooltipRenderer;
         private readonly ContinuousScrollHandler continuousScrollHandler;
 
@@ -44,6 +45,7 @@ namespace FittingRoom
             state = new OutfitState();
             uiBuilder = new OutfitUIBuilder();
             dropdownManager = new OutfitDropdownManager(filterManager, categoryManager, state, uiBuilder);
+            searchManager = new OutfitSearchManager(uiBuilder, state);
             tooltipRenderer = new OutfitTooltipRenderer(filterManager, categoryManager);
             continuousScrollHandler = new ContinuousScrollHandler(initialDelay: 400, repeatDelay: 100);
 
@@ -67,6 +69,7 @@ namespace FittingRoom
 
             // Recalculate UI positions for new window size
             uiBuilder.Recalculate();
+            searchManager.UpdateBounds();
 
             // Update menu dimensions from UI builder
             width = uiBuilder.Width;
@@ -88,18 +91,32 @@ namespace FittingRoom
 
         // --- Helper methods for readability ---
 
-        private int GetCurrentListCount() => filterManager.GetFilteredListCount(
-            categoryManager.CurrentCategory,
-            categoryManager.ShirtIds,
-            categoryManager.PantsIds,
-            categoryManager.HatIds,
-            state.GetModFilter(categoryManager.CurrentCategory));
+        private int GetCurrentListCount()
+        {
+            var category = categoryManager.CurrentCategory;
+            return category switch
+            {
+                OutfitCategoryManager.Category.Shirts => GetCurrentShirtIds().Count,
+                OutfitCategoryManager.Category.Pants => GetCurrentPantsIds().Count,
+                OutfitCategoryManager.Category.Hats => GetCurrentHatIds().Count,
+                _ => 0
+            };
+        }
         private int GetCurrentIndex() => state.GetCurrentIndex(categoryManager.CurrentCategory);
         private void SetCurrentIndex(int index) => state.SetCurrentIndex(categoryManager.CurrentCategory, index);
 
-        private List<string> GetCurrentShirtIds() => filterManager.GetFilteredShirtIds(categoryManager.ShirtIds, state.GetModFilter(OutfitCategoryManager.Category.Shirts));
-        private List<string> GetCurrentPantsIds() => filterManager.GetFilteredPantsIds(categoryManager.PantsIds, state.GetModFilter(OutfitCategoryManager.Category.Pants));
-        private List<string> GetCurrentHatIds() => filterManager.GetFilteredHatIds(categoryManager.HatIds, state.GetModFilter(OutfitCategoryManager.Category.Hats));
+        private List<string> GetCurrentShirtIds() => filterManager.GetFilteredAndSearchedShirtIds(
+            categoryManager.ShirtIds,
+            state.GetModFilter(OutfitCategoryManager.Category.Shirts),
+            state.GetSearchText(OutfitCategoryManager.Category.Shirts));
+        private List<string> GetCurrentPantsIds() => filterManager.GetFilteredAndSearchedPantsIds(
+            categoryManager.PantsIds,
+            state.GetModFilter(OutfitCategoryManager.Category.Pants),
+            state.GetSearchText(OutfitCategoryManager.Category.Pants));
+        private List<string> GetCurrentHatIds() => filterManager.GetFilteredAndSearchedHatIds(
+            categoryManager.HatIds,
+            state.GetModFilter(OutfitCategoryManager.Category.Hats),
+            state.GetSearchText(OutfitCategoryManager.Category.Hats));
 
         private void ApplyCurrentSelection()
         {
@@ -144,6 +161,7 @@ namespace FittingRoom
                 if (clickedOption)
                 {
                     state.SetModFilter(categoryManager.CurrentCategory, selectedMod);
+                    state.SetSearchText(categoryManager.CurrentCategory, searchManager.CurrentSearchText);
                     state.ScrollOffset = 0;
                     if (playSound) Game1.playSound("smallSelect");
                     return;
@@ -170,10 +188,23 @@ namespace FittingRoom
                 {
                     categoryManager.CurrentCategory = OutfitCategoryManager.Category.Shirts;
                     state.ScrollOffset = 0;
+
+                    // Handle mod filter reset
                     if (mod.GetConfig().ResetFilterOnTabSwitch)
                     {
                         state.SetModFilter(categoryManager.CurrentCategory, null);
                     }
+
+                    if (mod.GetConfig().ResetSearchOnTabSwitch)
+                    {
+                        state.SetSearchText(categoryManager.CurrentCategory, null);
+                        searchManager.Clear();
+                    }
+                    else
+                    {
+                        state.SetSearchText(categoryManager.CurrentCategory, searchManager.CurrentSearchText);
+                    }
+
                     if (playSound) Game1.playSound("smallSelect");
                 }
                 return;
@@ -184,10 +215,23 @@ namespace FittingRoom
                 {
                     categoryManager.CurrentCategory = OutfitCategoryManager.Category.Pants;
                     state.ScrollOffset = 0;
+
+                    // Handle mod filter reset
                     if (mod.GetConfig().ResetFilterOnTabSwitch)
                     {
                         state.SetModFilter(categoryManager.CurrentCategory, null);
                     }
+
+                    if (mod.GetConfig().ResetSearchOnTabSwitch)
+                    {
+                        state.SetSearchText(categoryManager.CurrentCategory, null);
+                        searchManager.Clear();
+                    }
+                    else
+                    {
+                        state.SetSearchText(categoryManager.CurrentCategory, searchManager.CurrentSearchText);
+                    }
+
                     if (playSound) Game1.playSound("smallSelect");
                 }
                 return;
@@ -198,10 +242,23 @@ namespace FittingRoom
                 {
                     categoryManager.CurrentCategory = OutfitCategoryManager.Category.Hats;
                     state.ScrollOffset = 0;
+
+                    // Handle mod filter reset
                     if (mod.GetConfig().ResetFilterOnTabSwitch)
                     {
                         state.SetModFilter(categoryManager.CurrentCategory, null);
                     }
+
+                    if (mod.GetConfig().ResetSearchOnTabSwitch)
+                    {
+                        state.SetSearchText(categoryManager.CurrentCategory, null);
+                        searchManager.Clear();
+                    }
+                    else
+                    {
+                        state.SetSearchText(categoryManager.CurrentCategory, searchManager.CurrentSearchText);
+                    }
+
                     if (playSound) Game1.playSound("smallSelect");
                 }
                 return;
@@ -294,12 +351,12 @@ namespace FittingRoom
                 return;
             }
 
-            // Handle scrolling with arrow keys and WASD
+            // Handle scrolling with arrow keys only (removed WASD)
             int totalRows = Math.Max(1, (int)Math.Ceiling(GetCurrentListCount() / (float)uiBuilder.COLUMNS));
             int maxScroll = Math.Max(0, totalRows - uiBuilder.VISIBLE_ROWS);
 
-            // Scroll up (Up arrow or W)
-            if (key == Keys.Up || key == Keys.W)
+            // Scroll up (Up arrow only)
+            if (key == Keys.Up)
             {
                 if (state.ScrollOffset > 0)
                 {
@@ -309,8 +366,8 @@ namespace FittingRoom
                 }
             }
 
-            // Scroll down (Down arrow or S)
-            if (key == Keys.Down || key == Keys.S)
+            // Scroll down (Down arrow only)
+            if (key == Keys.Down)
             {
                 if (state.ScrollOffset < maxScroll)
                 {
@@ -320,8 +377,8 @@ namespace FittingRoom
                 }
             }
 
-            // Page up (Left arrow or A) - scroll up by visible rows
-            if (key == Keys.Left || key == Keys.A)
+            // Page up (Left arrow only)
+            if (key == Keys.Left)
             {
                 if (state.ScrollOffset > 0)
                 {
@@ -331,8 +388,8 @@ namespace FittingRoom
                 }
             }
 
-            // Page down (Right arrow or D) - scroll down by visible rows
-            if (key == Keys.Right || key == Keys.D)
+            // Page down (Right arrow only)
+            if (key == Keys.Right)
             {
                 if (state.ScrollOffset < maxScroll)
                 {
@@ -342,12 +399,19 @@ namespace FittingRoom
                 }
             }
 
-            // Handle Escape or menu button to close with revert
-            if (key == Keys.Escape || Game1.options.doesInputListContain(Game1.options.menuButton, key))
+            // Handle Escape to close with revert
+            // Only Escape closes the menu - other menu buttons (like E) are used for typing
+            if (key == Keys.Escape)
             {
                 RevertAndClose();
                 Game1.playSound("bigDeSelect");
                 return;
+            }
+
+            // Don't pass menu button keys (like E) to base class - they should be used for typing
+            if (Game1.options.doesInputListContain(Game1.options.menuButton, key))
+            {
+                return; // Block menu button from closing the menu
             }
 
             base.receiveKeyPress(key);
@@ -357,6 +421,14 @@ namespace FittingRoom
         {
             base.update(time);
             uiBuilder.Update((float)time.ElapsedGameTime.TotalMilliseconds);
+
+            searchManager.Update();
+
+            if (searchManager.HasSearchTextChanged)
+            {
+                state.SetSearchText(categoryManager.CurrentCategory, searchManager.CurrentSearchText);
+                state.ScrollOffset = 0;
+            }
 
             // Handle item info toggle keybind
             var config = mod.GetConfig();
@@ -425,6 +497,10 @@ namespace FittingRoom
 
             uiBuilder.DrawTabWithText(b, uiBuilder.HatsTab, TranslationCache.TabHats,
                 categoryManager.CurrentCategory == OutfitCategoryManager.Category.Hats);
+
+            // Draw search bar
+            uiBuilder.DrawSearchBar(b, searchManager.IsFocused);
+            searchManager.Draw(b);
 
             // Draw mod filter dropdown
             uiBuilder.DrawModFilterDropdown(b, state.GetModFilter(categoryManager.CurrentCategory), dropdownManager.IsOpen);
@@ -560,6 +636,14 @@ namespace FittingRoom
                 Utility.drawTextWithShadow(b, displayText, Game1.smallFont, textPos,
                     isHovered ? Color.Black : Game1.textColor);
             }
+        }
+
+        // --- Cleanup ---
+
+        public override void emergencyShutDown()
+        {
+            filterManager.ClearSearchCaches();
+            base.emergencyShutDown();
         }
     }
 }

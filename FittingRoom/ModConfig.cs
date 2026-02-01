@@ -9,6 +9,7 @@ namespace FittingRoom
         public KeybindList ToggleItemInfoKey { get; set; } = KeybindList.Parse("I");
         public bool ShowItemInfo { get; set; } = false;
         public bool ResetFilterOnTabSwitch { get; set; } = false;
+        public bool ResetSearchOnTabSwitch { get; set; } = false;
 
         // Dev-only: Enable debug/trace logging (manually edit config.json)
         public bool EnableDebugLogging { get; set; } = false;

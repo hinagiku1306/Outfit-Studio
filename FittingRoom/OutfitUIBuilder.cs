@@ -28,6 +28,7 @@ namespace FittingRoom
         public List<ClickableComponent> ItemSlots { get; private set; } = new();
         public Rectangle PortraitBox { get; private set; }
         public ClickableComponent? ModFilterDropdown { get; private set; } = null;
+        public ClickableComponent? SearchBar { get; private set; } = null;
 
         // Menu position and dimensions
         public int X { get; private set; }
@@ -152,14 +153,26 @@ namespace FittingRoom
                 4f
             );
 
-            // Mod filter dropdown
-            int dropdownWidth = (int) (Width * 0.4);
-            int dropdownHeight = TabAndButtonHeight;
-            int dropdownX = rightPanelX;
-            int dropdownY = Y - dropdownHeight - ContentBoxPadding; // Above the menu
+            // Search bar and mod filter dropdown layout
+            int searchBarWidth = (int)(Width * 0.35);
+            int dropdownWidth = (int)(Width * 0.4);
+            int gapBetweenControls = TabAndButtonGap;
+            int controlsY = Y - TabAndButtonHeight - ContentBoxPadding; // Above the menu
 
+            // Search bar
+            SearchBar = new ClickableComponent(
+                new Rectangle(rightPanelX, controlsY, searchBarWidth, TabAndButtonHeight),
+                "SearchBar"
+            );
+
+            // Mod filter dropdown
             ModFilterDropdown = new ClickableComponent(
-                new Rectangle(dropdownX, dropdownY, dropdownWidth, dropdownHeight),
+                new Rectangle(
+                    rightPanelX + searchBarWidth + gapBetweenControls,
+                    controlsY,
+                    dropdownWidth,
+                    TabAndButtonHeight
+                ),
                 "ModFilterDropdown"
             );
         }
@@ -439,6 +452,16 @@ namespace FittingRoom
             Utility.drawTextWithShadow(b, displayText, Game1.smallFont, textPos, Game1.textColor);
         }
 
+        /// <summary>Draws the search bar background.</summary>
+        public void DrawSearchBar(SpriteBatch b, bool isFocused)
+        {
+            if (SearchBar == null)
+                return;
+
+            IClickableMenu.drawTextureBox(b, SearchBar.bounds.X, SearchBar.bounds.Y,
+                SearchBar.bounds.Width, SearchBar.bounds.Height, Color.White);
+        }
+
         /// <summary>
         /// Checks if the mouse is hovering over any clickable UI element.
         /// </summary>
@@ -455,6 +478,11 @@ namespace FittingRoom
             }
 
             if (ModFilterDropdown != null && ModFilterDropdown.containsPoint(mouseX, mouseY))
+            {
+                return true;
+            }
+
+            if (SearchBar != null && SearchBar.containsPoint(mouseX, mouseY))
             {
                 return true;
             }

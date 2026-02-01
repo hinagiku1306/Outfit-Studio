@@ -31,6 +31,9 @@ namespace FittingRoom
         // Mod filters per category (null = no filter active for that category)
         private readonly Dictionary<OutfitCategoryManager.Category, string?> modFilters = new();
 
+        // Search text per category (null = no search active for that category)
+        private readonly Dictionary<OutfitCategoryManager.Category, string?> searchTexts = new();
+
         /// <summary>Gets or sets the current shirt index.</summary>
         public int ShirtIndex
         {
@@ -69,6 +72,18 @@ namespace FittingRoom
         public void SetModFilter(OutfitCategoryManager.Category category, string? filter)
         {
             modFilters[category] = filter;
+        }
+
+        /// <summary>Gets the search text for the specified category. Null means no search is active.</summary>
+        public string? GetSearchText(OutfitCategoryManager.Category category)
+        {
+            return searchTexts.TryGetValue(category, out var text) ? text : null;
+        }
+
+        /// <summary>Sets the search text for the specified category. Null means no search is active.</summary>
+        public void SetSearchText(OutfitCategoryManager.Category category, string? text)
+        {
+            searchTexts[category] = text;
         }
 
         /// <summary>Gets the original shirt ID.</summary>

@@ -66,6 +66,22 @@ namespace FittingRoom
                     getValue: () => config.ToggleItemInfoKey,
                     setValue: value => config.ToggleItemInfoKey = value
                 );
+
+                gmcmApi.AddBoolOption(
+                    mod: ModManifest,
+                    name: () => TranslationCache.ConfigResetFilterOnTabSwitchName,
+                    tooltip: () => TranslationCache.ConfigResetFilterOnTabSwitchTooltip,
+                    getValue: () => config.ResetFilterOnTabSwitch,
+                    setValue: value => config.ResetFilterOnTabSwitch = value
+);
+
+                gmcmApi.AddBoolOption(
+                    mod: ModManifest,
+                    name: () => TranslationCache.ConfigResetSearchOnTabSwitchName,
+                    tooltip: () => TranslationCache.ConfigResetSearchOnTabSwitchTooltip,
+                    getValue: () => config.ResetSearchOnTabSwitch,
+                    setValue: value => config.ResetSearchOnTabSwitch = value
+                );
             }
         }
 

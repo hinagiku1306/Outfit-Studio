@@ -28,6 +28,11 @@ namespace FittingRoom
         private readonly Dictionary<string, List<string>> cachedFilteredPants = new();
         private readonly Dictionary<string, List<string>> cachedFilteredHats = new();
 
+        /// <summary>Cached combined filter+search results to avoid rebuilding every frame.</summary>
+        private readonly Dictionary<string, List<string>> cachedCombinedShirts = new();
+        private readonly Dictionary<string, List<string>> cachedCombinedPants = new();
+        private readonly Dictionary<string, List<string>> cachedCombinedHats = new();
+
         /// <summary>
         /// Initialize the filter manager.
         /// </summary>
@@ -583,6 +588,120 @@ namespace FittingRoom
         }
 
         /// <summary>
+        /// Filters items by search text (case-insensitive substring match on DisplayName).
+        /// </summary>
+        private List<string> SearchItemsByDisplayName(List<string> itemIds, string? searchText, string itemTypePrefix)
+        {
+            if (string.IsNullOrWhiteSpace(searchText))
+                return itemIds;
+
+            var filtered = new List<string>();
+            foreach (var id in itemIds)
+            {
+                // Special handling for "No Hat" option
+                if (id == "-1")
+                {
+                    if (TranslationCache.ItemNoHat.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+                        filtered.Add(id);
+                    continue;
+                }
+
+                var item = ItemRegistry.Create<Item>($"{itemTypePrefix}{id}");
+                if (item?.DisplayName?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false)
+                    filtered.Add(id);
+            }
+
+            return filtered;
+        }
+
+        /// <summary>Filters shirts by search text.</summary>
+        public List<string> GetSearchFilteredShirtIds(List<string> shirtIds, string? searchText) =>
+            SearchItemsByDisplayName(shirtIds, searchText, "(S)");
+
+        /// <summary>Filters pants by search text.</summary>
+        public List<string> GetSearchFilteredPantsIds(List<string> pantsIds, string? searchText) =>
+            SearchItemsByDisplayName(pantsIds, searchText, "(P)");
+
+        /// <summary>Filters hats by search text.</summary>
+        public List<string> GetSearchFilteredHatIds(List<string> hatIds, string? searchText) =>
+            SearchItemsByDisplayName(hatIds, searchText, "(H)");
+
+        /// <summary>
+        /// Combines mod filter and search filter for shirts (applies mod filter first, then search).
+        /// </summary>
+        /// <param name="shirtIds">The complete list of shirt IDs.</param>
+        /// <param name="modFilter">The mod name to filter by, or null for no filtering.</param>
+        /// <param name="searchText">The search text, or null for no filtering.</param>
+        /// <returns>A filtered list matching both criteria.</returns>
+        public List<string> GetFilteredAndSearchedShirtIds(List<string> shirtIds, string? modFilter, string? searchText)
+        {
+            // Create combined cache key: "modFilter::searchText"
+            string cacheKey = $"{modFilter ?? "All"}::{searchText ?? ""}";
+
+            // Check cache first
+            if (cachedCombinedShirts.TryGetValue(cacheKey, out var cached))
+                return cached;
+
+            // Apply both filters
+            var modFiltered = GetFilteredShirtIds(shirtIds, modFilter);
+            var result = GetSearchFilteredShirtIds(modFiltered, searchText);
+
+            // Cache the result
+            cachedCombinedShirts[cacheKey] = result;
+            return result;
+        }
+
+        /// <summary>
+        /// Combines mod filter and search filter for pants (applies mod filter first, then search).
+        /// </summary>
+        /// <param name="pantsIds">The complete list of pants IDs.</param>
+        /// <param name="modFilter">The mod name to filter by, or null for no filtering.</param>
+        /// <param name="searchText">The search text, or null for no filtering.</param>
+        /// <returns>A filtered list matching both criteria.</returns>
+        public List<string> GetFilteredAndSearchedPantsIds(List<string> pantsIds, string? modFilter, string? searchText)
+        {
+            // Create combined cache key: "modFilter::searchText"
+            string cacheKey = $"{modFilter ?? "All"}::{searchText ?? ""}";
+
+            // Check cache first
+            if (cachedCombinedPants.TryGetValue(cacheKey, out var cached))
+                return cached;
+
+            // Apply both filters
+            var modFiltered = GetFilteredPantsIds(pantsIds, modFilter);
+            var result = GetSearchFilteredPantsIds(modFiltered, searchText);
+
+            // Cache the result
+            cachedCombinedPants[cacheKey] = result;
+            return result;
+        }
+
+        /// <summary>
+        /// Combines mod filter and search filter for hats (applies mod filter first, then search).
+        /// </summary>
+        /// <param name="hatIds">The complete list of hat IDs.</param>
+        /// <param name="modFilter">The mod name to filter by, or null for no filtering.</param>
+        /// <param name="searchText">The search text, or null for no filtering.</param>
+        /// <returns>A filtered list matching both criteria.</returns>
+        public List<string> GetFilteredAndSearchedHatIds(List<string> hatIds, string? modFilter, string? searchText)
+        {
+            // Create combined cache key: "modFilter::searchText"
+            string cacheKey = $"{modFilter ?? "All"}::{searchText ?? ""}";
+
+            // Check cache first
+            if (cachedCombinedHats.TryGetValue(cacheKey, out var cached))
+                return cached;
+
+            // Apply both filters
+            var modFiltered = GetFilteredHatIds(hatIds, modFilter);
+            var result = GetSearchFilteredHatIds(modFiltered, searchText);
+
+            // Cache the result
+            cachedCombinedHats[cacheKey] = result;
+            return result;
+        }
+
+        /// <summary>
         /// Gets the count of items in the current category, respecting the active filter.
         /// </summary>
         /// <param name="category">The category to check.</param>
@@ -612,6 +731,16 @@ namespace FittingRoom
                 OutfitCategoryManager.Category.Hats => GetFilteredHatIds(hatIds, modFilter).Count,
                 _ => 0
             };
+        }
+
+        /// <summary>
+        /// Clears search-related caches to free memory.
+        /// </summary>
+        public void ClearSearchCaches()
+        {
+            cachedCombinedShirts.Clear();
+            cachedCombinedPants.Clear();
+            cachedCombinedHats.Clear();
         }
     }
 }
