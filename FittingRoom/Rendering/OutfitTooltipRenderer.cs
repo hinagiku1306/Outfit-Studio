@@ -8,7 +8,7 @@ using StardewValley.Menus;
 namespace FittingRoom
 {
     /// <summary>
-    /// Renders item tooltips for outfit items (shirts, pants, hats).
+    /// Renders item tooltips with name, description, and mod source.
     /// </summary>
     public class OutfitTooltipRenderer
     {
@@ -23,14 +23,6 @@ namespace FittingRoom
             this.categoryManager = categoryManager ?? throw new ArgumentNullException(nameof(categoryManager));
         }
 
-        /// <summary>
-        /// Draws a tooltip for the item at the specified list index.
-        /// </summary>
-        /// <param name="b">SpriteBatch for drawing</param>
-        /// <param name="listIndex">Index in the filtered item list</param>
-        /// <param name="shirtIds">Filtered shirt IDs</param>
-        /// <param name="pantsIds">Filtered pants IDs</param>
-        /// <param name="hatIds">Filtered hat IDs</param>
         public void DrawTooltip(
             SpriteBatch b,
             int listIndex,
@@ -69,9 +61,6 @@ namespace FittingRoom
             }
         }
 
-        /// <summary>
-        /// Retrieves item data for tooltip display.
-        /// </summary>
         private (string itemName, string description, string modName, Item? item) GetItemData(
             int listIndex,
             List<string> shirtIds,

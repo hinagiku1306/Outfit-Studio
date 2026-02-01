@@ -12,7 +12,6 @@ namespace FittingRoom
 {
     public class OutfitMenu : IClickableMenu
     {
-        // Helper classes
         private readonly OutfitCategoryManager categoryManager;
         private readonly OutfitFilterManager filterManager;
         private readonly OutfitItemRenderer itemRenderer;
@@ -22,25 +21,17 @@ namespace FittingRoom
         private readonly OutfitSearchManager searchManager;
         private readonly OutfitTooltipRenderer tooltipRenderer;
         private readonly ContinuousScrollHandler continuousScrollHandler;
-
-        // Reference to mod (for config if needed)
         private readonly ModEntry mod;
 
-        // Item info toggle state
         private bool showItemInfo = false;
 
         public OutfitMenu(ModEntry mod, OutfitCategoryManager categoryManager, OutfitFilterManager filterManager, bool showItemInfo = false)
         {
             this.mod = mod;
-
-            // Use the cached managers passed from ModEntry
             this.categoryManager = categoryManager;
             this.filterManager = filterManager;
-
-            // Restore user preference for item info display
             this.showItemInfo = showItemInfo;
 
-            // Initialize other helper classes
             itemRenderer = new OutfitItemRenderer(mod.Monitor, mod.Helper.ModRegistry);
             state = new OutfitState();
             uiBuilder = new OutfitUIBuilder();
@@ -49,13 +40,11 @@ namespace FittingRoom
             tooltipRenderer = new OutfitTooltipRenderer(filterManager, categoryManager);
             continuousScrollHandler = new ContinuousScrollHandler(initialDelay: 400, repeatDelay: 100);
 
-            // Set menu dimensions from UI builder
             width = uiBuilder.Width;
             height = uiBuilder.Height;
             xPositionOnScreen = uiBuilder.X;
             yPositionOnScreen = uiBuilder.Y;
 
-            // Set current indices to match player's outfit
             state.ShirtIndex = Math.Max(0, categoryManager.ShirtIds.IndexOf(Game1.player.shirt.Value));
             state.PantsIndex = Math.Max(0, categoryManager.PantsIds.IndexOf(Game1.player.pants.Value));
             state.HatIndex = Math.Max(0, categoryManager.HatIds.IndexOf(state.OriginalHat));
@@ -67,17 +56,15 @@ namespace FittingRoom
         {
             base.gameWindowSizeChanged(oldBounds, newBounds);
 
-            // Recalculate UI positions for new window size
             uiBuilder.Recalculate();
             searchManager.UpdateBounds();
 
-            // Update menu dimensions from UI builder
             width = uiBuilder.Width;
             height = uiBuilder.Height;
             xPositionOnScreen = uiBuilder.X;
             yPositionOnScreen = uiBuilder.Y;
 
-            // Clamp scroll offset in case visible items changed
+            // Clamp scroll offset if visible items changed
             int totalRows = Math.Max(1, (int)Math.Ceiling(GetCurrentListCount() / (float)uiBuilder.COLUMNS));
             int maxScroll = Math.Max(0, totalRows - uiBuilder.VISIBLE_ROWS);
             if (state.ScrollOffset > maxScroll)
@@ -89,7 +76,7 @@ namespace FittingRoom
             }
         }
 
-        // --- Helper methods for readability ---
+        // --- Helper methods ---
 
         private int GetCurrentListCount()
         {

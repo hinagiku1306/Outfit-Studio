@@ -10,32 +10,17 @@ namespace FittingRoom
     /// </summary>
     public class OutfitCategoryManager
     {
-        /// <summary>SMAPI monitor for logging.</summary>
         private readonly IMonitor monitor;
-
-        /// <summary>Reference to the filter manager for mod detection during logging.</summary>
         private readonly OutfitFilterManager? filterManager;
 
-        /// <summary>The current selected category.</summary>
         public Category CurrentCategory { get; set; } = Category.Shirts;
 
-        /// <summary>Available shirt IDs.</summary>
         public readonly List<string> ShirtIds = new();
-
-        /// <summary>Available pants IDs.</summary>
         public readonly List<string> PantsIds = new();
+        public readonly List<string> HatIds = new(); // Includes "-1" for no hat
 
-        /// <summary>Available hat IDs (including "-1" for no hat).</summary>
-        public readonly List<string> HatIds = new();
-
-        /// <summary>Enum of clothing categories.</summary>
         public enum Category { Shirts, Pants, Hats }
 
-        /// <summary>
-        /// Initialize and populate the clothing lists from game data.
-        /// </summary>
-        /// <param name="monitor">SMAPI monitor for logging.</param>
-        /// <param name="filterManager">Optional filter manager for mod detection during logging.</param>
         public OutfitCategoryManager(IMonitor monitor, OutfitFilterManager? filterManager = null)
         {
             this.monitor = monitor;
@@ -45,7 +30,6 @@ namespace FittingRoom
             LoadHats();
         }
 
-        /// <summary>Load all shirt IDs from Game1.shirtData.</summary>
         private void LoadShirts()
         {
             ShirtIds.Clear();
@@ -55,7 +39,6 @@ namespace FittingRoom
             }
         }
 
-        /// <summary>Load all pants IDs from Game1.pantsData.</summary>
         private void LoadPants()
         {
             PantsIds.Clear();
@@ -65,11 +48,10 @@ namespace FittingRoom
             }
         }
 
-        /// <summary>Load all hat IDs from DataLoader.Hats (including "-1" for no hat).</summary>
         private void LoadHats()
         {
             HatIds.Clear();
-            HatIds.Add("-1"); // no hat option (always valid)
+            HatIds.Add("-1"); // No hat option
             foreach (var id in DataLoader.Hats(Game1.content).Keys)
             {
                 HatIds.Add(id);

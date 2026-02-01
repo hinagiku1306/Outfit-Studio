@@ -8,39 +8,22 @@ using static FittingRoom.OutfitLayoutConstants;
 namespace FittingRoom
 {
     /// <summary>
-    /// Responsible for drawing clothing item sprites in the menu.
+    /// Draws clothing item sprites in the menu using vanilla inventory rendering.
     /// </summary>
     public class OutfitItemRenderer
     {
-        /// <summary>
-        /// Tracks which missing items have already been logged to prevent spam.
-        /// </summary>
+        // Tracks which missing items have already been logged to prevent spam
         private static readonly HashSet<string> loggedMissingItems = new();
 
-        /// <summary>SMAPI monitor for logging.</summary>
         private readonly IMonitor monitor;
-
-        /// <summary>SMAPI mod registry for looking up mod information.</summary>
         private readonly IModRegistry modRegistry;
 
-        /// <summary>
-        /// Creates a new item renderer.
-        /// </summary>
         public OutfitItemRenderer(IMonitor monitor, IModRegistry modRegistry)
         {
             this.monitor = monitor;
             this.modRegistry = modRegistry;
         }
-        /// <summary>
-        /// Draws a clothing item sprite in the given slot rectangle using vanilla inventory rendering.
-        /// </summary>
-        /// <param name="b">SpriteBatch to draw with.</param>
-        /// <param name="category">Category of the item.</param>
-        /// <param name="listIndex">Index in the category list.</param>
-        /// <param name="slot">Rectangle defining the slot area.</param>
-        /// <param name="shirtIds">List of shirt IDs (for shirts category).</param>
-        /// <param name="pantsIds">List of pants IDs (for pants category).</param>
-        /// <param name="hatIds">List of hat IDs (for hats category).</param>
+
         public void DrawItemSprite(SpriteBatch b, OutfitCategoryManager.Category category, int listIndex,
             Rectangle slot, List<string> shirtIds, List<string> pantsIds, List<string> hatIds)
         {
@@ -57,22 +40,18 @@ namespace FittingRoom
             }
         }
 
-        /// <summary>
-        /// Draws an item using the vanilla drawInMenu method like inventory slots.
-        /// Items that don't exist or fail to create are skipped entirely (not drawn).
-        /// </summary>
+        // Uses vanilla drawInMenu method - skips items that don't exist or fail to create
         private void DrawItemUsingVanillaMethod(SpriteBatch b, string qualifiedId, Rectangle slot)
         {
-            // Check if the item ID exists before creating
             if (!ItemRegistry.Exists(qualifiedId))
             {
-                return; // Don't draw anything
+                return;
             }
 
             Item item = ItemRegistry.Create(qualifiedId);
             if (item == null)
             {
-                return; // Don't draw anything
+                return;
             }
 
             // Center the item in the slot
@@ -80,20 +59,15 @@ namespace FittingRoom
             int offsetY = (slot.Height - DrawnItemSize) / 2;
             Vector2 position = new Vector2(slot.X + offsetX, slot.Y + offsetY);
 
-            // Use vanilla drawInMenu - renders at standard inventory size
             item.drawInMenu(b, position, 1f);
         }
 
-        /// <summary>
-        /// Logs information about a missing item to the console.
-        /// Only logs each unique item once to prevent spam.
-        /// </summary>
+        // Logs each unique missing item once to prevent spam
         private void LogMissingItem(string qualifiedId, string reason)
         {
-            // Only log each missing item once
             if (!loggedMissingItems.Add(qualifiedId))
             {
-                return; // Already logged this item
+                return;
             }
 
             string UNKNOWN = "Unknown";
@@ -184,9 +158,6 @@ namespace FittingRoom
             DebugLogger.Log($"Skipped missing item: {itemType} '{itemName}' (ID: {itemId}) from mod {modDisplayText} - {reason}", LogLevel.Trace);
         }
 
-        /// <summary>
-        /// Draws an "X" for the no‑hat slot.
-        /// </summary>
         private void DrawNoHatIndicator(SpriteBatch b, Rectangle slot)
         {
             Vector2 textPos = new Vector2(
@@ -196,9 +167,6 @@ namespace FittingRoom
             Utility.drawTextWithShadow(b, "X", Game1.smallFont, textPos, Color.Gray);
         }
 
-        /// <summary>
-        /// Returns the qualified item ID for the given category and index, or null if none.
-        /// </summary>
         private string? GetQualifiedItemId(OutfitCategoryManager.Category category, int listIndex,
             List<string> shirtIds, List<string> pantsIds, List<string> hatIds)
         {
@@ -226,25 +194,19 @@ namespace FittingRoom
             return null;
         }
 
-        /// <summary>
-        /// Gets the sprite texture and source rectangle for a tab icon.
-        /// Uses a representative sprite for each category.
-        /// </summary>
+        // Returns a representative sprite for each category tab icon
         public (Texture2D texture, Rectangle sourceRect) GetTabSpriteInfo(OutfitCategoryManager.Category category,
             List<string> shirtIds, List<string> pantsIds, List<string> hatIds)
         {
             switch (category)
             {
                 case OutfitCategoryManager.Category.Shirts:
-                    // Use the first shirt sprite (top-left of shirt texture)
                     return (FarmerRenderer.shirtsTexture, new Rectangle(0, 0, 8, 8));
 
                 case OutfitCategoryManager.Category.Pants:
-                    // Use the first pants sprite (top-left of pants texture)
                     return (FarmerRenderer.pantsTexture, new Rectangle(0, 0, 16, 16));
 
                 case OutfitCategoryManager.Category.Hats:
-                    // Use the first hat sprite (index 0 in hat texture - the red cap)
                     return (FarmerRenderer.hatsTexture, new Rectangle(0, 0, 20, 20));
 
                 default:
