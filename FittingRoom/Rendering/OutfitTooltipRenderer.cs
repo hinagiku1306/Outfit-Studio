@@ -14,6 +14,7 @@ namespace FittingRoom
     {
         private readonly OutfitFilterManager filterManager;
         private readonly OutfitCategoryManager categoryManager;
+        private readonly Dictionary<string, Item?> itemCache = new();
 
         public OutfitTooltipRenderer(
             OutfitFilterManager filterManager,
@@ -21,6 +22,21 @@ namespace FittingRoom
         {
             this.filterManager = filterManager ?? throw new ArgumentNullException(nameof(filterManager));
             this.categoryManager = categoryManager ?? throw new ArgumentNullException(nameof(categoryManager));
+        }
+
+        public void ClearCache()
+        {
+            itemCache.Clear();
+        }
+
+        private Item? GetCachedItem(string qualifiedId)
+        {
+            if (itemCache.TryGetValue(qualifiedId, out var item))
+                return item;
+
+            item = ItemRegistry.Create(qualifiedId);
+            itemCache[qualifiedId] = item;
+            return item;
         }
 
         public void DrawTooltip(
@@ -121,53 +137,28 @@ namespace FittingRoom
             string modName = "";
             Item? actualItem = null;
 
-            switch (itemCategory)
+            if (itemCategory == OutfitCategoryManager.Category.Hats && ItemIdHelper.IsNoHatId(itemId))
             {
-                case OutfitCategoryManager.Category.Shirts:
-                    {
-                        string qualifiedId = "(S)" + itemId;
-                        actualItem = ItemRegistry.Create(qualifiedId);
-                        if (actualItem != null)
-                        {
-                            itemName = actualItem.DisplayName;
-                            description = actualItem.getDescription();
-                        }
-                        modName = filterManager.GetModNameForItem(itemId);
-                    }
-                    break;
-
-                case OutfitCategoryManager.Category.Pants:
-                    {
-                        string qualifiedId = "(P)" + itemId;
-                        actualItem = ItemRegistry.Create(qualifiedId);
-                        if (actualItem != null)
-                        {
-                            itemName = actualItem.DisplayName;
-                            description = actualItem.getDescription();
-                        }
-                        modName = filterManager.GetModNameForItem(itemId);
-                    }
-                    break;
-
-                case OutfitCategoryManager.Category.Hats:
-                    if (!string.IsNullOrEmpty(itemId) && itemId != OutfitLayoutConstants.NoHatId)
-                    {
-                        string qualifiedId = "(H)" + itemId;
-                        actualItem = ItemRegistry.Create(qualifiedId);
-                        if (actualItem != null)
-                        {
-                            itemName = actualItem.DisplayName;
-                            description = actualItem.getDescription();
-                        }
-                        modName = filterManager.GetModNameForHat(itemId);
-                    }
-                    else
-                    {
-                        itemName = TranslationCache.ItemNoHat;
-                        description = "";
-                    }
-                    break;
+                itemName = TranslationCache.ItemNoHat;
+                return (itemName, description, modName, actualItem);
             }
+
+            string? qualifiedId = ItemIdHelper.GetQualifiedId(itemId, itemCategory);
+            if (qualifiedId != null)
+            {
+                actualItem = GetCachedItem(qualifiedId);
+                if (actualItem != null)
+                {
+                    itemName = actualItem.DisplayName;
+                    description = actualItem.getDescription();
+                }
+            }
+
+            // Determine mod name
+            if (itemCategory == OutfitCategoryManager.Category.Hats)
+                modName = filterManager.GetModNameForHat(itemId);
+            else
+                modName = filterManager.GetModNameForItem(itemId);
 
             return (itemName, description, modName, actualItem);
         }
@@ -183,61 +174,30 @@ namespace FittingRoom
             string modName = "";
             Item? actualItem = null;
 
-            switch (categoryManager.CurrentCategory)
+            string? qualifiedId = ItemIdHelper.GetQualifiedItemId(categoryManager.CurrentCategory, listIndex, shirtIds, pantsIds, hatIds);
+            if (qualifiedId == null)
             {
-                case OutfitCategoryManager.Category.Shirts:
-                    if (listIndex >= 0 && listIndex < shirtIds.Count)
-                    {
-                        string id = shirtIds[listIndex];
-                        string qualifiedId = "(S)" + id;
-                        actualItem = ItemRegistry.Create(qualifiedId);
-                        if (actualItem != null)
-                        {
-                            itemName = actualItem.DisplayName;
-                            description = actualItem.getDescription();
-                        }
-                        modName = filterManager.GetModNameForItem(id);
-                    }
-                    break;
-
-                case OutfitCategoryManager.Category.Pants:
-                    if (listIndex >= 0 && listIndex < pantsIds.Count)
-                    {
-                        string id = pantsIds[listIndex];
-                        string qualifiedId = "(P)" + id;
-                        actualItem = ItemRegistry.Create(qualifiedId);
-                        if (actualItem != null)
-                        {
-                            itemName = actualItem.DisplayName;
-                            description = actualItem.getDescription();
-                        }
-                        modName = filterManager.GetModNameForItem(id);
-                    }
-                    break;
-
-                case OutfitCategoryManager.Category.Hats:
-                    if (listIndex >= 0 && listIndex < hatIds.Count)
-                    {
-                        string hatId = hatIds[listIndex];
-                        if (!string.IsNullOrEmpty(hatId) && hatId != OutfitLayoutConstants.NoHatId)
-                        {
-                            string qualifiedId = "(H)" + hatId;
-                            actualItem = ItemRegistry.Create(qualifiedId);
-                            if (actualItem != null)
-                            {
-                                itemName = actualItem.DisplayName;
-                                description = actualItem.getDescription();
-                            }
-                            modName = filterManager.GetModNameForHat(hatId);
-                        }
-                        else
-                        {
-                            itemName = TranslationCache.ItemNoHat;
-                            description = "";
-                        }
-                    }
-                    break;
+                // This could be no hat case (listIndex == 0 for hats)
+                if (categoryManager.CurrentCategory == OutfitCategoryManager.Category.Hats && listIndex == 0)
+                {
+                    itemName = TranslationCache.ItemNoHat;
+                }
+                return (itemName, description, modName, actualItem);
             }
+
+            actualItem = GetCachedItem(qualifiedId);
+            if (actualItem != null)
+            {
+                itemName = actualItem.DisplayName;
+                description = actualItem.getDescription();
+            }
+
+            // Determine unqualified ID for mod name lookup
+            string unqualifiedId = ItemIdHelper.GetUnqualifiedId(qualifiedId);
+            if (categoryManager.CurrentCategory == OutfitCategoryManager.Category.Hats)
+                modName = filterManager.GetModNameForHat(unqualifiedId);
+            else
+                modName = filterManager.GetModNameForItem(unqualifiedId);
 
             return (itemName, description, modName, actualItem);
         }

@@ -54,6 +54,7 @@ namespace FittingRoom
                 onRevertAndClose: RevertAndClose,
                 onApplyOutfit: ApplyOutfit,
                 onResetOutfit: ResetOutfit,
+                onOutfitChanged: () => uiBuilder.MarkPreviewDirty(),
                 getCurrentListCount: () => itemListProvider.GetCurrentListCount(),
                 getCurrentShirtIds: () => itemListProvider.GetCurrentShirtIds(),
                 getCurrentPantsIds: () => itemListProvider.GetCurrentPantsIds(),
@@ -110,6 +111,7 @@ namespace FittingRoom
                 itemListProvider.GetCurrentPantsIds(),
                 itemListProvider.GetCurrentHatIds()
             );
+            uiBuilder.MarkPreviewDirty();
         }
 
         private void ApplyOutfit()
@@ -234,12 +236,28 @@ namespace FittingRoom
             // Draw mod filter dropdown
             uiBuilder.DrawModFilterDropdown(b, state.GetModFilter(categoryManager.CurrentCategory), dropdownManager.IsOpen);
 
+            // Cache list provider results once per frame to avoid repeated allocations
+            var currentCategory = categoryManager.CurrentCategory;
+            var allItems = currentCategory == OutfitCategoryManager.Category.All ? itemListProvider.GetCurrentAllItems() : null;
+            var shirtIds = currentCategory != OutfitCategoryManager.Category.All ? itemListProvider.GetCurrentShirtIds() : null;
+            var pantsIds = currentCategory != OutfitCategoryManager.Category.All ? itemListProvider.GetCurrentPantsIds() : null;
+            var hatIds = currentCategory != OutfitCategoryManager.Category.All ? itemListProvider.GetCurrentHatIds() : null;
+            int listCount = allItems?.Count ?? itemListProvider.GetCurrentListCount();
+
+            // Cache equipped item IDs once for All tab selection highlighting
+            string? equippedShirtId = null, equippedPantsId = null, equippedHatId = null;
+            if (allItems != null)
+            {
+                equippedShirtId = OutfitState.GetClothingId(Game1.player.shirtItem.Value);
+                equippedPantsId = OutfitState.GetClothingId(Game1.player.pantsItem.Value);
+                equippedHatId = OutfitState.GetHatIdFromItem(Game1.player.hat.Value);
+            }
+
             // Draw item list background and scroll buttons
-            uiBuilder.DrawItemList(b, state.ScrollOffset, itemListProvider.GetCurrentListCount());
+            uiBuilder.DrawItemList(b, state.ScrollOffset, listCount);
 
             // Draw items
             int currentIndex = GetCurrentIndex();
-            int listCount = itemListProvider.GetCurrentListCount();
             int hoveredIndex = -1;
 
             for (int i = 0; i < uiBuilder.VISIBLE_ITEMS; i++)
@@ -251,12 +269,29 @@ namespace FittingRoom
                     break;
 
                 Rectangle slot = uiBuilder.ItemSlots[i].bounds;
-                bool isSelected = listIndex == currentIndex;
+                bool isSelected;
+
+                // For All tab, check if item matches the cached equipped item for its category
+                if (allItems != null && listIndex < allItems.Count)
+                {
+                    var (itemCategory, itemId) = allItems[listIndex];
+                    isSelected = itemCategory switch
+                    {
+                        OutfitCategoryManager.Category.Shirts => itemId == equippedShirtId,
+                        OutfitCategoryManager.Category.Pants => itemId == equippedPantsId,
+                        OutfitCategoryManager.Category.Hats => itemId == equippedHatId,
+                        _ => false
+                    };
+                }
+                else
+                {
+                    isSelected = listIndex == currentIndex;
+                }
 
                 // Highlight selected item
                 if (isSelected)
                 {
-                    b.Draw(Game1.staminaRect, slot, Color.LimeGreen * 0.3f);
+                    b.Draw(Game1.staminaRect, slot, Color.Wheat * 0.3f);
                 }
 
                 // Hover highlight
@@ -267,10 +302,9 @@ namespace FittingRoom
                     hoveredIndex = listIndex; // Track for tooltip rendering later
                 }
 
-                // Draw item sprite (use filtered lists)
-                if (categoryManager.CurrentCategory == OutfitCategoryManager.Category.All)
+                // Draw item sprite with cached filtered lists
+                if (allItems != null)
                 {
-                    var allItems = itemListProvider.GetCurrentAllItems();
                     if (listIndex < allItems.Count)
                     {
                         var (itemCategory, itemId) = allItems[listIndex];
@@ -279,8 +313,7 @@ namespace FittingRoom
                 }
                 else
                 {
-                    itemRenderer.DrawItemSprite(b, categoryManager.CurrentCategory, listIndex,
-                        slot, itemListProvider.GetCurrentShirtIds(), itemListProvider.GetCurrentPantsIds(), itemListProvider.GetCurrentHatIds());
+                    itemRenderer.DrawItemSprite(b, currentCategory, listIndex, slot, shirtIds!, pantsIds!, hatIds!);
                 }
             }
 
@@ -302,9 +335,8 @@ namespace FittingRoom
             // Draw item info tooltip if toggle is active, hovering, and dropdown is closed
             if (showItemInfo && hoveredIndex >= 0 && !dropdownManager.IsOpen)
             {
-                if (categoryManager.CurrentCategory == OutfitCategoryManager.Category.All)
+                if (allItems != null)
                 {
-                    var allItems = itemListProvider.GetCurrentAllItems();
                     if (hoveredIndex < allItems.Count)
                     {
                         var (itemCategory, itemId) = allItems[hoveredIndex];
@@ -313,8 +345,7 @@ namespace FittingRoom
                 }
                 else
                 {
-                    tooltipRenderer.DrawTooltip(b, hoveredIndex,
-                        itemListProvider.GetCurrentShirtIds(), itemListProvider.GetCurrentPantsIds(), itemListProvider.GetCurrentHatIds());
+                    tooltipRenderer.DrawTooltip(b, hoveredIndex, shirtIds!, pantsIds!, hatIds!);
                 }
             }
 
@@ -337,6 +368,8 @@ namespace FittingRoom
         public override void emergencyShutDown()
         {
             filterManager.ClearSearchCaches();
+            itemRenderer.ClearCache();
+            tooltipRenderer.ClearCache();
             uiBuilder.Cleanup();
             base.emergencyShutDown();
         }

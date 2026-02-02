@@ -30,6 +30,7 @@ namespace FittingRoom
         public static string ItemNoShirt { get; private set; } = "";
         public static string ItemNoPants { get; private set; } = "";
         public static string ItemModInfoTemplate { get; private set; } = ""; // "Mod: {{modName}}"
+        public static string ItemNoHatSymbol { get; private set; } = "";
 
         // Lookup tooltip labels
         public static string LookupShirt { get; private set; } = "";
@@ -93,6 +94,7 @@ namespace FittingRoom
             ItemNoShirt = i18n.Get("menu.item.no-shirt");
             ItemNoPants = i18n.Get("menu.item.no-pants");
             ItemModInfoTemplate = i18n.Get("menu.item.mod-info");
+            ItemNoHatSymbol = i18n.Get("menu.item.no-hat-symbol");
 
             LookupShirt = i18n.Get("menu.lookup.shirt");
             LookupPants = i18n.Get("menu.lookup.pants");

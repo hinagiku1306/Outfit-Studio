@@ -124,28 +124,7 @@ namespace FittingRoom
         /// <summary>Get the qualified item ID for an item at the given index in the current category.</summary>
         public string? GetQualifiedItemId(int listIndex)
         {
-            switch (CurrentCategory)
-            {
-                case Category.Shirts:
-                    if (listIndex >= 0 && listIndex < ShirtIds.Count)
-                        return "(S)" + ShirtIds[listIndex];
-                    break;
-
-                case Category.Pants:
-                    if (listIndex >= 0 && listIndex < PantsIds.Count)
-                        return "(P)" + PantsIds[listIndex];
-                    break;
-
-                case Category.Hats:
-                    if (listIndex >= 0 && listIndex < HatIds.Count)
-                    {
-                        string hatId = HatIds[listIndex];
-                        if (!string.IsNullOrEmpty(hatId) && hatId != OutfitLayoutConstants.NoHatId)
-                            return "(H)" + hatId;
-                    }
-                    break;
-            }
-            return null;
+            return ItemIdHelper.GetQualifiedItemId(CurrentCategory, listIndex, ShirtIds, PantsIds, HatIds);
         }
     }
 }

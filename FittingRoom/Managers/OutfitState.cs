@@ -223,32 +223,12 @@ namespace FittingRoom
 
         public static string GetHatIdFromItem(Hat? hat)
         {
-            if (hat == null)
-                return OutfitLayoutConstants.NoHatId;
-
-            string itemId = hat.ItemId;
-            if (string.IsNullOrEmpty(itemId))
-                return OutfitLayoutConstants.NoHatId;
-
-            if (itemId.StartsWith("(H)"))
-                return itemId.Substring(3);
-
-            return itemId;
+            return ItemIdHelper.GetHatIdFromItem(hat);
         }
 
         public static string GetClothingId(Clothing? clothing)
         {
-            if (clothing == null)
-                return OutfitLayoutConstants.NoShirtId;
-
-            string itemId = clothing.ItemId;
-            if (string.IsNullOrEmpty(itemId))
-                return OutfitLayoutConstants.NoShirtId;
-
-            if (itemId.StartsWith("(S)") || itemId.StartsWith("(P)"))
-                return itemId.Substring(3);
-
-            return itemId;
+            return ItemIdHelper.GetClothingIdFromItem(clothing);
         }
     }
 }

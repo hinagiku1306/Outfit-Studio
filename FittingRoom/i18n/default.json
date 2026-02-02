@@ -17,6 +17,7 @@
     "menu.item.no-shirt": "None",
     "menu.item.no-pants": "None",
     "menu.item.mod-info": "Mod: {{modName}}",
+    "menu.item.no-hat-symbol": "X",
 
     // Lookup tooltip labels
     "menu.lookup.shirt": "Shirt",

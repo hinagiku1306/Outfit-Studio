@@ -57,6 +57,7 @@ namespace FittingRoom
         // Farmer preview rendering resources
         private RenderTarget2D? farmerRenderTarget = null;
         private SpriteBatch? farmerSpriteBatch = null;
+        private bool previewDirty = true;
 
         // Farmer preview constants (cached for performance)
         private static readonly Rectangle FarmerSourceRect = new Rectangle(0, 0, 16, 32);
@@ -301,7 +302,7 @@ namespace FittingRoom
             bool isHovered = tab.containsPoint(Game1.getMouseX(), Game1.getMouseY());
 
             IClickableMenu.drawTextureBox(b, tab.bounds.X, tab.bounds.Y,
-                tab.bounds.Width, tab.bounds.Height, Color.White);
+                tab.bounds.Width, tab.bounds.Height, isActive ? Color.White : Color.White * 0.8f);
 
             Vector2 labelSize = Game1.smallFont.MeasureString(label);
             Vector2 textPos = new Vector2(
@@ -320,9 +321,15 @@ namespace FittingRoom
             }
         }
 
+        public void MarkPreviewDirty()
+        {
+            previewDirty = true;
+        }
+
         /// <summary>
         /// Draws the player preview (background and farmer).
         /// Uses RenderTarget2D to render farmer at 1x scale then scales the result.
+        /// Only re-renders to the RenderTarget when the preview is marked dirty.
         /// </summary>
         public void DrawPlayerPreview(SpriteBatch b)
         {
@@ -330,12 +337,21 @@ namespace FittingRoom
 
             InitializeFarmerRenderResources();
 
+            if (previewDirty)
+            {
+                RenderFarmerToTarget();
+                previewDirty = false;
+            }
+
+            b.Draw(farmerRenderTarget, PortraitBox, null, Color.White, 0f, Vector2.Zero, SpriteEffects.None, 0.5f);
+        }
+
+        private void RenderFarmerToTarget()
+        {
             var renderTargets = Game1.graphics.GraphicsDevice.GetRenderTargets();
             Game1.graphics.GraphicsDevice.SetRenderTarget(farmerRenderTarget);
             Game1.graphics.GraphicsDevice.Clear(Color.Transparent);
 
-            // Calculate source rect based on direction frame
-            // Spritesheet is 96px wide (6 frames per row), each frame is 16x32
             int frameIndex = DirectionFrames[previewDirection].frame;
             int baseY = Game1.player.bathingClothes.Value ? 576 : 0;
             int sourceX = (frameIndex * 16) % 96;
@@ -356,8 +372,6 @@ namespace FittingRoom
             farmerSpriteBatch.End();
 
             Game1.graphics.GraphicsDevice.SetRenderTargets(renderTargets);
-
-            b.Draw(farmerRenderTarget, PortraitBox, null, Color.White, 0f, Vector2.Zero, SpriteEffects.None, 0.5f);
         }
 
         private void InitializeFarmerRenderResources()
@@ -443,20 +457,16 @@ namespace FittingRoom
 
         #endregion
 
-        /// <summary>
-        /// Rotates the preview direction clockwise
-        /// </summary>
         public void RotatePreviewLeft()
         {
             previewDirection = (previewDirection + 1) % 4;
+            previewDirty = true;
         }
 
-        /// <summary>
-        /// Rotates the preview direction counter-clockwise
-        /// </summary>
         public void RotatePreviewRight()
         {
             previewDirection = (previewDirection + 3) % 4;
+            previewDirty = true;
         }
 
         /// <summary>
@@ -526,9 +536,6 @@ namespace FittingRoom
         /// <summary>
         /// Draws the mod filter dropdown button.
         /// </summary>
-        /// <param name="b">SpriteBatch for drawing.</param>
-        /// <param name="currentFilter">The currently selected mod filter, or null for "All Items".</param>
-        /// <param name="isOpen">Whether the dropdown is currently open.</param>
         public void DrawModFilterDropdown(SpriteBatch b, string? currentFilter, bool isOpen)
         {
             if (ModFilterDropdown == null)
@@ -602,9 +609,6 @@ namespace FittingRoom
         }
 
         /// <summary>Draws the search bar background.</summary>
-        /// <param name="b">SpriteBatch for drawing.</param>
-        /// <param name="isFocused">Whether the search bar is focused.</param>
-        /// <param name="hasText">Whether the search bar has text (to show clear button).</param>
         public void DrawSearchBar(SpriteBatch b, bool isFocused, bool hasText = false)
         {
             if (SearchBar == null)

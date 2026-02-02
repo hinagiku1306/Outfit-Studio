@@ -12,8 +12,8 @@ namespace FittingRoom
     /// </summary>
     public class OutfitItemRenderer
     {
-        // Tracks which missing items have already been logged to prevent spam
         private static readonly HashSet<string> loggedMissingItems = new();
+        private readonly Dictionary<string, Item?> itemCache = new();
 
         private readonly IMonitor monitor;
         private readonly IModRegistry modRegistry;
@@ -31,7 +31,7 @@ namespace FittingRoom
 
             if (qualifiedId != null)
             {
-                DrawItemUsingVanillaMethod(b, qualifiedId, slot);
+                DrawItem(b, qualifiedId, slot);
             }
             else if (category == OutfitCategoryManager.Category.Hats && listIndex == 0)
             {
@@ -41,41 +41,46 @@ namespace FittingRoom
 
         public void DrawItemFromAllCategory(SpriteBatch b, OutfitCategoryManager.Category itemCategory, string itemId, Rectangle slot)
         {
-            if (itemCategory == OutfitCategoryManager.Category.Hats && itemId == OutfitLayoutConstants.NoHatId)
+            if (itemCategory == OutfitCategoryManager.Category.Hats && ItemIdHelper.IsNoHatId(itemId))
             {
                 DrawNoHatIndicator(b, slot);
                 return;
             }
 
-            string prefix = itemCategory switch
+            string? qualifiedId = ItemIdHelper.GetQualifiedId(itemId, itemCategory);
+            if (!string.IsNullOrEmpty(qualifiedId))
             {
-                OutfitCategoryManager.Category.Shirts => "(S)",
-                OutfitCategoryManager.Category.Pants => "(P)",
-                OutfitCategoryManager.Category.Hats => "(H)",
-                _ => ""
-            };
-
-            if (!string.IsNullOrEmpty(prefix))
-            {
-                DrawItemUsingVanillaMethod(b, prefix + itemId, slot);
+                DrawItem(b, qualifiedId, slot);
             }
         }
 
-        // Uses vanilla drawInMenu method - skips items that don't exist or fail to create
-        private void DrawItemUsingVanillaMethod(SpriteBatch b, string qualifiedId, Rectangle slot)
+        public void ClearCache()
         {
+            itemCache.Clear();
+        }
+
+        private Item? GetCachedItem(string qualifiedId)
+        {
+            if (itemCache.TryGetValue(qualifiedId, out var item))
+                return item;
+
             if (!ItemRegistry.Exists(qualifiedId))
             {
-                return;
+                itemCache[qualifiedId] = null;
+                return null;
             }
 
-            Item item = ItemRegistry.Create(qualifiedId);
+            item = ItemRegistry.Create(qualifiedId);
+            itemCache[qualifiedId] = item;
+            return item;
+        }
+
+        private void DrawItem(SpriteBatch b, string qualifiedId, Rectangle slot)
+        {
+            var item = GetCachedItem(qualifiedId);
             if (item == null)
-            {
                 return;
-            }
 
-            // Center the item in the slot
             int offsetX = (slot.Width - DrawnItemSize) / 2;
             int offsetY = (slot.Height - DrawnItemSize) / 2;
             Vector2 position = new Vector2(slot.X + offsetX, slot.Y + offsetY);
@@ -181,38 +186,18 @@ namespace FittingRoom
 
         private void DrawNoHatIndicator(SpriteBatch b, Rectangle slot)
         {
+            string symbol = TranslationCache.ItemNoHatSymbol;
             Vector2 textPos = new Vector2(
-                slot.X + (slot.Width - Game1.smallFont.MeasureString("X").X) / 2,
+                slot.X + (slot.Width - Game1.smallFont.MeasureString(symbol).X) / 2,
                 slot.Y + (slot.Height - Game1.smallFont.LineSpacing) / 2
             );
-            Utility.drawTextWithShadow(b, "X", Game1.smallFont, textPos, Color.Gray);
+            Utility.drawTextWithShadow(b, symbol, Game1.smallFont, textPos, Color.Gray);
         }
 
         private string? GetQualifiedItemId(OutfitCategoryManager.Category category, int listIndex,
             List<string> shirtIds, List<string> pantsIds, List<string> hatIds)
         {
-            switch (category)
-            {
-                case OutfitCategoryManager.Category.Shirts:
-                    if (listIndex >= 0 && listIndex < shirtIds.Count)
-                        return "(S)" + shirtIds[listIndex];
-                    break;
-
-                case OutfitCategoryManager.Category.Pants:
-                    if (listIndex >= 0 && listIndex < pantsIds.Count)
-                        return "(P)" + pantsIds[listIndex];
-                    break;
-
-                case OutfitCategoryManager.Category.Hats:
-                    if (listIndex >= 0 && listIndex < hatIds.Count)
-                    {
-                        string hatId = hatIds[listIndex];
-                        if (!string.IsNullOrEmpty(hatId) && hatId != OutfitLayoutConstants.NoHatId)
-                            return "(H)" + hatId;
-                    }
-                    break;
-            }
-            return null;
+            return ItemIdHelper.GetQualifiedItemId(category, listIndex, shirtIds, pantsIds, hatIds);
         }
 
         // Returns a representative sprite for each category tab icon

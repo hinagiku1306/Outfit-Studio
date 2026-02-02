@@ -11,6 +11,11 @@ namespace FittingRoom
         private readonly OutfitCategoryManager categoryManager;
         private readonly OutfitState state;
 
+        // Cache for GetCurrentAllItems to avoid allocating new lists every frame
+        private List<(OutfitCategoryManager.Category ItemCategory, string ItemId)>? cachedAllItems;
+        private string? cachedAllItemsModFilter;
+        private string? cachedAllItemsSearchText;
+
         public OutfitItemListProvider(
             OutfitFilterManager filterManager,
             OutfitCategoryManager categoryManager,
@@ -19,6 +24,11 @@ namespace FittingRoom
             this.filterManager = filterManager;
             this.categoryManager = categoryManager;
             this.state = state;
+        }
+
+        public void InvalidateAllItemsCache()
+        {
+            cachedAllItems = null;
         }
 
         public int GetCurrentListCount()
@@ -51,9 +61,17 @@ namespace FittingRoom
 
         public List<(OutfitCategoryManager.Category ItemCategory, string ItemId)> GetCurrentAllItems()
         {
-            var result = new List<(OutfitCategoryManager.Category, string)>();
             string? modFilter = state.GetModFilter(OutfitCategoryManager.Category.All);
             string? searchText = state.GetSearchText(OutfitCategoryManager.Category.All);
+
+            if (cachedAllItems != null &&
+                cachedAllItemsModFilter == modFilter &&
+                cachedAllItemsSearchText == searchText)
+            {
+                return cachedAllItems;
+            }
+
+            var result = new List<(OutfitCategoryManager.Category, string)>();
 
             var shirts = filterManager.GetFilteredAndSearchedShirtIds(categoryManager.ShirtIds, modFilter, searchText);
             var pants = filterManager.GetFilteredAndSearchedPantsIds(categoryManager.PantsIds, modFilter, searchText);
@@ -65,6 +83,10 @@ namespace FittingRoom
                 result.Add((OutfitCategoryManager.Category.Pants, id));
             foreach (var id in hats)
                 result.Add((OutfitCategoryManager.Category.Hats, id));
+
+            cachedAllItems = result;
+            cachedAllItemsModFilter = modFilter;
+            cachedAllItemsSearchText = searchText;
 
             return result;
         }

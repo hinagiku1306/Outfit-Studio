@@ -153,9 +153,6 @@ namespace FittingRoom
         /// <summary>
         /// Handles mouse click on dropdown. Returns selected mod name if an option was clicked, null otherwise.
         /// </summary>
-        /// <param name="x">Mouse X position</param>
-        /// <param name="y">Mouse Y position</param>
-        /// <param name="clickedOption">True if an option was clicked, false if clicked outside</param>
         /// <returns>The selected mod name, or null for "All" filter</returns>
         public string? HandleClick(int x, int y, out bool clickedOption)
         {
@@ -183,7 +180,6 @@ namespace FittingRoom
         /// <summary>
         /// Handles scroll wheel input for the dropdown.
         /// </summary>
-        /// <param name="direction">Scroll direction (positive = up, negative = down)</param>
         /// <returns>True if scroll was handled, false otherwise</returns>
         public bool HandleScrollWheel(int direction)
         {
@@ -211,7 +207,6 @@ namespace FittingRoom
         /// <summary>
         /// Handles continuous scrolling with a scroll amount (for held keys).
         /// </summary>
-        /// <param name="scrollAmount">Scroll amount (negative = up, positive = down)</param>
         /// <returns>True if scroll was handled, false otherwise</returns>
         public bool HandleScrollAmount(int scrollAmount)
         {
@@ -235,7 +230,6 @@ namespace FittingRoom
         /// <summary>
         /// Handles keyboard input for the dropdown.
         /// </summary>
-        /// <param name="key">The pressed key</param>
         /// <returns>True if key was handled, false otherwise</returns>
         public bool HandleKeyPress(Keys key)
         {

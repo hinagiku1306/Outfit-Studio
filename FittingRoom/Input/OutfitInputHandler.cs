@@ -19,10 +19,10 @@ namespace FittingRoom
         private readonly ContinuousScrollHandler continuousScrollHandler;
         private readonly ModEntry mod;
 
-        // Callbacks for menu-level actions
         private readonly Action onRevertAndClose;
         private readonly Action onApplyOutfit;
         private readonly Action onResetOutfit;
+        private readonly Action onOutfitChanged;
         private readonly Func<int> getCurrentListCount;
         private readonly Func<List<string>> getCurrentShirtIds;
         private readonly Func<List<string>> getCurrentPantsIds;
@@ -42,6 +42,7 @@ namespace FittingRoom
             Action onRevertAndClose,
             Action onApplyOutfit,
             Action onResetOutfit,
+            Action onOutfitChanged,
             Func<int> getCurrentListCount,
             Func<List<string>> getCurrentShirtIds,
             Func<List<string>> getCurrentPantsIds,
@@ -60,6 +61,7 @@ namespace FittingRoom
             this.onRevertAndClose = onRevertAndClose;
             this.onApplyOutfit = onApplyOutfit;
             this.onResetOutfit = onResetOutfit;
+            this.onOutfitChanged = onOutfitChanged;
             this.getCurrentListCount = getCurrentListCount;
             this.getCurrentShirtIds = getCurrentShirtIds;
             this.getCurrentPantsIds = getCurrentPantsIds;
@@ -336,29 +338,39 @@ namespace FittingRoom
                 getCurrentPantsIds(),
                 getCurrentHatIds()
             );
+            onOutfitChanged();
         }
 
         private void ApplyItemFromAllCategory(OutfitCategoryManager.Category itemCategory, string itemId)
         {
+            if (itemCategory == OutfitCategoryManager.Category.Hats && ItemIdHelper.IsNoHatId(itemId))
+            {
+                Game1.player.hat.Value = null;
+                onOutfitChanged();
+                return;
+            }
+
+            string? qualifiedId = ItemIdHelper.GetQualifiedId(itemId, itemCategory);
+            if (qualifiedId == null)
+                return;
+
             switch (itemCategory)
             {
                 case OutfitCategoryManager.Category.Shirts:
-                    Game1.player.shirtItem.Value = ItemRegistry.Create<Clothing>("(S)" + itemId);
+                    Game1.player.shirtItem.Value = ItemRegistry.Create<Clothing>(qualifiedId);
                     Game1.player.FarmerRenderer.MarkSpriteDirty();
                     break;
 
                 case OutfitCategoryManager.Category.Pants:
-                    Game1.player.pantsItem.Value = ItemRegistry.Create<Clothing>("(P)" + itemId);
+                    Game1.player.pantsItem.Value = ItemRegistry.Create<Clothing>(qualifiedId);
                     Game1.player.FarmerRenderer.MarkSpriteDirty();
                     break;
 
                 case OutfitCategoryManager.Category.Hats:
-                    if (string.IsNullOrEmpty(itemId) || itemId == OutfitLayoutConstants.NoHatId)
-                        Game1.player.hat.Value = null;
-                    else
-                        Game1.player.hat.Value = ItemRegistry.Create<Hat>("(H)" + itemId);
+                    Game1.player.hat.Value = ItemRegistry.Create<Hat>(qualifiedId);
                     break;
             }
+            onOutfitChanged();
         }
 
         public bool HandleScrollWheel(int direction)

@@ -16,8 +16,6 @@ namespace FittingRoom
         /// <summary>
         /// Creates a new continuous scroll handler.
         /// </summary>
-        /// <param name="initialDelay">Delay before continuous scrolling starts (ms)</param>
-        /// <param name="repeatDelay">Delay between scroll ticks (ms)</param>
         public ContinuousScrollHandler(int initialDelay = 400, int repeatDelay = 100)
         {
             this.initialDelay = initialDelay;
@@ -27,9 +25,6 @@ namespace FittingRoom
         /// <summary>
         /// Updates the continuous scroll state and returns scroll amount if scrolling should occur.
         /// </summary>
-        /// <param name="time">Game time</param>
-        /// <param name="visibleRows">Number of visible rows for page scrolling</param>
-        /// <param name="shouldPlaySound">True if a scroll occurred and sound should play</param>
         /// <returns>Scroll amount (0 = no scroll, negative = up, positive = down)</returns>
         public int Update(GameTime time, int visibleRows, out bool shouldPlaySound)
         {
