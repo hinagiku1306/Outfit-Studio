@@ -255,5 +255,39 @@ namespace FittingRoom
 
         /// <summary>Height of bottom button area in templates.</summary>
         public const int TemplatesBottomButtonHeight = 70;
+
+        // ============================================================
+        // SAVE SET OVERLAY DIMENSIONS
+        // ============================================================
+
+        /// <summary>Total width of save set overlay window.</summary>
+        public const int SaveSetOverlayWidth = 600;
+
+        /// <summary>Padding above and below each section.</summary>
+        public const int SaveSetSectionPadding = 12;
+
+        /// <summary>Character preview width (matches day/night bg).</summary>
+        public const int SaveSetPreviewWidth = 140;
+
+        /// <summary>Character preview height (matches day/night bg).</summary>
+        public const int SaveSetPreviewHeight = 192;
+
+        /// <summary>Size of item slots for clothing sprites.</summary>
+        public const int SaveSetItemSlotSize = 64;
+
+        /// <summary>Gap between item slots.</summary>
+        public const int SaveSetItemSlotGap = 8;
+
+        /// <summary>Size of favorite checkbox.</summary>
+        public const int SaveSetCheckboxSize = 36;
+
+        /// <summary>Gap between Save and Cancel buttons.</summary>
+        public const int SaveSetButtonGap = 20;
+
+        /// <summary>Border padding for texture box content area.</summary>
+        public const int SaveSetBorderPadding = 30;
+
+        /// <summary>Save Set slot color when excluded or empty.</summary>
+        public static readonly Color SaveSetExcludedItemSlotColor = Color.Black * 0.3f;
     }
 }

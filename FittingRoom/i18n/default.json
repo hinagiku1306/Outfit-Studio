@@ -51,5 +51,27 @@
     "templates.button.delete": "Delete",
     "templates.button.favorite": "★ Favorite",
     "templates.details-label": "Template Details",
-    "templates.preview-label": "Preview"
+    "templates.preview-label": "Preview",
+    // Save Set Overlay
+    "saveset.title": "Save Outfit Set",
+    "saveset.name-label": "Name:",
+    "saveset.name-placeholder": "Enter outfit name...",
+    "saveset.tag-label": "Tag:",
+    "saveset.tag.none": "None",
+    "saveset.tag.spring": "Spring",
+    "saveset.tag.summer": "Summer",
+    "saveset.tag.fall": "Fall",
+    "saveset.tag.winter": "Winter",
+    "saveset.tag.festival": "Festival",
+    "saveset.tag.work": "Work",
+    "saveset.tag.formal": "Formal",
+    "saveset.tag.casual": "Casual",
+    "saveset.favorite": "Favorite",
+    "saveset.include-shirt": "Shirt",
+    "saveset.include-pants": "Pants",
+    "saveset.include-hat": "Hat",
+    "saveset.button.save": "Save",
+    "saveset.button.cancel": "Cancel",
+    "saveset.message.saved": "Outfit saved!",
+    "saveset.message.name-required": "Please enter a name"
 }

@@ -57,6 +57,29 @@ namespace FittingRoom
         public static string TemplatesDetailsLabel { get; private set; } = "";
         public static string TemplatesPreviewLabel { get; private set; } = "";
 
+        // Save Set overlay
+        public static string SaveSetTitle { get; private set; } = "";
+        public static string SaveSetNameLabel { get; private set; } = "";
+        public static string SaveSetNamePlaceholder { get; private set; } = "";
+        public static string SaveSetTagLabel { get; private set; } = "";
+        public static string SaveSetTagNone { get; private set; } = "";
+        public static string SaveSetTagSpring { get; private set; } = "";
+        public static string SaveSetTagSummer { get; private set; } = "";
+        public static string SaveSetTagFall { get; private set; } = "";
+        public static string SaveSetTagWinter { get; private set; } = "";
+        public static string SaveSetTagFestival { get; private set; } = "";
+        public static string SaveSetTagWork { get; private set; } = "";
+        public static string SaveSetTagFormal { get; private set; } = "";
+        public static string SaveSetTagCasual { get; private set; } = "";
+        public static string SaveSetFavorite { get; private set; } = "";
+        public static string SaveSetIncludeShirt { get; private set; } = "";
+        public static string SaveSetIncludePants { get; private set; } = "";
+        public static string SaveSetIncludeHat { get; private set; } = "";
+        public static string SaveSetButtonSave { get; private set; } = "";
+        public static string SaveSetButtonCancel { get; private set; } = "";
+        public static string SaveSetMessageSaved { get; private set; } = "";
+        public static string SaveSetMessageNameRequired { get; private set; } = "";
+
         // Config (optional - only needed if GMCM is used)
         public static string ConfigToggleMenuKeyName { get; private set; } = "";
         public static string ConfigToggleMenuKeyTooltip { get; private set; } = "";
@@ -118,6 +141,28 @@ namespace FittingRoom
             TemplatesButtonFavorite = i18n.Get("templates.button.favorite");
             TemplatesDetailsLabel = i18n.Get("templates.details-label");
             TemplatesPreviewLabel = i18n.Get("templates.preview-label");
+
+            SaveSetTitle = i18n.Get("saveset.title");
+            SaveSetNameLabel = i18n.Get("saveset.name-label");
+            SaveSetNamePlaceholder = i18n.Get("saveset.name-placeholder");
+            SaveSetTagLabel = i18n.Get("saveset.tag-label");
+            SaveSetTagNone = i18n.Get("saveset.tag.none");
+            SaveSetTagSpring = i18n.Get("saveset.tag.spring");
+            SaveSetTagSummer = i18n.Get("saveset.tag.summer");
+            SaveSetTagFall = i18n.Get("saveset.tag.fall");
+            SaveSetTagWinter = i18n.Get("saveset.tag.winter");
+            SaveSetTagFestival = i18n.Get("saveset.tag.festival");
+            SaveSetTagWork = i18n.Get("saveset.tag.work");
+            SaveSetTagFormal = i18n.Get("saveset.tag.formal");
+            SaveSetTagCasual = i18n.Get("saveset.tag.casual");
+            SaveSetFavorite = i18n.Get("saveset.favorite");
+            SaveSetIncludeShirt = i18n.Get("saveset.include-shirt");
+            SaveSetIncludePants = i18n.Get("saveset.include-pants");
+            SaveSetIncludeHat = i18n.Get("saveset.include-hat");
+            SaveSetButtonSave = i18n.Get("saveset.button.save");
+            SaveSetButtonCancel = i18n.Get("saveset.button.cancel");
+            SaveSetMessageSaved = i18n.Get("saveset.message.saved");
+            SaveSetMessageNameRequired = i18n.Get("saveset.message.name-required");
 
             ConfigToggleMenuKeyName = i18n.Get("config.toggle-menu-key.name");
             ConfigToggleMenuKeyTooltip = i18n.Get("config.toggle-menu-key.tooltip");

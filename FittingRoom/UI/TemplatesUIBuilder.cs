@@ -29,14 +29,23 @@ namespace FittingRoom
         public ClickableComponent FavoriteButton { get; private set; } = null!;
         public ClickableTextureComponent CloseButton { get; private set; } = null!;
 
-        private readonly int X, Y, Width, Height;
+        public int X { get; private set; }
+        public int Y { get; private set; }
+        public int Width { get; private set; }
+        public int Height { get; private set; }
 
-        public TemplatesUIBuilder(int x, int y, int width, int height)
+        public TemplatesUIBuilder(int width, int height)
         {
-            X = x;
-            Y = y;
             Width = width;
             Height = height;
+
+            Recalculate();
+        }
+
+        public void Recalculate()
+        {
+            X = (Game1.uiViewport.Width - Width) / 2;
+            Y = (Game1.uiViewport.Height - Height) / 2;
 
             CalculateLayout();
         }

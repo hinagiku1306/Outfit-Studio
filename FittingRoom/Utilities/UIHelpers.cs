@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using StardewValley;
@@ -37,8 +39,6 @@ namespace FittingRoom
         {
             Vector2 textSize = Game1.smallFont.MeasureString(text);
             int calculatedWidth = (int)textSize.X + TextPadding * 2;
-
-            // Use fixed width unless calculated width exceeds it
             return Math.Max(TabAndButtonWidth, calculatedWidth);
         }
 
@@ -87,6 +87,220 @@ namespace FittingRoom
             {
                 button.draw(b);
             }
+        }
+
+        private static readonly Dictionary<string, string> truncatedTextCache = new();
+        private static int lastTruncationWidth = -1;
+
+        /// <summary>
+        /// Draws a dropdown button with text, optional label, optional arrow, and optional clear button.
+        /// Centralizes dropdown button rendering for consistent appearance.
+        /// </summary>
+        public static void DrawDropdownButton(
+            SpriteBatch b,
+            Rectangle bounds,
+            string displayText,
+            bool isOpen,
+            bool showArrow = true,
+            string? label = null,
+            int labelX = 0,
+            ClickableComponent? clearButton = null,
+            bool hasValue = false,
+            Action<SpriteBatch, ClickableComponent>? drawClearButton = null)
+        {
+            int mouseX = Game1.getMouseX();
+            int mouseY = Game1.getMouseY();
+            bool isHovered = bounds.Contains(mouseX, mouseY) && !isOpen;
+
+            // Draw label if provided
+            if (!string.IsNullOrEmpty(label))
+            {
+                float textHeight = Game1.smallFont.MeasureString("A").Y;
+                int labelY = bounds.Y + (int)((bounds.Height - textHeight) / 2);
+                Utility.drawTextWithShadow(b, label, Game1.smallFont,
+                    new Vector2(labelX, labelY), Game1.textColor);
+            }
+
+            // Draw texture box
+            IClickableMenu.drawTextureBox(b, bounds.X, bounds.Y, bounds.Width, bounds.Height,
+                isOpen ? Color.Wheat : Color.White);
+
+            // Calculate max text width based on whether we have clear button and/or arrow
+            int reservedRight = 20; // Base right padding
+            if (showArrow) reservedRight += 28;
+            if (hasValue && clearButton != null) reservedRight = ClearButtonSize + ClearButtonRightMargin + 28;
+            int maxTextWidth = bounds.Width - reservedRight - 20;
+
+            // Truncate text if needed
+            string truncatedText = TruncateText(displayText, maxTextWidth);
+
+            // Calculate text position
+            Vector2 textSize = Game1.smallFont.MeasureString(truncatedText);
+            Vector2 textPos = new Vector2(
+                bounds.X + 20,
+                bounds.Y + (bounds.Height - textSize.Y) / 2
+            );
+
+            // Draw text with hover effect
+            if (isHovered)
+            {
+                Utility.drawTextWithShadow(b, truncatedText, Game1.smallFont, textPos + new Vector2(-1, 0), Game1.textColor * 0.8f);
+                Utility.drawTextWithShadow(b, truncatedText, Game1.smallFont, textPos, Game1.textColor);
+            }
+            else
+            {
+                Utility.drawTextWithShadow(b, truncatedText, Game1.smallFont, textPos, Game1.textColor);
+            }
+
+            // Draw arrow if requested
+            if (showArrow)
+            {
+                Rectangle sourceRect = new Rectangle(421, 472, 11, 12);
+                float scale = 2f;
+                Vector2 arrowPos = new Vector2(
+                    bounds.Right - 24,
+                    bounds.Y + (bounds.Height - 12 * scale) / 2
+                );
+                b.Draw(Game1.mouseCursors, arrowPos, sourceRect, Color.White, 0f, Vector2.Zero, scale, SpriteEffects.None, 1f);
+            }
+
+            // Draw clear button if value exists
+            if (hasValue && clearButton != null && drawClearButton != null)
+            {
+                drawClearButton(b, clearButton);
+            }
+        }
+
+        /// <summary>
+        /// Draws dropdown options with texture box background, hover effects, scroll indicators, and text truncation.
+        /// Returns the full text of any hovered truncated option (for tooltip display).
+        /// </summary>
+        public static string? DrawDropdownOptions(
+            SpriteBatch b,
+            Rectangle anchorBounds,
+            List<ClickableComponent> options,
+            int firstVisibleIndex,
+            int maxVisibleItems,
+            Func<ClickableComponent, bool>? isSelected = null,
+            bool enableTruncation = true)
+        {
+            if (options.Count == 0)
+                return null;
+
+            string? hoveredTruncatedText = null;
+            int mouseX = Game1.getMouseX();
+            int mouseY = Game1.getMouseY();
+
+            int visibleCount = 0;
+            for (int i = 0; i < options.Count; i++)
+            {
+                if (options[i].visible)
+                    visibleCount++;
+            }
+            if (visibleCount == 0)
+                return null;
+
+            int optionHeight = options[0].bounds.Height;
+            int dropdownHeight = Math.Min(visibleCount, maxVisibleItems) * optionHeight;
+
+            IClickableMenu.drawTextureBox(b,
+                anchorBounds.X - 4,
+                anchorBounds.Bottom - 4,
+                anchorBounds.Width + 8,
+                dropdownHeight + 8,
+                Color.White);
+
+            int maxTextWidth = anchorBounds.Width - FilterTextPadding * 2;
+            if (lastTruncationWidth != maxTextWidth)
+            {
+                truncatedTextCache.Clear();
+                lastTruncationWidth = maxTextWidth;
+            }
+
+            for (int i = 0; i < options.Count; i++)
+            {
+                var option = options[i];
+                if (!option.visible)
+                    continue;
+
+                bool optionSelected = isSelected?.Invoke(option) ?? false;
+                bool optionHovered = option.containsPoint(mouseX, mouseY);
+
+                if (optionSelected)
+                {
+                    b.Draw(Game1.staminaRect, option.bounds, Color.LightBlue * 0.3f);
+                }
+                else if (optionHovered)
+                {
+                    b.Draw(Game1.staminaRect, option.bounds, Color.Wheat * 0.6f);
+                }
+
+                string fullText = option.name;
+                string displayText;
+                bool isTruncated = false;
+
+                if (enableTruncation)
+                {
+                    if (truncatedTextCache.TryGetValue(fullText, out var cached))
+                    {
+                        displayText = cached;
+                        isTruncated = displayText != fullText;
+                    }
+                    else
+                    {
+                        displayText = fullText;
+                        Vector2 textSize = Game1.smallFont.MeasureString(displayText);
+
+                        if (textSize.X > maxTextWidth)
+                        {
+                            isTruncated = true;
+                            while (textSize.X > maxTextWidth && displayText.Length > 3)
+                            {
+                                displayText = displayText.Substring(0, displayText.Length - 1);
+                                textSize = Game1.smallFont.MeasureString(displayText + "...");
+                            }
+                            displayText += "...";
+                        }
+                        truncatedTextCache[fullText] = displayText;
+                    }
+                }
+                else
+                {
+                    displayText = fullText;
+                }
+
+                Vector2 finalTextSize = Game1.smallFont.MeasureString(displayText);
+                Vector2 textPos = new Vector2(
+                    option.bounds.X + 16,
+                    option.bounds.Y + (option.bounds.Height - finalTextSize.Y) / 2
+                );
+
+                Utility.drawTextWithShadow(b, displayText, Game1.smallFont, textPos, Game1.textColor);
+
+                if (optionHovered && isTruncated)
+                {
+                    hoveredTruncatedText = fullText;
+                }
+            }
+
+            bool canScrollUp = firstVisibleIndex > 0;
+            bool canScrollDown = firstVisibleIndex + maxVisibleItems < options.Count;
+
+            if (canScrollUp)
+            {
+                Rectangle upArrowSource = new Rectangle(421, 459, 11, 12);
+                Vector2 upArrowPos = new Vector2(anchorBounds.Right - 22, anchorBounds.Bottom + 6);
+                b.Draw(Game1.mouseCursors, upArrowPos, upArrowSource, Color.White, 0f, Vector2.Zero, 1.5f, SpriteEffects.None, 1f);
+            }
+
+            if (canScrollDown)
+            {
+                Rectangle downArrowSource = new Rectangle(421, 472, 11, 12);
+                Vector2 downArrowPos = new Vector2(anchorBounds.Right - 22, anchorBounds.Bottom + dropdownHeight - 22);
+                b.Draw(Game1.mouseCursors, downArrowPos, downArrowSource, Color.White, 0f, Vector2.Zero, 1.5f, SpriteEffects.None, 1f);
+            }
+
+            return hoveredTruncatedText;
         }
     }
 }

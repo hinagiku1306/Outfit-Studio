@@ -548,70 +548,18 @@ namespace FittingRoom
             if (ModFilterDropdown == null)
                 return;
 
-            Rectangle bounds = ModFilterDropdown.bounds;
-            int mouseX = Game1.getMouseX();
-            int mouseY = Game1.getMouseY();
-            bool isHovered = bounds.Contains(mouseX, mouseY) && !isOpen;
             bool hasFilter = !string.IsNullOrEmpty(currentFilter);
-
-            IClickableMenu.drawTextureBox(b, bounds.X, bounds.Y, bounds.Width, bounds.Height,
-                isOpen ? Color.Wheat : Color.White);
-
             string displayText = hasFilter ? currentFilter! : TranslationCache.FilterAll;
 
-            Vector2 textSize = Game1.smallFont.MeasureString(displayText);
-            int maxTextWidth = bounds.Width - ClearButtonSize - ClearButtonRightMargin - 28;
-            if (textSize.X > maxTextWidth)
-            {
-                while (textSize.X > maxTextWidth && displayText.Length > 10)
-                {
-                    displayText = displayText.Substring(0, displayText.Length - 1);
-                    textSize = Game1.smallFont.MeasureString(displayText + "...");
-                }
-                displayText += "...";
-            }
-
-            Vector2 textPos = new Vector2(
-                bounds.X + 20,
-                bounds.Y + (bounds.Height - textSize.Y) / 2
-            );
-
-            if (isHovered)
-            {
-                Utility.drawTextWithShadow(b, displayText, Game1.smallFont, textPos + new Vector2(-1, 0), Game1.textColor * 0.8f);
-                Utility.drawTextWithShadow(b, displayText, Game1.smallFont, textPos, Game1.textColor);
-            }
-            else
-            {
-                Utility.drawTextWithShadow(b, displayText, Game1.smallFont, textPos, Game1.textColor);
-            }
-
-            if (hasFilter && FilterClearButton != null)
-            {
-                DrawClearButton(b, FilterClearButton);
-            }
-        }
-
-        private void DrawDropdownArrow(SpriteBatch b, Rectangle buttonBounds)
-        {
-            Rectangle sourceRect = new Rectangle(421, 472, 11, 12);
-            float scale = 2f;
-            Vector2 center = new Vector2(
-                buttonBounds.X + buttonBounds.Width / 2,
-                buttonBounds.Y + buttonBounds.Height / 2
-            );
-            Vector2 origin = new Vector2(5.5f, 6);
-
-            b.Draw(
-                Game1.mouseCursors,
-                center,
-                sourceRect,
-                Color.White,
-                0f,
-                origin,
-                scale,
-                SpriteEffects.None,
-                1f
+            UIHelpers.DrawDropdownButton(
+                b,
+                ModFilterDropdown.bounds,
+                displayText,
+                isOpen,
+                showArrow: false,
+                clearButton: FilterClearButton,
+                hasValue: hasFilter,
+                drawClearButton: DrawClearButton
             );
         }
 

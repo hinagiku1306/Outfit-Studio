@@ -1,4 +1,5 @@
 using System;
+using FittingRoom.Services;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewModdingAPI.Utilities;
@@ -15,6 +16,7 @@ namespace FittingRoom
         // Cached managers (initialized once when game launches)
         private OutfitFilterManager? filterManager;
         private OutfitCategoryManager? categoryManager;
+        private TemplateManager? templateManager;
 
         public override void Entry(IModHelper helper)
         {
@@ -37,6 +39,7 @@ namespace FittingRoom
             filterManager = new OutfitFilterManager(Monitor, Helper);
             categoryManager = new OutfitCategoryManager(Monitor, filterManager);
             filterManager.BuildModMapping(categoryManager.ShirtIds, categoryManager.PantsIds, categoryManager.HatIds);
+            templateManager = new TemplateManager(Helper);
         }
 
         private void OnGameLaunched(object? sender, GameLaunchedEventArgs e)
@@ -107,13 +110,13 @@ namespace FittingRoom
                 else
                 {
                     // Ensure managers are initialized
-                    if (categoryManager == null || filterManager == null)
+                    if (categoryManager == null || filterManager == null || templateManager == null)
                     {
                         Monitor.Log("Managers not initialized yet. This shouldn't happen.", LogLevel.Warn);
                         return;
                     }
 
-                    menu = new OutfitMenu(this, categoryManager, filterManager, config.ShowItemInfo);
+                    menu = new OutfitMenu(this, categoryManager, filterManager, templateManager, config.ShowItemInfo);
                     Game1.activeClickableMenu = menu;
                 }
             }

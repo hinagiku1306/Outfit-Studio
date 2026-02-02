@@ -18,9 +18,6 @@ namespace FittingRoom
         private readonly OutfitState state;
         private readonly ModEntry mod;
 
-        private readonly Dictionary<string, string> truncatedTextCache = new();
-        private int lastTruncationWidth = -1;
-
         public string? HoveredTruncatedFilterText { get; private set; }
 
         public OutfitDrawingHelper(
@@ -43,120 +40,20 @@ namespace FittingRoom
             if (options.Count == 0 || uiBuilder.ModFilterDropdown == null)
                 return;
 
-            int mouseX = Game1.getMouseX();
-            int mouseY = Game1.getMouseY();
+            string? hoveredText = UIHelpers.DrawDropdownOptions(
+                b,
+                uiBuilder.ModFilterDropdown.bounds,
+                options,
+                dropdownManager.FirstVisibleIndex,
+                dropdownManager.MaxVisibleItems,
+                isSelected: null, // No selection highlighting for filter dropdown
+                enableTruncation: true
+            );
 
-            // Calculate total dropdown height based on VISIBLE items
-            int visibleCount = 0;
-            for (int i = 0; i < options.Count; i++)
+            // Only show tooltip if config allows it
+            if (hoveredText != null && mod.GetConfig().ShowFilterTooltip)
             {
-                if (options[i].visible)
-                    visibleCount++;
-            }
-            if (visibleCount == 0)
-                return;
-
-            // Get dropdown position from the dropdown button
-            int totalHeight = visibleCount * options[0].bounds.Height;
-            int dropdownX = uiBuilder.ModFilterDropdown.bounds.X;
-            int dropdownY = uiBuilder.ModFilterDropdown.bounds.Bottom;
-            int dropdownWidth = uiBuilder.ModFilterDropdown.bounds.Width;
-
-            // Draw dropdown background
-            var bgColor = Color.Wheat;
-            b.Draw(Game1.staminaRect, new Rectangle(dropdownX, dropdownY, dropdownWidth, totalHeight), bgColor);
-
-            // Draw border
-            var borderColor = Color.Black * 0.5f;
-            int borderWidth = 1;
-            b.Draw(Game1.staminaRect, new Rectangle(dropdownX, dropdownY, dropdownWidth, borderWidth), borderColor); // Top
-            b.Draw(Game1.staminaRect, new Rectangle(dropdownX, dropdownY + totalHeight - borderWidth, dropdownWidth, borderWidth), borderColor); // Bottom
-            b.Draw(Game1.staminaRect, new Rectangle(dropdownX, dropdownY, borderWidth, totalHeight), borderColor); // Left
-            b.Draw(Game1.staminaRect, new Rectangle(dropdownX + dropdownWidth - borderWidth, dropdownY, borderWidth, totalHeight), borderColor); // Right
-
-            // Draw scroll indicators
-            bool canScrollUp = dropdownManager.FirstVisibleIndex > 0;
-            bool canScrollDown = dropdownManager.FirstVisibleIndex + dropdownManager.MaxVisibleItems < options.Count;
-
-            if (canScrollUp)
-            {
-                Rectangle upArrowSource = new Rectangle(421, 459, 11, 12);
-                Vector2 upArrowPos = new Vector2(dropdownX + dropdownWidth - 20, dropdownY + 4);
-                b.Draw(Game1.mouseCursors, upArrowPos, upArrowSource, Color.White, 0f, Vector2.Zero, 1.5f, SpriteEffects.None, 1f);
-            }
-
-            if (canScrollDown)
-            {
-                Rectangle downArrowSource = new Rectangle(421, 472, 11, 12);
-                Vector2 downArrowPos = new Vector2(dropdownX + dropdownWidth - 20, dropdownY + totalHeight - 20);
-                b.Draw(Game1.mouseCursors, downArrowPos, downArrowSource, Color.White, 0f, Vector2.Zero, 1.5f, SpriteEffects.None, 1f);
-            }
-
-            // Clear truncation cache if width changed
-            int maxTextWidth = options[0].bounds.Width - FilterTextPadding * 2;
-            if (lastTruncationWidth != maxTextWidth)
-            {
-                truncatedTextCache.Clear();
-                lastTruncationWidth = maxTextWidth;
-            }
-
-            // Iterate without LINQ to avoid allocations
-            for (int i = 0; i < options.Count; i++)
-            {
-                var option = options[i];
-                if (!option.visible)
-                    continue;
-
-                bool isHovered = option.containsPoint(mouseX, mouseY);
-
-                if (isHovered)
-                {
-                    b.Draw(Game1.staminaRect, option.bounds, Color.White * 0.5f);
-                }
-
-                // Get truncated text from cache or compute it
-                string fullText = option.name;
-                string displayText;
-                bool isTruncated;
-
-                if (truncatedTextCache.TryGetValue(fullText, out var cached))
-                {
-                    displayText = cached;
-                    isTruncated = displayText != fullText;
-                }
-                else
-                {
-                    displayText = fullText;
-                    Vector2 textSize = Game1.smallFont.MeasureString(displayText);
-                    isTruncated = false;
-
-                    if (textSize.X > maxTextWidth)
-                    {
-                        isTruncated = true;
-                        // Binary search would be faster, but simple truncation is still better than before
-                        while (textSize.X > maxTextWidth && displayText.Length > 3)
-                        {
-                            displayText = displayText.Substring(0, displayText.Length - 1);
-                            textSize = Game1.smallFont.MeasureString(displayText + "...");
-                        }
-                        displayText += "...";
-                    }
-                    truncatedTextCache[fullText] = displayText;
-                }
-
-                Vector2 finalTextSize = Game1.smallFont.MeasureString(displayText);
-                Vector2 textPos = new Vector2(
-                    option.bounds.X + 12,
-                    option.bounds.Y + (option.bounds.Height - finalTextSize.Y) / 2
-                );
-
-                b.DrawString(Game1.smallFont, displayText, textPos,
-                    isHovered ? Color.Black : Game1.textColor);
-
-                if (isHovered && isTruncated && mod.GetConfig().ShowFilterTooltip)
-                {
-                    HoveredTruncatedFilterText = fullText;
-                }
+                HoveredTruncatedFilterText = hoveredText;
             }
         }
 

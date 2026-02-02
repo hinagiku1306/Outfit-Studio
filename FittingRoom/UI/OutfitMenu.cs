@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using FittingRoom.Services;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -24,15 +25,19 @@ namespace FittingRoom
         private readonly OutfitDrawingHelper drawingHelper;
         private readonly OutfitInputHandler inputHandler;
         private readonly ModEntry mod;
+        private readonly TemplateManager templateManager;
 
         private bool showItemInfo = false;
         private TemplatesOverlay? templatesOverlay = null;
 
-        public OutfitMenu(ModEntry mod, OutfitCategoryManager categoryManager, OutfitFilterManager filterManager, bool showItemInfo = false)
+        public bool IsOverlayBlocking { get; set; } = false;
+
+        public OutfitMenu(ModEntry mod, OutfitCategoryManager categoryManager, OutfitFilterManager filterManager, TemplateManager templateManager, bool showItemInfo = false)
         {
             this.mod = mod;
             this.categoryManager = categoryManager;
             this.filterManager = filterManager;
+            this.templateManager = templateManager;
             this.showItemInfo = showItemInfo;
 
             // Reset to All tab when opening menu
@@ -61,7 +66,9 @@ namespace FittingRoom
                 getCurrentHatIds: () => itemListProvider.GetCurrentHatIds(),
                 getCurrentAllItems: () => itemListProvider.GetCurrentAllItems(),
                 getTemplatesOverlay: () => templatesOverlay,
-                setTemplatesOverlay: overlay => templatesOverlay = overlay
+                setTemplatesOverlay: overlay => templatesOverlay = overlay,
+                templateManager: templateManager,
+                showSavedMessage: () => uiBuilder.ShowSavedMessage()
             );
 
             width = uiBuilder.Width;
@@ -201,6 +208,8 @@ namespace FittingRoom
 
         public override void draw(SpriteBatch b)
         {
+            bool hasOverlay = templatesOverlay != null || IsOverlayBlocking;
+
             // Draw semi-transparent background overlay
             OutfitUIBuilder.DrawOverlay(b);
 
@@ -254,7 +263,7 @@ namespace FittingRoom
             // Draw item list background and scroll buttons
             uiBuilder.DrawItemList(b, state.ScrollOffset, listCount);
 
-            // Draw items
+            // Draw items (skip hover effects when overlay is open)
             int hoveredIndex = -1;
 
             for (int i = 0; i < uiBuilder.VISIBLE_ITEMS; i++)
@@ -294,12 +303,15 @@ namespace FittingRoom
                     b.Draw(Game1.staminaRect, slot, Color.Wheat);
                 }
 
-                // Hover highlight
-                bool isHovered = uiBuilder.ItemSlots[i].containsPoint(Game1.getMouseX(), Game1.getMouseY());
-                if (isHovered)
+                // Hover highlight (only when no overlay is open)
+                if (!hasOverlay)
                 {
-                    b.Draw(Game1.staminaRect, slot, HoverEffectColor);
-                    hoveredIndex = listIndex; // Track for tooltip rendering later
+                    bool isHovered = uiBuilder.ItemSlots[i].containsPoint(Game1.getMouseX(), Game1.getMouseY());
+                    if (isHovered)
+                    {
+                        b.Draw(Game1.staminaRect, slot, HoverEffectColor);
+                        hoveredIndex = listIndex; // Track for tooltip rendering later
+                    }
                 }
 
                 // Draw item sprite with cached filtered lists
@@ -321,38 +333,42 @@ namespace FittingRoom
             uiBuilder.DrawBottomButtons(b);
             uiBuilder.DrawCloseButton(b);
 
-            // Draw dropdown options if open
-            if (dropdownManager.IsOpen)
+            // Skip dropdown and tooltips when overlay is open
+            if (!hasOverlay)
             {
-                drawingHelper.DrawDropdownOptions(b);
-
-                if (!string.IsNullOrEmpty(drawingHelper.HoveredTruncatedFilterText))
+                // Draw dropdown options if open
+                if (dropdownManager.IsOpen)
                 {
-                    drawingHelper.DrawFilterTooltip(b, drawingHelper.HoveredTruncatedFilterText);
-                }
-            }
+                    drawingHelper.DrawDropdownOptions(b);
 
-            // Draw item info tooltip if toggle is active, hovering, and dropdown is closed
-            if (showItemInfo && hoveredIndex >= 0 && !dropdownManager.IsOpen)
-            {
-                if (allItems != null)
-                {
-                    if (hoveredIndex < allItems.Count)
+                    if (!string.IsNullOrEmpty(drawingHelper.HoveredTruncatedFilterText))
                     {
-                        var (itemCategory, itemId) = allItems[hoveredIndex];
-                        tooltipRenderer.DrawTooltipForAllCategory(b, itemCategory, itemId);
+                        drawingHelper.DrawFilterTooltip(b, drawingHelper.HoveredTruncatedFilterText);
                     }
                 }
-                else
-                {
-                    tooltipRenderer.DrawTooltip(b, hoveredIndex, shirtIds!, pantsIds!, hatIds!);
-                }
-            }
 
-            // Draw lookup tooltip if hovering over lookup icon
-            if (uiBuilder.LookupButton != null && uiBuilder.LookupButton.containsPoint(Game1.getMouseX(), Game1.getMouseY()))
-            {
-                drawingHelper.DrawLookupTooltip(b);
+                // Draw item info tooltip if toggle is active, hovering, and dropdown is closed
+                if (showItemInfo && hoveredIndex >= 0 && !dropdownManager.IsOpen)
+                {
+                    if (allItems != null)
+                    {
+                        if (hoveredIndex < allItems.Count)
+                        {
+                            var (itemCategory, itemId) = allItems[hoveredIndex];
+                            tooltipRenderer.DrawTooltipForAllCategory(b, itemCategory, itemId);
+                        }
+                    }
+                    else
+                    {
+                        tooltipRenderer.DrawTooltip(b, hoveredIndex, shirtIds!, pantsIds!, hatIds!);
+                    }
+                }
+
+                // Draw lookup tooltip if hovering over lookup icon
+                if (uiBuilder.LookupButton != null && uiBuilder.LookupButton.containsPoint(Game1.getMouseX(), Game1.getMouseY()))
+                {
+                    drawingHelper.DrawLookupTooltip(b);
+                }
             }
 
             // Draw templates overlay if open
@@ -361,8 +377,11 @@ namespace FittingRoom
                 templatesOverlay.draw(b);
             }
 
-            // Draw cursor
-            drawMouse(b);
+            // Only draw cursor if no overlay (overlays draw their own cursor)
+            if (!hasOverlay)
+            {
+                drawMouse(b);
+            }
         }
 
         public override void emergencyShutDown()

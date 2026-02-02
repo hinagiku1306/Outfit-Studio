@@ -1,14 +1,13 @@
 using System;
 using System.Collections.Generic;
+using FittingRoom.Services;
 using Microsoft.Xna.Framework.Input;
 using StardewValley;
+using StardewValley.Menus;
 using StardewValley.Objects;
 
 namespace FittingRoom
 {
-    /// <summary>
-    /// Handles input events (clicks, key presses, scroll) for the outfit menu.
-    /// </summary>
     public class OutfitInputHandler
     {
         private readonly OutfitCategoryManager categoryManager;
@@ -18,11 +17,13 @@ namespace FittingRoom
         private readonly OutfitSearchManager searchManager;
         private readonly ContinuousScrollHandler continuousScrollHandler;
         private readonly ModEntry mod;
+        private readonly TemplateManager templateManager;
 
         private readonly Action onRevertAndClose;
         private readonly Action onApplyOutfit;
         private readonly Action onResetOutfit;
         private readonly Action onOutfitChanged;
+        private readonly Action showSavedMessage;
         private readonly Func<int> getCurrentListCount;
         private readonly Func<List<string>> getCurrentShirtIds;
         private readonly Func<List<string>> getCurrentPantsIds;
@@ -49,7 +50,9 @@ namespace FittingRoom
             Func<List<string>> getCurrentHatIds,
             Func<List<(OutfitCategoryManager.Category, string)>> getCurrentAllItems,
             Func<TemplatesOverlay?> getTemplatesOverlay,
-            Action<TemplatesOverlay?> setTemplatesOverlay)
+            Action<TemplatesOverlay?> setTemplatesOverlay,
+            TemplateManager templateManager,
+            Action showSavedMessage)
         {
             this.categoryManager = categoryManager;
             this.state = state;
@@ -58,10 +61,12 @@ namespace FittingRoom
             this.searchManager = searchManager;
             this.continuousScrollHandler = continuousScrollHandler;
             this.mod = mod;
+            this.templateManager = templateManager;
             this.onRevertAndClose = onRevertAndClose;
             this.onApplyOutfit = onApplyOutfit;
             this.onResetOutfit = onResetOutfit;
             this.onOutfitChanged = onOutfitChanged;
+            this.showSavedMessage = showSavedMessage;
             this.getCurrentListCount = getCurrentListCount;
             this.getCurrentShirtIds = getCurrentShirtIds;
             this.getCurrentPantsIds = getCurrentPantsIds;
@@ -73,19 +78,18 @@ namespace FittingRoom
 
         public bool HandleLeftClick(int x, int y, bool playSound)
         {
-            // Templates overlay handling - check first
+            // Templates overlay handling
             var templatesOverlay = getTemplatesOverlay();
             if (templatesOverlay != null)
             {
                 templatesOverlay.receiveLeftClick(x, y, playSound);
 
-                // Check if overlay was closed
                 if (templatesOverlay.readyToClose())
                 {
                     setTemplatesOverlay(null);
                 }
 
-                return true; // Don't process main menu clicks when overlay is open
+                return true;
             }
 
             // Handle dropdown option clicks (but allow Close, Tab, and Clear buttons to work)
@@ -240,11 +244,11 @@ namespace FittingRoom
                 return true;
             }
 
-            // Save button (placeholder - just shows message)
+            // Save button - opens SaveSet overlay (swaps active menu)
             if (uiBuilder.SaveButton.containsPoint(x, y))
             {
-                uiBuilder.ShowSavedMessage();
-                if (playSound) Game1.playSound("coin");
+                Game1.activeClickableMenu = new SaveSetOverlay(Game1.activeClickableMenu, templateManager, () => showSavedMessage());
+                if (playSound) Game1.playSound("bigSelect");
                 return true;
             }
 

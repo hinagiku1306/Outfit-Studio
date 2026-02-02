@@ -32,10 +32,19 @@ namespace FittingRoom
         {
             width = TemplatesOverlayWidth;
             height = TemplatesOverlayHeight;
-            xPositionOnScreen = (Game1.uiViewport.Width - width) / 2;
-            yPositionOnScreen = (Game1.uiViewport.Height - height) / 2;
 
-            uiBuilder = new TemplatesUIBuilder(xPositionOnScreen, yPositionOnScreen, width, height);
+            uiBuilder = new TemplatesUIBuilder(width, height);
+            xPositionOnScreen = uiBuilder.X;
+            yPositionOnScreen = uiBuilder.Y;
+        }
+
+        public override void gameWindowSizeChanged(Rectangle oldBounds, Rectangle newBounds)
+        {
+            base.gameWindowSizeChanged(oldBounds, newBounds);
+
+            uiBuilder.Recalculate();
+            xPositionOnScreen = uiBuilder.X;
+            yPositionOnScreen = uiBuilder.Y;
         }
 
         public override bool readyToClose() => shouldClose;
