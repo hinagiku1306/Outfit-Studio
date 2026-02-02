@@ -83,8 +83,8 @@ namespace FittingRoom
             ButtonApply = i18n.Get("menu.buttons.apply");
             ButtonReset = i18n.Get("menu.buttons.reset");
             ButtonNewOutfit = i18n.Get("menu.buttons.new-outfit");
-            ButtonOutfits = i18n.Get("menu.buttons.outfits");
-            MessageSaved = i18n.Get("menu.messages.saved");
+            ButtonOutfits = i18n.Get("menu.buttons.wardrobe");
+            MessageSaved = i18n.Get("menu.messages.applied");
 
             FilterAll = i18n.Get("menu.filter.all");
             FilterVanilla = i18n.Get("menu.filter.vanilla");

@@ -102,8 +102,6 @@ namespace FittingRoom
 
         // --- Helper methods ---
 
-        private int GetCurrentIndex() => state.GetCurrentIndex(categoryManager.CurrentCategory);
-
         private void ResetOutfit()
         {
             state.ResetToApplied(
@@ -257,7 +255,6 @@ namespace FittingRoom
             uiBuilder.DrawItemList(b, state.ScrollOffset, listCount);
 
             // Draw items
-            int currentIndex = GetCurrentIndex();
             int hoveredIndex = -1;
 
             for (int i = 0; i < uiBuilder.VISIBLE_ITEMS; i++)
@@ -271,9 +268,10 @@ namespace FittingRoom
                 Rectangle slot = uiBuilder.ItemSlots[i].bounds;
                 bool isSelected;
 
-                // For All tab, check if item matches the cached equipped item for its category
+                // Check if item matches the current selection
                 if (allItems != null && listIndex < allItems.Count)
                 {
+                    // All tab: check by category and item ID against equipped items
                     var (itemCategory, itemId) = allItems[listIndex];
                     isSelected = itemCategory switch
                     {
@@ -285,13 +283,15 @@ namespace FittingRoom
                 }
                 else
                 {
+                    // Category tabs: use category-specific index
+                    int currentIndex = state.GetCurrentIndex(currentCategory);
                     isSelected = listIndex == currentIndex;
                 }
 
                 // Highlight selected item
                 if (isSelected)
                 {
-                    b.Draw(Game1.staminaRect, slot, Color.Wheat * 0.3f);
+                    b.Draw(Game1.staminaRect, slot, Color.Wheat);
                 }
 
                 // Hover highlight

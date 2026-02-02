@@ -1,29 +1,4 @@
 {
-    // Main Menu
-    "menu.title": "Fitting Room",
-    "menu.tabs.all": "All",
-    "menu.tabs.shirts": "Shirts",
-    "menu.tabs.pants": "Pants",
-    "menu.tabs.hats": "Hats",
-    "menu.buttons.apply": "Apply",
-    "menu.buttons.reset": "Reset",
-    "menu.buttons.new-outfit": "New",
-    "menu.buttons.outfits": "Outfits",
-    "menu.messages.saved": "Saved!",
-    "menu.filter.all": "All",
-    "menu.filter.vanilla": "Vanilla",
-    "menu.filter.unknown": "Unknown",
-    "menu.item.no-hat": "No Hat",
-    "menu.item.no-shirt": "None",
-    "menu.item.no-pants": "None",
-    "menu.item.mod-info": "Mod: {{modName}}",
-    "menu.item.no-hat-symbol": "X",
-
-    // Lookup tooltip labels
-    "menu.lookup.shirt": "Shirt",
-    "menu.lookup.pants": "Pants",
-    "menu.lookup.hat": "Hat",
-
     // GMCM Configs
     "config.toggle-menu-key.name": "Toggle Menu Key",
     "config.toggle-menu-key.tooltip": "Press this key to open/close the menu.",
@@ -35,7 +10,29 @@
     "config.reset-search-on-tab-switch.tooltip": "If enabled, the search text will be cleared when switching between Clothing tabs.",
     "config.show-filter-tooltip.name": "Show Filter Tooltip",
     "config.show-filter-tooltip.tooltip": "If enabled, hovering over a truncated filter name will show the full name in a tooltip.",
-
+    // Main Menu
+    "menu.title": "Fitting Room",
+    "menu.tabs.all": "All",
+    "menu.tabs.shirts": "Shirts",
+    "menu.tabs.pants": "Pants",
+    "menu.tabs.hats": "Hats",
+    "menu.buttons.apply": "Apply",
+    "menu.buttons.reset": "Reset",
+    "menu.buttons.new-outfit": "Save Set",
+    "menu.buttons.wardrobe": "Wardrobe",
+    "menu.messages.applied": "Applied!",
+    "menu.filter.all": "All",
+    "menu.filter.vanilla": "Vanilla",
+    "menu.filter.unknown": "Unknown",
+    "menu.item.no-hat": "No Hat",
+    "menu.item.no-shirt": "None",
+    "menu.item.no-pants": "None",
+    "menu.item.mod-info": "Mod: {{modName}}",
+    "menu.item.no-hat-symbol": "X",
+    // Lookup tooltip labels
+    "menu.lookup.shirt": "Shirt",
+    "menu.lookup.pants": "Pants",
+    "menu.lookup.hat": "Hat",
     // Template Menu
     "templates.title": "Outfit Templates",
     "templates.filter": "Filter",

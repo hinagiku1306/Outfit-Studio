@@ -358,6 +358,10 @@ namespace FittingRoom
             int sourceY = baseY + (frameIndex * 16) / 96 * 32;
             Rectangle sourceRect = new Rectangle(sourceX, sourceY, FarmerSpriteWidth, FarmerSpriteHeight);
 
+            // Save original eye state and force open eyes for preview
+            int originalEyes = Game1.player.currentEyes;
+            Game1.player.currentEyes = 0;
+
             farmerSpriteBatch!.Begin(SpriteSortMode.FrontToBack, BlendState.AlphaBlend, SamplerState.PointClamp, null, null);
 
             FarmerRenderer.isDrawingForUI = true;
@@ -370,6 +374,9 @@ namespace FittingRoom
             FarmerRenderer.isDrawingForUI = false;
 
             farmerSpriteBatch.End();
+
+            // Restore original eye state
+            Game1.player.currentEyes = originalEyes;
 
             Game1.graphics.GraphicsDevice.SetRenderTargets(renderTargets);
         }

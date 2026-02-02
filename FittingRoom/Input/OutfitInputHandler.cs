@@ -346,6 +346,10 @@ namespace FittingRoom
             if (itemCategory == OutfitCategoryManager.Category.Hats && ItemIdHelper.IsNoHatId(itemId))
             {
                 Game1.player.hat.Value = null;
+                // Update hat index to match the selected item in the hats list
+                int hatIndex = getCurrentHatIds().IndexOf(itemId);
+                if (hatIndex >= 0)
+                    state.SetCurrentIndex(OutfitCategoryManager.Category.Hats, hatIndex);
                 onOutfitChanged();
                 return;
             }
@@ -359,15 +363,27 @@ namespace FittingRoom
                 case OutfitCategoryManager.Category.Shirts:
                     Game1.player.shirtItem.Value = ItemRegistry.Create<Clothing>(qualifiedId);
                     Game1.player.FarmerRenderer.MarkSpriteDirty();
+                    // Update shirt index to match the selected item in the shirts list
+                    int shirtIndex = getCurrentShirtIds().IndexOf(itemId);
+                    if (shirtIndex >= 0)
+                        state.SetCurrentIndex(OutfitCategoryManager.Category.Shirts, shirtIndex);
                     break;
 
                 case OutfitCategoryManager.Category.Pants:
                     Game1.player.pantsItem.Value = ItemRegistry.Create<Clothing>(qualifiedId);
                     Game1.player.FarmerRenderer.MarkSpriteDirty();
+                    // Update pants index to match the selected item in the pants list
+                    int pantsIndex = getCurrentPantsIds().IndexOf(itemId);
+                    if (pantsIndex >= 0)
+                        state.SetCurrentIndex(OutfitCategoryManager.Category.Pants, pantsIndex);
                     break;
 
                 case OutfitCategoryManager.Category.Hats:
                     Game1.player.hat.Value = ItemRegistry.Create<Hat>(qualifiedId);
+                    // Update hat index to match the selected item in the hats list
+                    int hatIdx = getCurrentHatIds().IndexOf(itemId);
+                    if (hatIdx >= 0)
+                        state.SetCurrentIndex(OutfitCategoryManager.Category.Hats, hatIdx);
                     break;
             }
             onOutfitChanged();
