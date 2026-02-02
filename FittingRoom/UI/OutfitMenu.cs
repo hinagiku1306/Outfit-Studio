@@ -362,6 +362,20 @@ namespace FittingRoom
                 return;
             }
 
+            // Direction preview arrows
+            if (uiBuilder.LeftArrowButton.containsPoint(x, y))
+            {
+                uiBuilder.RotatePreviewLeft();
+                if (playSound) Game1.playSound("shwip");
+                return;
+            }
+            if (uiBuilder.RightArrowButton.containsPoint(x, y))
+            {
+                uiBuilder.RotatePreviewRight();
+                if (playSound) Game1.playSound("shwip");
+                return;
+            }
+
             // Save button (placeholder - just shows message)
             if (uiBuilder.SaveButton.containsPoint(x, y))
             {
@@ -568,10 +582,7 @@ namespace FittingRoom
             // === LEFT PANEL: Player Preview ===
             uiBuilder.DrawPlayerPreview(b);
             uiBuilder.DrawSavedMessage(b);
-
-            // Draw apply and reset buttons
-            uiBuilder.DrawApplyButton(b);
-            uiBuilder.DrawResetButton(b);
+            uiBuilder.DrawLeftPanelButtons(b);
 
             // === RIGHT PANEL: Category Tabs & Item List ===
             // Draw category tabs with text labels
@@ -629,18 +640,9 @@ namespace FittingRoom
                     slot, GetCurrentShirtIds(), GetCurrentPantsIds(), GetCurrentHatIds());
             }
 
-            // Draw new buttons
-            uiBuilder.DrawSaveButton(b);
-            uiBuilder.DrawTemplatesButton(b);
-
-            // Draw close button
+            // Draw bottom and close buttons
+            uiBuilder.DrawBottomButtons(b);
             uiBuilder.DrawCloseButton(b);
-
-            // Set hand cursor when hovering over clickable elements
-            if (uiBuilder.IsHoveringClickable(Game1.getMouseX(), Game1.getMouseY()) || dropdownManager.IsOpen)
-            {
-                Game1.mouseCursor = 1;
-            }
 
             // Draw dropdown options if open
             if (dropdownManager.IsOpen)
@@ -696,21 +698,19 @@ namespace FittingRoom
             b.Draw(Game1.staminaRect, new Rectangle(dropdownX, dropdownY, borderWidth, totalHeight), borderColor); // Left
             b.Draw(Game1.staminaRect, new Rectangle(dropdownX + dropdownWidth - borderWidth, dropdownY, borderWidth, totalHeight), borderColor); // Right
 
-            // Draw each VISIBLE option
             foreach (var option in dropdownManager.Options.Where(opt => opt.visible))
             {
                 bool isHovered = option.containsPoint(mouseX, mouseY);
 
-                // Draw hover highlight
                 if (isHovered)
                 {
-                    b.Draw(Game1.staminaRect, option.bounds, Color.Wheat * 0.3f);
+                    b.Draw(Game1.staminaRect, option.bounds, Color.White * 0.5f);
                 }
 
                 // Truncate text with ellipsis if too long
                 string displayText = option.name;
                 Vector2 textSize = Game1.smallFont.MeasureString(displayText);
-                int maxTextWidth = option.bounds.Width - 24; // 12px padding on each side
+                int maxTextWidth = option.bounds.Width - FilterTextPadding * 2;
 
                 if (textSize.X > maxTextWidth)
                 {
@@ -723,13 +723,12 @@ namespace FittingRoom
                     displayText += "...";
                 }
 
-                // Draw option text
                 Vector2 textPos = new Vector2(
                     option.bounds.X + 12,
                     option.bounds.Y + (option.bounds.Height - textSize.Y) / 2
                 );
 
-                Utility.drawTextWithShadow(b, displayText, Game1.smallFont, textPos,
+                b.DrawString(Game1.smallFont, displayText, textPos,
                     isHovered ? Color.Black : Game1.textColor);
             }
         }

@@ -34,7 +34,7 @@ namespace FittingRoom
         public const int BottomButtonAreaHeight = 80;
 
         // ============================================================
-        // CHARACTER PREVIEW PANEL (Left Side)
+        // CHARACTER PREVIEW PANEL
         // ============================================================
 
         /// <summary>Width of the character preview background box.</summary>
@@ -59,10 +59,10 @@ namespace FittingRoom
         public const float FarmerSpriteScale = 1.3f;
 
         /// <summary>Width of farmer sprite at standard scale.</summary>
-        public const int FarmerSpriteWidth = 64;
+        public const int FarmerSpriteWidth = 16;
 
         /// <summary>Height of farmer sprite at standard scale.</summary>
-        public const int FarmerSpriteHeight = 128;
+        public const int FarmerSpriteHeight = 32;
 
         /// <summary>Layer depth for farmer sprite rendering.</summary>
         public const float FarmerSpriteLayerDepth = 0.8f;
@@ -90,7 +90,7 @@ namespace FittingRoom
         public const int DrawnItemSize = 64;
 
         // ============================================================
-        // CATEGORY TABS AND ACTION BUTTONS (Shared dimensions)
+        // CATEGORY TABS AND ACTION BUTTONS
         // ============================================================
 
         /// <summary>Width of category tabs and action buttons (Apply/Reset).</summary>
@@ -105,28 +105,15 @@ namespace FittingRoom
         /// <summary>Tab opacity.</summary>
         public const float TabOpacity = 0.2f;
 
-        /// <summary>Default hover effect color for tabs and buttons.</summary>
-        public static readonly Color HoverEffectColor = Color.Wheat * 0.3f;
-
         /// <summary>Padding around equipped text area.</summary>
         public const int TextPadding = 15;
 
         // ============================================================
-        // SCROLL ARROWS
+        // SCROLL ARROWS & CLOSE
         // ============================================================
 
         /// <summary>Size of scroll arrow buttons (width and height).</summary>
         public const int ScrollArrowButtonSize = 44;
-
-        /// <summary>Vertical gap between up and down scroll arrows.</summary>
-        public const int ScrollArrowVerticalGap = 50;
-
-        /// <summary>Left gap between outfit menu and arrow.</summary>
-        public const int ScrollArrowLeftGap = 20;
-
-        // ============================================================
-        // CLOSE BUTTON
-        // ============================================================
 
         /// <summary>Size of the close button (width and height).</summary>
         public const int CloseButtonSize = 48;
@@ -139,7 +126,10 @@ namespace FittingRoom
         // ============================================================
 
         /// <summary>Scale increase when hovering over buttons.</summary>
-        public const float ButtonHoverScaleIncrease = 0.5f;
+        public const float ButtonHoveringScale = 1.05f;
+
+        /// <summary>Default hover effect color for tabs and buttons.</summary>
+        public static readonly Color HoverEffectColor = Color.Wheat * 0.3f;
 
         // ============================================================
         // SAVED MESSAGE
@@ -166,27 +156,21 @@ namespace FittingRoom
         public const string NoHatId = "-1";
 
         // ============================================================
-        // REVAMPED LAYOUT - TABS AT TOP
+        // TOP TABS
         // ============================================================
-
-        /// <summary>Height reserved for tabs row at top of menu.</summary>
-        public const int TabAreaHeight = 70;
 
         /// <summary>Gap between title and tabs.</summary>
         public const int TabMarginTop = 8;
 
         // ============================================================
-        // REVAMPED LAYOUT - EQUIPPED ITEMS DISPLAY
+        // EQUIPPED ITEMS DISPLAY
         // ============================================================
-
-        /// <summary>Height reserved for equipped items text area.</summary>
-        public const int EquippedTextAreaHeight = 90;
 
         /// <summary>Height per line of equipped text.</summary>
         public const int EquippedTextLineHeight = 28;
 
         // ============================================================
-        // REVAMPED LAYOUT - FILTER & SEARCH AT TOP OF GRID
+        // FILTER & SEARCH AT TOP OF GRID
         // ============================================================
 
         /// <summary>Height for filter/search controls row.</summary>
@@ -198,15 +182,12 @@ namespace FittingRoom
         /// <summary>Fixed width for filter dropdown.</summary>
         public const int FilterDropdownWidth = 200;
 
-        // ============================================================
-        // REVAMPED LAYOUT - NEW BOTTOM BUTTONS
-        // ============================================================
+        /// <summary>Padding between text and its box.</summary>
+        public const int FilterTextPadding = 12;
 
-        /// <summary>Width of Save button.</summary>
-        public const int SaveButtonWidth = 120;
-
-        /// <summary>Width of Templates button.</summary>
-        public const int TemplatesButtonWidth = 140;
+        // ============================================================
+        // BOTTOM BUTTONS
+        // ============================================================
 
         /// <summary>Gap between bottom buttons.</summary>
         public const int BottomButtonGap = 16;

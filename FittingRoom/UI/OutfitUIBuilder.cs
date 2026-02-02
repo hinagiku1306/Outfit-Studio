@@ -1,6 +1,5 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using StardewModdingAPI;
 using StardewValley;
 using StardewValley.Menus;
 using static FittingRoom.OutfitLayoutConstants;
@@ -34,6 +33,11 @@ namespace FittingRoom
         public ClickableComponent SaveButton { get; private set; } = null!;
         public ClickableComponent TemplatesButton { get; private set; } = null!;
 
+        // Direction preview arrows
+        public ClickableTextureComponent LeftArrowButton { get; private set; } = null!;
+        public ClickableTextureComponent RightArrowButton { get; private set; } = null!;
+        private int previewDirection = 2; // 0=Up, 1=Right, 2=Down, 3=Left (default: Down)
+
         // Equipped items text area
         public Rectangle EquippedTextArea { get; private set; }
 
@@ -51,10 +55,19 @@ namespace FittingRoom
         private SpriteBatch? farmerSpriteBatch = null;
 
         // Farmer preview constants (cached for performance)
-        private static readonly Rectangle FarmerDownFacingRect = new Rectangle(0, 0, 16, 32);
-        private static readonly Rectangle FarmerDownFacingBathingRect = new Rectangle(0, 576, 16, 32);
+        private static readonly Rectangle FarmerSourceRect = new Rectangle(0, 0, 16, 32);
+        private static readonly Rectangle FarmerBathingSourceRect = new Rectangle(0, 576, 16, 32);
         private static readonly Vector2 FarmerRenderPosition = new Vector2(32, 32);
-        private static readonly FarmerSprite.AnimationFrame StandingFrame = new FarmerSprite.AnimationFrame(0, 0, secondaryArm: false, flip: false);
+
+        // Standing animation frames for each direction (frame index, duration, secondaryArm, flip)
+        // Frame indices: 0=down, 6=right, 12=up, 6+flip=left
+        private static readonly FarmerSprite.AnimationFrame[] DirectionFrames = new[]
+        {
+            new FarmerSprite.AnimationFrame(12, 0, secondaryArm: false, flip: false), // 0 = Up
+            new FarmerSprite.AnimationFrame(6, 0, secondaryArm: false, flip: false),  // 1 = Right
+            new FarmerSprite.AnimationFrame(0, 0, secondaryArm: false, flip: false),  // 2 = Down
+            new FarmerSprite.AnimationFrame(6, 0, secondaryArm: false, flip: true),   // 3 = Left
+        };
         private const int FarmerRenderWidth = BackgroundSourceWidth * 2;  // 128
         private const int FarmerRenderHeight = BackgroundSourceHeight * 2; // 192
 
@@ -95,9 +108,9 @@ namespace FittingRoom
             int tabY = Y + ContentBoxPadding + MenuTopPadding + TabMarginTop;
 
             // Calculate dynamic widths for tabs based on text
-            int shirtTabWidth = CalculateButtonWidth(TranslationCache.TabShirts);
-            int pantsTabWidth = CalculateButtonWidth(TranslationCache.TabPants);
-            int hatsTabWidth = CalculateButtonWidth(TranslationCache.TabHats);
+            int shirtTabWidth = UIHelpers.CalculateButtonWidth(TranslationCache.TabShirts);
+            int pantsTabWidth = UIHelpers.CalculateButtonWidth(TranslationCache.TabPants);
+            int hatsTabWidth = UIHelpers.CalculateButtonWidth(TranslationCache.TabHats);
 
             int totalTabsWidth = shirtTabWidth + pantsTabWidth + hatsTabWidth + TabAndButtonGap * 2;
             int tabsStartX = X + (Width - totalTabsWidth) / 2;
@@ -118,9 +131,10 @@ namespace FittingRoom
             // Content panels start below tabs
             int contentY = tabY + TabAndButtonHeight + ContentBoxPadding;
 
-            // Left panel: Portrait centered vertically with Apply/Reset buttons below
-            // Calculate total group height for vertical centering
-            int totalGroupHeight = CharacterPreviewHeight + GapBetweenPortraitAndButtons + (TabAndButtonHeight * 2) + TabAndButtonGap;
+            // Left panel: Portrait centered vertically with arrows and Apply/Reset buttons below
+            // Calculate total group height for vertical centering (includes arrow row)
+            const int arrowRowHeight = ScrollArrowButtonSize + 8;
+            int totalGroupHeight = CharacterPreviewHeight + arrowRowHeight + GapBetweenPortraitAndButtons + (TabAndButtonHeight * 2) + TabAndButtonGap;
             int availableVerticalSpace = Height - (contentY - Y) - ContentBoxPadding - MenuTopPadding;
             int portraitY = contentY + (availableVerticalSpace - totalGroupHeight) / 2;
 
@@ -131,14 +145,36 @@ namespace FittingRoom
                 CharacterPreviewHeight
             );
 
-            // Apply and Reset buttons below portrait (centered in left panel)
+            // Direction arrows below portrait (centered horizontally)
+            const int arrowScale = 4;
+            const int arrowWidth = 12 * arrowScale;  // 48px
+            const int arrowHeight = 11 * arrowScale; // 44px
+            const int arrowGap = 16;
+            int arrowY = PortraitBox.Bottom + 8;
+            int totalArrowsWidth = arrowWidth * 2 + arrowGap;
+            int arrowsStartX = leftPanelCenterX - totalArrowsWidth / 2;
+
+            LeftArrowButton = new ClickableTextureComponent(
+                new Rectangle(arrowsStartX, arrowY, arrowWidth, arrowHeight),
+                Game1.mouseCursors,
+                new Rectangle(352, 495, 12, 11),
+                arrowScale
+            );
+            RightArrowButton = new ClickableTextureComponent(
+                new Rectangle(arrowsStartX + arrowWidth + arrowGap, arrowY, arrowWidth, arrowHeight),
+                Game1.mouseCursors,
+                new Rectangle(365, 495, 12, 11),
+                arrowScale
+            );
+
+            // Apply and Reset buttons below arrows (centered in left panel)
             // Calculate dynamic widths and use max so both buttons are same width
-            int applyButtonWidth = CalculateButtonWidth(TranslationCache.ButtonApply);
-            int resetButtonWidth = CalculateButtonWidth(TranslationCache.ButtonReset);
+            int applyButtonWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ButtonApply);
+            int resetButtonWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ButtonReset);
             int buttonWidth = Math.Max(applyButtonWidth, resetButtonWidth);
 
             int buttonsStartX = leftPanelCenterX - buttonWidth / 2;
-            int applyButtonY = PortraitBox.Bottom + GapBetweenPortraitAndButtons;
+            int applyButtonY = arrowY + arrowHeight + GapBetweenPortraitAndButtons;
             int resetButtonY = applyButtonY + TabAndButtonHeight + TabAndButtonGap;
 
             ApplyButton = new ClickableComponent(
@@ -194,8 +230,8 @@ namespace FittingRoom
             int bottomButtonY = Y + Height - BottomButtonAreaHeight - MenuBottomPadding + (BottomButtonAreaHeight - TabAndButtonHeight) / 2;
 
             // Calculate dynamic widths based on text
-            int templatesButtonWidth = CalculateButtonWidth(TranslationCache.ButtonTemplates);
-            int saveButtonWidth = CalculateButtonWidth(TranslationCache.ButtonSave);
+            int templatesButtonWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ButtonTemplates);
+            int saveButtonWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ButtonSave);
 
             // Templates button on the right
             TemplatesButton = new ClickableComponent(
@@ -258,7 +294,13 @@ namespace FittingRoom
             Game1.graphics.GraphicsDevice.SetRenderTarget(farmerRenderTarget);
             Game1.graphics.GraphicsDevice.Clear(Color.Transparent);
 
-            Rectangle sourceRect = Game1.player.bathingClothes.Value ? FarmerDownFacingBathingRect : FarmerDownFacingRect;
+            // Calculate source rect based on direction frame
+            // Spritesheet is 96px wide (6 frames per row), each frame is 16x32
+            int frameIndex = DirectionFrames[previewDirection].frame;
+            int baseY = Game1.player.bathingClothes.Value ? 576 : 0;
+            int sourceX = (frameIndex * 16) % 96;
+            int sourceY = baseY + (frameIndex * 16) / 96 * 32;
+            Rectangle sourceRect = new Rectangle(sourceX, sourceY, FarmerSpriteWidth, FarmerSpriteHeight);
 
             farmerSpriteBatch!.Begin(SpriteSortMode.FrontToBack, BlendState.AlphaBlend, SamplerState.PointClamp, null, null);
 
@@ -290,7 +332,7 @@ namespace FittingRoom
                     SurfaceFormat.Color,
                     DepthFormat.None,
                     0,
-                    RenderTargetUsage.PreserveContents
+                    RenderTargetUsage.DiscardContents
                 );
             }
 
@@ -304,13 +346,13 @@ namespace FittingRoom
         {
             Game1.player.FarmerRenderer.draw(
                 farmerSpriteBatch!,
-                StandingFrame,
-                0,
+                DirectionFrames[previewDirection],
+                DirectionFrames[previewDirection].frame,
                 sourceRect,
                 FarmerRenderPosition,
                 Vector2.Zero,
                 FarmerSpriteLayerDepth,
-                2,
+                previewDirection,
                 color,
                 0f,
                 1f,
@@ -336,49 +378,47 @@ namespace FittingRoom
                 listWidth + ContentBoxPadding * 2, listHeight + ContentBoxPadding * 2, Color.White);
         }
 
+        #region Button Drawing
+
         /// <summary>
-        /// Helper method to draw a text button with label and hover effect.
+        /// Draws all left panel buttons: direction arrows, apply, and reset.
         /// </summary>
-        private void DrawTextButton(SpriteBatch b, ClickableComponent button, string label, Color? hoverColor = null)
+        public void DrawLeftPanelButtons(SpriteBatch b)
         {
-            int mouseX = Game1.getMouseX();
-            int mouseY = Game1.getMouseY();
-            bool isHovered = button.containsPoint(mouseX, mouseY);
+            // Direction arrows
+            UIHelpers.DrawTextureButton(b, LeftArrowButton);
+            UIHelpers.DrawTextureButton(b, RightArrowButton);
 
-            // Draw button box
-            IClickableMenu.drawTextureBox(b, button.bounds.X, button.bounds.Y,
-                button.bounds.Width, button.bounds.Height, Color.White);
-
-            // Draw hover effect AFTER texture box so it overlays on top
-            if (isHovered)
-            {
-                b.Draw(Game1.staminaRect, button.bounds, hoverColor ?? HoverEffectColor);
-            }
-
-            // Draw centered text
-            Vector2 textSize = Game1.smallFont.MeasureString(label);
-            Vector2 textPos = new Vector2(
-                button.bounds.X + (button.bounds.Width - textSize.X) / 2,
-                button.bounds.Y + (button.bounds.Height - textSize.Y) / 2
-            );
-
-            Utility.drawTextWithShadow(b, label, Game1.smallFont, textPos, Game1.textColor);
+            // Apply and Reset buttons
+            UIHelpers.DrawTextButton(b, ApplyButton, TranslationCache.ButtonApply);
+            UIHelpers.DrawTextButton(b, ResetButton, TranslationCache.ButtonReset);
         }
 
         /// <summary>
-        /// Draws the apply button with its label and hover effect.
+        /// Draws the bottom panel buttons: save and templates.
         /// </summary>
-        public void DrawApplyButton(SpriteBatch b)
+        public void DrawBottomButtons(SpriteBatch b)
         {
-            DrawTextButton(b, ApplyButton, TranslationCache.ButtonApply, null);
+            UIHelpers.DrawTextButton(b, SaveButton, TranslationCache.ButtonSave);
+            UIHelpers.DrawTextButton(b, TemplatesButton, TranslationCache.ButtonTemplates);
+        }
+
+        #endregion
+
+        /// <summary>
+        /// Rotates the preview direction counter-clockwise (left arrow).
+        /// </summary>
+        public void RotatePreviewLeft()
+        {
+            previewDirection = (previewDirection + 3) % 4;
         }
 
         /// <summary>
-        /// Draws the reset button with its label and hover effect.
+        /// Rotates the preview direction clockwise (right arrow).
         /// </summary>
-        public void DrawResetButton(SpriteBatch b)
+        public void RotatePreviewRight()
         {
-            DrawTextButton(b, ResetButton, TranslationCache.ButtonReset, null);
+            previewDirection = (previewDirection + 1) % 4;
         }
 
         /// <summary>
@@ -386,22 +426,7 @@ namespace FittingRoom
         /// </summary>
         public void DrawCloseButton(SpriteBatch b)
         {
-            int mouseX = Game1.getMouseX();
-            int mouseY = Game1.getMouseY();
-            bool isHovered = CloseButton.containsPoint(mouseX, mouseY);
-
-            if (isHovered)
-            {
-                Game1.mouseCursor = 1; // Hand cursor
-                float originalScale = CloseButton.scale;
-                CloseButton.scale = originalScale + ButtonHoverScaleIncrease;
-                CloseButton.draw(b);
-                CloseButton.scale = originalScale;
-            }
-            else
-            {
-                CloseButton.draw(b);
-            }
+            UIHelpers.DrawTextureButton(b, CloseButton);
         }
 
         /// <summary>
@@ -524,7 +549,9 @@ namespace FittingRoom
                 HatsTab.containsPoint(mouseX, mouseY) ||
                 ApplyButton.containsPoint(mouseX, mouseY) ||
                 ResetButton.containsPoint(mouseX, mouseY) ||
-                CloseButton.containsPoint(mouseX, mouseY))
+                CloseButton.containsPoint(mouseX, mouseY) ||
+                LeftArrowButton.containsPoint(mouseX, mouseY) ||
+                RightArrowButton.containsPoint(mouseX, mouseY))
             {
                 return true;
             }
@@ -567,64 +594,19 @@ namespace FittingRoom
             int maxWidth = EquippedTextArea.Width - (TextPadding * 2);
 
             textY += EquippedTextLineHeight;
-            string shirtText = TruncateText($"Shirt: {shirtName}", maxWidth);
+            string shirtText = UIHelpers.TruncateText($"Shirt: {shirtName}", maxWidth);
             Utility.drawTextWithShadow(b, shirtText, Game1.smallFont,
                 new Vector2(textX, textY), Game1.textColor);
 
             textY += EquippedTextLineHeight;
-            string pantsText = TruncateText($"Pants: {pantsName}", maxWidth);
+            string pantsText = UIHelpers.TruncateText($"Pants: {pantsName}", maxWidth);
             Utility.drawTextWithShadow(b, pantsText, Game1.smallFont,
                 new Vector2(textX, textY), Game1.textColor);
 
             textY += EquippedTextLineHeight;
-            string hatText = TruncateText($"Hat: {hatName}", maxWidth);
+            string hatText = UIHelpers.TruncateText($"Hat: {hatName}", maxWidth);
             Utility.drawTextWithShadow(b, hatText, Game1.smallFont,
                 new Vector2(textX, textY), Game1.textColor);
-        }
-
-        /// <summary>
-        /// Truncates text with ellipsis if it exceeds maxWidth.
-        /// </summary>
-        private string TruncateText(string text, int maxWidth)
-        {
-            if (Game1.smallFont.MeasureString(text).X <= maxWidth)
-                return text;
-
-            while (text.Length > 0 && Game1.smallFont.MeasureString(text + "...").X > maxWidth)
-            {
-                text = text.Substring(0, text.Length - 1);
-            }
-
-            return text + "...";
-        }
-
-        /// <summary>
-        /// Draws the Save button.
-        /// </summary>
-        public void DrawSaveButton(SpriteBatch b)
-        {
-            DrawTextButton(b, SaveButton, TranslationCache.ButtonSave, null);
-        }
-
-        /// <summary>
-        /// Draws the Templates button.
-        /// </summary>
-        public void DrawTemplatesButton(SpriteBatch b)
-        {
-            DrawTextButton(b, TemplatesButton, TranslationCache.ButtonTemplates, null);
-        }
-
-        /// <summary>
-        /// Calculates the width needed for a button based on its text content.
-        /// Uses fixed TabAndButtonWidth unless text requires more space.
-        /// </summary>
-        private int CalculateButtonWidth(string text)
-        {
-            Vector2 textSize = Game1.smallFont.MeasureString(text);
-            int calculatedWidth = (int)textSize.X + TextPadding * 2;
-
-            // Use fixed width unless calculated width exceeds it
-            return Math.Max(TabAndButtonWidth, calculatedWidth);
         }
 
         public void Cleanup()
