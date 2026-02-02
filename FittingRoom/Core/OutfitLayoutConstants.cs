@@ -33,6 +33,9 @@ namespace FittingRoom
         /// <summary>Height reserved at bottom for action buttons.</summary>
         public const int BottomButtonAreaHeight = 80;
 
+        /// <summary>Height reserved at bottom for action buttons.</summary>
+        public const int GapBetweenTabsAndItemGrid = 22;
+
         // ============================================================
         // CHARACTER PREVIEW PANEL
         // ============================================================
@@ -155,6 +158,12 @@ namespace FittingRoom
         /// <summary>Item ID representing "no hat" option.</summary>
         public const string NoHatId = "-1";
 
+        /// <summary>Item ID representing "no shirt" (unequipped).</summary>
+        public const string NoShirtId = "-1";
+
+        /// <summary>Item ID representing "no pants" (unequipped).</summary>
+        public const string NoPantsId = "-1";
+
         // ============================================================
         // TOP TABS
         // ============================================================
@@ -170,7 +179,7 @@ namespace FittingRoom
         public const int EquippedTextLineHeight = 28;
 
         // ============================================================
-        // FILTER & SEARCH AT TOP OF GRID
+        // FILTER & SEARCH
         // ============================================================
 
         /// <summary>Height for filter/search controls row.</summary>
@@ -191,6 +200,33 @@ namespace FittingRoom
 
         /// <summary>Gap between bottom buttons.</summary>
         public const int BottomButtonGap = 16;
+
+        // ============================================================
+        // CLEAR BUTTON (for dropdown and search bar)
+        // ============================================================
+
+        /// <summary>Size of clear button icon.</summary>
+        public const int ClearButtonSize = 24;
+
+        /// <summary>Margin from right edge to clear button.</summary>
+        public const int ClearButtonRightMargin = 12;
+
+        // ============================================================
+        // LOOKUP ICON
+        // ============================================================
+
+        /// <summary>Size of the lookup icon button.</summary>
+        public const int LookupIconSize = 32;
+
+        /// <summary>Margin from portrait box edge to lookup icon.</summary>
+        public const int LookupIconMargin = 4;
+
+        // ============================================================
+        // TOOLTIP
+        // ============================================================
+
+        /// <summary>Text padding for tooltip box.</summary>
+        public const int TooltipPadding = 16;
 
         // ============================================================
         // TEMPLATES OVERLAY DIMENSIONS

@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using StardewValley;
+using StardewValley.GameData.Pants;
+using StardewValley.GameData.Shirts;
 using StardewValley.Objects;
 
 namespace FittingRoom
@@ -78,18 +80,24 @@ namespace FittingRoom
         public string OriginalPants => originalPants;
         public string OriginalHat => originalHat;
 
+        public string AppliedShirt => appliedShirt;
+        public string AppliedPants => appliedPants;
+        public string AppliedHat => appliedHat;
+
+        public bool IsShirtUnsaved => GetClothingId(Game1.player.shirtItem.Value) != appliedShirt;
+        public bool IsPantsUnsaved => GetClothingId(Game1.player.pantsItem.Value) != appliedPants;
+        public bool IsHatUnsaved => GetHatIdFromItem(Game1.player.hat.Value) != appliedHat;
+
         public OutfitState()
         {
-            originalShirt = Game1.player.shirt.Value;
-            originalPants = Game1.player.pants.Value;
+            originalShirt = GetClothingId(Game1.player.shirtItem.Value);
+            originalPants = GetClothingId(Game1.player.pantsItem.Value);
             originalHat = GetHatIdFromItem(Game1.player.hat.Value);
 
-            // Applied starts as the original outfit
             appliedShirt = originalShirt;
             appliedPants = originalPants;
             appliedHat = originalHat;
 
-            // Indices will be set by menu to match current outfit
             shirtIndex = 0;
             pantsIndex = 0;
             hatIndex = 0;
@@ -105,7 +113,8 @@ namespace FittingRoom
                 case OutfitCategoryManager.Category.Shirts:
                     if (shirtIndex >= 0 && shirtIndex < shirtIds.Count)
                     {
-                        Game1.player.shirt.Value = shirtIds[shirtIndex];
+                        string shirtId = shirtIds[shirtIndex];
+                        Game1.player.shirtItem.Value = ItemRegistry.Create<Clothing>("(S)" + shirtId);
                         Game1.player.FarmerRenderer.MarkSpriteDirty();
                     }
                     break;
@@ -113,7 +122,8 @@ namespace FittingRoom
                 case OutfitCategoryManager.Category.Pants:
                     if (pantsIndex >= 0 && pantsIndex < pantsIds.Count)
                     {
-                        Game1.player.pants.Value = pantsIds[pantsIndex];
+                        string pantsId = pantsIds[pantsIndex];
+                        Game1.player.pantsItem.Value = ItemRegistry.Create<Clothing>("(P)" + pantsId);
                         Game1.player.FarmerRenderer.MarkSpriteDirty();
                     }
                     break;
@@ -133,18 +143,24 @@ namespace FittingRoom
 
         public void SaveAppliedOutfit()
         {
-            appliedShirt = Game1.player.shirt.Value;
-            appliedPants = Game1.player.pants.Value;
+            appliedShirt = GetClothingId(Game1.player.shirtItem.Value);
+            appliedPants = GetClothingId(Game1.player.pantsItem.Value);
             appliedHat = GetHatIdFromItem(Game1.player.hat.Value);
         }
 
-        // Resets player's outfit and indices to last applied outfit
         public void ResetToApplied(System.Collections.Generic.List<string> shirtIds,
             System.Collections.Generic.List<string> pantsIds,
             System.Collections.Generic.List<string> hatIds)
         {
-            Game1.player.shirt.Value = appliedShirt;
-            Game1.player.pants.Value = appliedPants;
+            if (string.IsNullOrEmpty(appliedShirt) || appliedShirt == OutfitLayoutConstants.NoShirtId)
+                Game1.player.shirtItem.Value = null;
+            else
+                Game1.player.shirtItem.Value = ItemRegistry.Create<Clothing>("(S)" + appliedShirt);
+
+            if (string.IsNullOrEmpty(appliedPants) || appliedPants == OutfitLayoutConstants.NoPantsId)
+                Game1.player.pantsItem.Value = null;
+            else
+                Game1.player.pantsItem.Value = ItemRegistry.Create<Clothing>("(P)" + appliedPants);
 
             if (string.IsNullOrEmpty(appliedHat) || appliedHat == OutfitLayoutConstants.NoHatId)
                 Game1.player.hat.Value = null;
@@ -158,11 +174,17 @@ namespace FittingRoom
             hatIndex = Math.Max(0, hatIds.IndexOf(appliedHat));
         }
 
-        // Reverts player's outfit to applied state without changing indices (for closing menu)
         public void RevertToApplied()
         {
-            Game1.player.shirt.Value = appliedShirt;
-            Game1.player.pants.Value = appliedPants;
+            if (string.IsNullOrEmpty(appliedShirt) || appliedShirt == OutfitLayoutConstants.NoShirtId)
+                Game1.player.shirtItem.Value = null;
+            else
+                Game1.player.shirtItem.Value = ItemRegistry.Create<Clothing>("(S)" + appliedShirt);
+
+            if (string.IsNullOrEmpty(appliedPants) || appliedPants == OutfitLayoutConstants.NoPantsId)
+                Game1.player.pantsItem.Value = null;
+            else
+                Game1.player.pantsItem.Value = ItemRegistry.Create<Clothing>("(P)" + appliedPants);
 
             if (string.IsNullOrEmpty(appliedHat) || appliedHat == OutfitLayoutConstants.NoHatId)
                 Game1.player.hat.Value = null;
@@ -199,8 +221,7 @@ namespace FittingRoom
             }
         }
 
-        // Extracts unqualified ID from Hat item (returns NoHatId for no hat)
-        public static string GetHatIdFromItem(Hat hat)
+        public static string GetHatIdFromItem(Hat? hat)
         {
             if (hat == null)
                 return OutfitLayoutConstants.NoHatId;
@@ -209,8 +230,22 @@ namespace FittingRoom
             if (string.IsNullOrEmpty(itemId))
                 return OutfitLayoutConstants.NoHatId;
 
-            // Remove "(H)" prefix if present
             if (itemId.StartsWith("(H)"))
+                return itemId.Substring(3);
+
+            return itemId;
+        }
+
+        public static string GetClothingId(Clothing? clothing)
+        {
+            if (clothing == null)
+                return OutfitLayoutConstants.NoShirtId;
+
+            string itemId = clothing.ItemId;
+            if (string.IsNullOrEmpty(itemId))
+                return OutfitLayoutConstants.NoShirtId;
+
+            if (itemId.StartsWith("(S)") || itemId.StartsWith("(P)"))
                 return itemId.Substring(3);
 
             return itemId;

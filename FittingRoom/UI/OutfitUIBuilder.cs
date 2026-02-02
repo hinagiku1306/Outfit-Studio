@@ -18,6 +18,7 @@ namespace FittingRoom
         public int COLUMNS { get; private set; }
 
         // UI Components
+        public ClickableComponent AllTab { get; private set; } = null!;
         public ClickableComponent ShirtsTab { get; private set; } = null!;
         public ClickableComponent PantsTab { get; private set; } = null!;
         public ClickableComponent HatsTab { get; private set; } = null!;
@@ -28,6 +29,9 @@ namespace FittingRoom
         public Rectangle PortraitBox { get; private set; }
         public ClickableComponent? ModFilterDropdown { get; private set; } = null;
         public ClickableComponent? SearchBar { get; private set; } = null;
+        public ClickableComponent? FilterClearButton { get; private set; } = null;
+        public ClickableComponent? SearchClearButton { get; private set; } = null;
+        public ClickableComponent? LookupButton { get; private set; } = null;
 
         // New buttons for revamped layout
         public ClickableComponent SaveButton { get; private set; } = null!;
@@ -108,28 +112,33 @@ namespace FittingRoom
             int tabY = Y + ContentBoxPadding + MenuTopPadding + TabMarginTop;
 
             // Calculate dynamic widths for tabs based on text
+            int allTabWidth = UIHelpers.CalculateButtonWidth(TranslationCache.TabAll);
             int shirtTabWidth = UIHelpers.CalculateButtonWidth(TranslationCache.TabShirts);
             int pantsTabWidth = UIHelpers.CalculateButtonWidth(TranslationCache.TabPants);
             int hatsTabWidth = UIHelpers.CalculateButtonWidth(TranslationCache.TabHats);
 
-            int totalTabsWidth = shirtTabWidth + pantsTabWidth + hatsTabWidth + TabAndButtonGap * 2;
+            int totalTabsWidth = allTabWidth + shirtTabWidth + pantsTabWidth + hatsTabWidth + TabAndButtonGap * 3;
             int tabsStartX = X + (Width - totalTabsWidth) / 2;
 
+            AllTab = new ClickableComponent(
+                new Rectangle(tabsStartX, tabY, allTabWidth, TabAndButtonHeight),
+                TranslationCache.TabAll
+            );
             ShirtsTab = new ClickableComponent(
-                new Rectangle(tabsStartX, tabY, shirtTabWidth, TabAndButtonHeight),
+                new Rectangle(tabsStartX + allTabWidth + TabAndButtonGap, tabY, shirtTabWidth, TabAndButtonHeight),
                 TranslationCache.TabShirts
             );
             PantsTab = new ClickableComponent(
-                new Rectangle(tabsStartX + shirtTabWidth + TabAndButtonGap, tabY, pantsTabWidth, TabAndButtonHeight),
+                new Rectangle(tabsStartX + allTabWidth + shirtTabWidth + TabAndButtonGap * 2, tabY, pantsTabWidth, TabAndButtonHeight),
                 TranslationCache.TabPants
             );
             HatsTab = new ClickableComponent(
-                new Rectangle(tabsStartX + shirtTabWidth + pantsTabWidth + TabAndButtonGap * 2, tabY, hatsTabWidth, TabAndButtonHeight),
+                new Rectangle(tabsStartX + allTabWidth + shirtTabWidth + pantsTabWidth + TabAndButtonGap * 3, tabY, hatsTabWidth, TabAndButtonHeight),
                 TranslationCache.TabHats
             );
 
             // Content panels start below tabs
-            int contentY = tabY + TabAndButtonHeight + ContentBoxPadding;
+            int contentY = tabY + TabAndButtonHeight + GapBetweenTabsAndItemGrid;
 
             // Left panel: Portrait centered vertically with arrows and Apply/Reset buttons below
             // Calculate total group height for vertical centering (includes arrow row)
@@ -167,23 +176,22 @@ namespace FittingRoom
                 arrowScale
             );
 
-            // Apply and Reset buttons below arrows (centered in left panel)
-            // Calculate dynamic widths and use max so both buttons are same width
-            int applyButtonWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ButtonApply);
-            int resetButtonWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ButtonReset);
-            int buttonWidth = Math.Max(applyButtonWidth, resetButtonWidth);
+            // New/Outfits buttons below arrows (centered in left panel)
+            int newOutfitButtonWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ButtonNewOutfit);
+            int outfitsButtonWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ButtonOutfits);
+            int leftButtonWidth = Math.Max(newOutfitButtonWidth, outfitsButtonWidth);
 
-            int buttonsStartX = leftPanelCenterX - buttonWidth / 2;
-            int applyButtonY = arrowY + arrowHeight + GapBetweenPortraitAndButtons;
-            int resetButtonY = applyButtonY + TabAndButtonHeight + TabAndButtonGap;
+            int leftButtonsStartX = leftPanelCenterX - leftButtonWidth / 2;
+            int newOutfitButtonY = arrowY + arrowHeight + GapBetweenPortraitAndButtons;
+            int outfitsButtonY = newOutfitButtonY + TabAndButtonHeight + TabAndButtonGap;
 
-            ApplyButton = new ClickableComponent(
-                new Rectangle(buttonsStartX, applyButtonY, buttonWidth, TabAndButtonHeight),
-                TranslationCache.ButtonApply
+            SaveButton = new ClickableComponent(
+                new Rectangle(leftButtonsStartX, newOutfitButtonY, leftButtonWidth, TabAndButtonHeight),
+                TranslationCache.ButtonNewOutfit
             );
-            ResetButton = new ClickableComponent(
-                new Rectangle(buttonsStartX, resetButtonY, buttonWidth, TabAndButtonHeight),
-                TranslationCache.ButtonReset
+            TemplatesButton = new ClickableComponent(
+                new Rectangle(leftButtonsStartX, outfitsButtonY, leftButtonWidth, TabAndButtonHeight),
+                TranslationCache.ButtonOutfits
             );
 
             // Right panel: Filter/Search controls at top, then item grid
@@ -195,11 +203,44 @@ namespace FittingRoom
                 "ModFilterDropdown"
             );
 
+            // Filter clear button (positioned inside dropdown, right side)
+            FilterClearButton = new ClickableComponent(
+                new Rectangle(
+                    rightPanelX + FilterDropdownWidth - ClearButtonRightMargin - ClearButtonSize,
+                    filterSearchY + (TabAndButtonHeight - ClearButtonSize) / 2,
+                    ClearButtonSize,
+                    ClearButtonSize
+                ),
+                "FilterClear"
+            );
+
             // Search bar next to filter
             int searchBarWidth = gridWidth - FilterDropdownWidth - FilterSearchGap;
             SearchBar = new ClickableComponent(
                 new Rectangle(rightPanelX + FilterDropdownWidth + FilterSearchGap, filterSearchY, searchBarWidth, TabAndButtonHeight),
                 "SearchBar"
+            );
+
+            // Search clear button
+            SearchClearButton = new ClickableComponent(
+                new Rectangle(
+                    rightPanelX + FilterDropdownWidth + FilterSearchGap + searchBarWidth - ClearButtonRightMargin - ClearButtonSize,
+                    filterSearchY + (TabAndButtonHeight - ClearButtonSize) / 2,
+                    ClearButtonSize,
+                    ClearButtonSize
+                ),
+                "SearchClear"
+            );
+
+            // Lookup button
+            LookupButton = new ClickableComponent(
+                new Rectangle(
+                    PortraitBox.Right - LookupIconSize - LookupIconMargin,
+                    PortraitBox.Y + LookupIconMargin,
+                    LookupIconSize,
+                    LookupIconSize
+                ),
+                "Lookup"
             );
 
             // Item grid starts below filter/search
@@ -225,24 +266,21 @@ namespace FittingRoom
                 }
             }
 
-            // Bottom buttons: Save and Templates (aligned to bottom-right) - dynamic widths
-            // Center buttons vertically within the BottomButtonAreaHeight
+            // Bottom buttons: Apply and Reset (aligned to bottom-right)
             int bottomButtonY = Y + Height - BottomButtonAreaHeight - MenuBottomPadding + (BottomButtonAreaHeight - TabAndButtonHeight) / 2;
 
-            // Calculate dynamic widths based on text
-            int templatesButtonWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ButtonTemplates);
-            int saveButtonWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ButtonSave);
+            int applyButtonWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ButtonApply);
+            int resetButtonWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ButtonReset);
+            int bottomButtonWidth = Math.Max(applyButtonWidth, resetButtonWidth);
 
-            // Templates button on the right
-            TemplatesButton = new ClickableComponent(
-                new Rectangle(X + Width - MenuSidePadding - templatesButtonWidth, bottomButtonY, templatesButtonWidth, TabAndButtonHeight),
-                TranslationCache.ButtonTemplates
+            ResetButton = new ClickableComponent(
+                new Rectangle(X + Width - MenuSidePadding - bottomButtonWidth, bottomButtonY, bottomButtonWidth, TabAndButtonHeight),
+                TranslationCache.ButtonReset
             );
 
-            // Save button to the left of Templates
-            SaveButton = new ClickableComponent(
-                new Rectangle(TemplatesButton.bounds.X - saveButtonWidth - BottomButtonGap, bottomButtonY, saveButtonWidth, TabAndButtonHeight),
-                TranslationCache.ButtonSave
+            ApplyButton = new ClickableComponent(
+                new Rectangle(ResetButton.bounds.X - bottomButtonWidth - BottomButtonGap, bottomButtonY, bottomButtonWidth, TabAndButtonHeight),
+                TranslationCache.ButtonApply
             );
 
             // Close button (top right)
@@ -255,29 +293,31 @@ namespace FittingRoom
         }
 
         /// <summary>
-        /// Draws a category tab with text.
+        /// Draws a category tab with text and bold effect on hover.
         /// </summary>
         public void DrawTabWithText(SpriteBatch b, ClickableComponent tab, string label, bool isActive)
         {
-            // Keep box (and its shadow) at full opacity, only dim the text when inactive
             Color textColor = isActive ? Game1.textColor : Game1.textColor * TabOpacity;
+            bool isHovered = tab.containsPoint(Game1.getMouseX(), Game1.getMouseY());
 
             IClickableMenu.drawTextureBox(b, tab.bounds.X, tab.bounds.Y,
                 tab.bounds.Width, tab.bounds.Height, Color.White);
 
-            // Draw hover effect
-            if (tab.containsPoint(Game1.getMouseX(), Game1.getMouseY()))
-            {
-                b.Draw(Game1.staminaRect, tab.bounds, HoverEffectColor);
-            }
-
             Vector2 labelSize = Game1.smallFont.MeasureString(label);
-            Utility.drawTextWithShadow(b, label, Game1.smallFont,
-                new Vector2(
-                    tab.bounds.X + (tab.bounds.Width - labelSize.X) / 2,
-                    tab.bounds.Y + (tab.bounds.Height - labelSize.Y) / 2
-                ),
-                textColor);
+            Vector2 textPos = new Vector2(
+                tab.bounds.X + (tab.bounds.Width - labelSize.X) / 2,
+                tab.bounds.Y + (tab.bounds.Height - labelSize.Y) / 2
+            );
+
+            if (isHovered)
+            {
+                Utility.drawTextWithShadow(b, label, Game1.smallFont, textPos + new Vector2(-1, 0), textColor * 0.8f);
+                Utility.drawTextWithShadow(b, label, Game1.smallFont, textPos, textColor);
+            }
+            else
+            {
+                Utility.drawTextWithShadow(b, label, Game1.smallFont, textPos, textColor);
+            }
         }
 
         /// <summary>
@@ -381,44 +421,42 @@ namespace FittingRoom
         #region Button Drawing
 
         /// <summary>
-        /// Draws all left panel buttons: direction arrows, apply, and reset.
+        /// Draws all left panel buttons: direction arrows, new outfit, and outfits.
         /// </summary>
         public void DrawLeftPanelButtons(SpriteBatch b)
         {
-            // Direction arrows
             UIHelpers.DrawTextureButton(b, LeftArrowButton);
             UIHelpers.DrawTextureButton(b, RightArrowButton);
 
-            // Apply and Reset buttons
-            UIHelpers.DrawTextButton(b, ApplyButton, TranslationCache.ButtonApply);
-            UIHelpers.DrawTextButton(b, ResetButton, TranslationCache.ButtonReset);
+            UIHelpers.DrawTextButton(b, SaveButton, TranslationCache.ButtonNewOutfit);
+            UIHelpers.DrawTextButton(b, TemplatesButton, TranslationCache.ButtonOutfits);
         }
 
         /// <summary>
-        /// Draws the bottom panel buttons: save and templates.
+        /// Draws the bottom panel buttons: apply and reset.
         /// </summary>
         public void DrawBottomButtons(SpriteBatch b)
         {
-            UIHelpers.DrawTextButton(b, SaveButton, TranslationCache.ButtonSave);
-            UIHelpers.DrawTextButton(b, TemplatesButton, TranslationCache.ButtonTemplates);
+            UIHelpers.DrawTextButton(b, ApplyButton, TranslationCache.ButtonApply);
+            UIHelpers.DrawTextButton(b, ResetButton, TranslationCache.ButtonReset);
         }
 
         #endregion
 
         /// <summary>
-        /// Rotates the preview direction counter-clockwise (left arrow).
+        /// Rotates the preview direction clockwise
         /// </summary>
         public void RotatePreviewLeft()
         {
-            previewDirection = (previewDirection + 3) % 4;
+            previewDirection = (previewDirection + 1) % 4;
         }
 
         /// <summary>
-        /// Rotates the preview direction clockwise (right arrow).
+        /// Rotates the preview direction counter-clockwise
         /// </summary>
         public void RotatePreviewRight()
         {
-            previewDirection = (previewDirection + 1) % 4;
+            previewDirection = (previewDirection + 3) % 4;
         }
 
         /// <summary>
@@ -499,18 +537,16 @@ namespace FittingRoom
             Rectangle bounds = ModFilterDropdown.bounds;
             int mouseX = Game1.getMouseX();
             int mouseY = Game1.getMouseY();
-            bool isHovered = bounds.Contains(mouseX, mouseY);
+            bool isHovered = bounds.Contains(mouseX, mouseY) && !isOpen;
+            bool hasFilter = !string.IsNullOrEmpty(currentFilter);
 
-            // Draw dropdown button background
             IClickableMenu.drawTextureBox(b, bounds.X, bounds.Y, bounds.Width, bounds.Height,
                 isOpen ? Color.Wheat : Color.White);
 
-            // Draw current selection text
-            string displayText = string.IsNullOrEmpty(currentFilter) ? TranslationCache.FilterAll : $"{currentFilter}";
+            string displayText = hasFilter ? currentFilter! : TranslationCache.FilterAll;
 
-            // Truncate text if too long
             Vector2 textSize = Game1.smallFont.MeasureString(displayText);
-            int maxTextWidth = bounds.Width - 48;
+            int maxTextWidth = bounds.Width - ClearButtonSize - ClearButtonRightMargin - 28;
             if (textSize.X > maxTextWidth)
             {
                 while (textSize.X > maxTextWidth && displayText.Length > 10)
@@ -522,21 +558,120 @@ namespace FittingRoom
             }
 
             Vector2 textPos = new Vector2(
-                bounds.X + 20, // Increased left padding for better spacing
+                bounds.X + 20,
                 bounds.Y + (bounds.Height - textSize.Y) / 2
             );
 
-            Utility.drawTextWithShadow(b, displayText, Game1.smallFont, textPos, Game1.textColor);
+            if (isHovered)
+            {
+                Utility.drawTextWithShadow(b, displayText, Game1.smallFont, textPos + new Vector2(-1, 0), Game1.textColor * 0.8f);
+                Utility.drawTextWithShadow(b, displayText, Game1.smallFont, textPos, Game1.textColor);
+            }
+            else
+            {
+                Utility.drawTextWithShadow(b, displayText, Game1.smallFont, textPos, Game1.textColor);
+            }
+
+            if (hasFilter && FilterClearButton != null)
+            {
+                DrawClearButton(b, FilterClearButton);
+            }
+        }
+
+        private void DrawDropdownArrow(SpriteBatch b, Rectangle buttonBounds)
+        {
+            Rectangle sourceRect = new Rectangle(421, 472, 11, 12);
+            float scale = 2f;
+            Vector2 center = new Vector2(
+                buttonBounds.X + buttonBounds.Width / 2,
+                buttonBounds.Y + buttonBounds.Height / 2
+            );
+            Vector2 origin = new Vector2(5.5f, 6);
+
+            b.Draw(
+                Game1.mouseCursors,
+                center,
+                sourceRect,
+                Color.White,
+                0f,
+                origin,
+                scale,
+                SpriteEffects.None,
+                1f
+            );
         }
 
         /// <summary>Draws the search bar background.</summary>
-        public void DrawSearchBar(SpriteBatch b, bool isFocused)
+        /// <param name="b">SpriteBatch for drawing.</param>
+        /// <param name="isFocused">Whether the search bar is focused.</param>
+        /// <param name="hasText">Whether the search bar has text (to show clear button).</param>
+        public void DrawSearchBar(SpriteBatch b, bool isFocused, bool hasText = false)
         {
             if (SearchBar == null)
                 return;
 
             IClickableMenu.drawTextureBox(b, SearchBar.bounds.X, SearchBar.bounds.Y,
                 SearchBar.bounds.Width, SearchBar.bounds.Height, Color.White);
+
+            // Draw clear button if there's search text
+            if (hasText && SearchClearButton != null)
+            {
+                DrawClearButton(b, SearchClearButton);
+            }
+        }
+
+        /// <summary>Draws a small X clear button.</summary>
+        private void DrawClearButton(SpriteBatch b, ClickableComponent button)
+        {
+            int mouseX = Game1.getMouseX();
+            int mouseY = Game1.getMouseY();
+            bool isHovered = button.containsPoint(mouseX, mouseY);
+
+            Rectangle sourceRect = new Rectangle(337, 494, 12, 12);
+            float scale = isHovered ? 2.2f : 2f;
+            Vector2 center = new Vector2(
+                button.bounds.X + button.bounds.Width / 2,
+                button.bounds.Y + button.bounds.Height / 2
+            );
+            Vector2 origin = new Vector2(6, 6);
+
+            b.Draw(
+                Game1.mouseCursors,
+                center,
+                sourceRect,
+                Color.White,
+                0f,
+                origin,
+                scale,
+                SpriteEffects.None,
+                1f
+            );
+        }
+
+        /// <summary>Draws the lookup icon on the character preview.</summary>
+        public void DrawLookupIcon(SpriteBatch b)
+        {
+            if (LookupButton == null)
+                return;
+
+            int mouseX = Game1.getMouseX();
+            int mouseY = Game1.getMouseY();
+            bool isHovered = LookupButton.containsPoint(mouseX, mouseY);
+
+            // Draw magnifying glass icon using game cursors
+            Rectangle sourceRect = new Rectangle(240, 192, 16, 16);
+
+            b.Draw(
+                Game1.mouseCursors,
+                new Vector2(LookupButton.bounds.X, LookupButton.bounds.Y),
+                sourceRect,
+                Color.White,
+                0f,
+                Vector2.Zero,
+                2f,
+                SpriteEffects.None,
+                1f
+            );
         }
 
         /// <summary>
@@ -544,7 +679,8 @@ namespace FittingRoom
         /// </summary>
         public bool IsHoveringClickable(int mouseX, int mouseY)
         {
-            if (ShirtsTab.containsPoint(mouseX, mouseY) ||
+            if (AllTab.containsPoint(mouseX, mouseY) ||
+                ShirtsTab.containsPoint(mouseX, mouseY) ||
                 PantsTab.containsPoint(mouseX, mouseY) ||
                 HatsTab.containsPoint(mouseX, mouseY) ||
                 ApplyButton.containsPoint(mouseX, mouseY) ||
@@ -573,40 +709,6 @@ namespace FittingRoom
             }
 
             return false;
-        }
-
-        /// <summary>
-        /// Cleans up resources used by the UI builder.
-        /// </summary>
-        /// <summary>
-        /// Draws the equipped items text (Shirt, Pants, Hat names) below preview.
-        /// </summary>
-        public void DrawEquippedItemsText(SpriteBatch b, string shirtName, string pantsName, string hatName)
-        {
-            int textX = EquippedTextArea.X + TextPadding;
-            int textY = EquippedTextArea.Y + TextPadding;
-
-            // Draw "Equipped:" label
-            Utility.drawTextWithShadow(b, "Equipped:", Game1.smallFont,
-                new Vector2(textX, textY), Game1.textColor);
-
-            // Draw item names with truncation if needed
-            int maxWidth = EquippedTextArea.Width - (TextPadding * 2);
-
-            textY += EquippedTextLineHeight;
-            string shirtText = UIHelpers.TruncateText($"Shirt: {shirtName}", maxWidth);
-            Utility.drawTextWithShadow(b, shirtText, Game1.smallFont,
-                new Vector2(textX, textY), Game1.textColor);
-
-            textY += EquippedTextLineHeight;
-            string pantsText = UIHelpers.TruncateText($"Pants: {pantsName}", maxWidth);
-            Utility.drawTextWithShadow(b, pantsText, Game1.smallFont,
-                new Vector2(textX, textY), Game1.textColor);
-
-            textY += EquippedTextLineHeight;
-            string hatText = UIHelpers.TruncateText($"Hat: {hatName}", maxWidth);
-            Utility.drawTextWithShadow(b, hatText, Game1.smallFont,
-                new Vector2(textX, textY), Game1.textColor);
         }
 
         public void Cleanup()

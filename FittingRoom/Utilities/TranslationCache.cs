@@ -10,13 +10,14 @@ namespace FittingRoom
     {
         // Menu UI
         public static string MenuTitle { get; private set; } = "";
+        public static string TabAll { get; private set; } = "";
         public static string TabShirts { get; private set; } = "";
         public static string TabPants { get; private set; } = "";
         public static string TabHats { get; private set; } = "";
         public static string ButtonApply { get; private set; } = "";
         public static string ButtonReset { get; private set; } = "";
-        public static string ButtonSave { get; private set; } = "";
-        public static string ButtonTemplates { get; private set; } = "";
+        public static string ButtonNewOutfit { get; private set; } = "";
+        public static string ButtonOutfits { get; private set; } = "";
         public static string MessageSaved { get; private set; } = "";
 
         // Filter options
@@ -26,7 +27,14 @@ namespace FittingRoom
 
         // Item info
         public static string ItemNoHat { get; private set; } = "";
+        public static string ItemNoShirt { get; private set; } = "";
+        public static string ItemNoPants { get; private set; } = "";
         public static string ItemModInfoTemplate { get; private set; } = ""; // "Mod: {{modName}}"
+
+        // Lookup tooltip labels
+        public static string LookupShirt { get; private set; } = "";
+        public static string LookupPants { get; private set; } = "";
+        public static string LookupHat { get; private set; } = "";
 
         // Templates overlay
         public static string TemplatesTitle { get; private set; } = "";
@@ -57,6 +65,8 @@ namespace FittingRoom
         public static string ConfigResetFilterOnTabSwitchTooltip { get; private set; } = "";
         public static string ConfigResetSearchOnTabSwitchName { get; private set; } = "";
         public static string ConfigResetSearchOnTabSwitchTooltip { get; private set; } = "";
+        public static string ConfigShowFilterTooltipName { get; private set; } = "";
+        public static string ConfigShowFilterTooltipTooltip { get; private set; } = "";
 
         /// <summary>
         /// Initialize all translations from the translation helper.
@@ -65,13 +75,14 @@ namespace FittingRoom
         public static void Initialize(ITranslationHelper i18n)
         {
             MenuTitle = i18n.Get("menu.title");
+            TabAll = i18n.Get("menu.tabs.all");
             TabShirts = i18n.Get("menu.tabs.shirts");
             TabPants = i18n.Get("menu.tabs.pants");
             TabHats = i18n.Get("menu.tabs.hats");
             ButtonApply = i18n.Get("menu.buttons.apply");
             ButtonReset = i18n.Get("menu.buttons.reset");
-            ButtonSave = i18n.Get("menu.buttons.save");
-            ButtonTemplates = i18n.Get("menu.buttons.templates");
+            ButtonNewOutfit = i18n.Get("menu.buttons.new-outfit");
+            ButtonOutfits = i18n.Get("menu.buttons.outfits");
             MessageSaved = i18n.Get("menu.messages.saved");
 
             FilterAll = i18n.Get("menu.filter.all");
@@ -79,7 +90,13 @@ namespace FittingRoom
             FilterUnknown = i18n.Get("menu.filter.unknown");
 
             ItemNoHat = i18n.Get("menu.item.no-hat");
+            ItemNoShirt = i18n.Get("menu.item.no-shirt");
+            ItemNoPants = i18n.Get("menu.item.no-pants");
             ItemModInfoTemplate = i18n.Get("menu.item.mod-info");
+
+            LookupShirt = i18n.Get("menu.lookup.shirt");
+            LookupPants = i18n.Get("menu.lookup.pants");
+            LookupHat = i18n.Get("menu.lookup.hat");
 
             TemplatesTitle = i18n.Get("templates.title");
             TemplatesFilter = i18n.Get("templates.filter");
@@ -108,6 +125,8 @@ namespace FittingRoom
             ConfigResetFilterOnTabSwitchTooltip = i18n.Get("config.reset-filter-on-tab-switch.tooltip");
             ConfigResetSearchOnTabSwitchName = i18n.Get("config.reset-search-on-tab-switch.name");
             ConfigResetSearchOnTabSwitchTooltip = i18n.Get("config.reset-search-on-tab-switch.tooltip");
+            ConfigShowFilterTooltipName = i18n.Get("config.show-filter-tooltip.name");
+            ConfigShowFilterTooltipTooltip = i18n.Get("config.show-filter-tooltip.tooltip");
         }
     }
 }

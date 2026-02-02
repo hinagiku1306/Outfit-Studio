@@ -82,6 +82,14 @@ namespace FittingRoom
                     getValue: () => config.ResetSearchOnTabSwitch,
                     setValue: value => config.ResetSearchOnTabSwitch = value
                 );
+
+                gmcmApi.AddBoolOption(
+                    mod: ModManifest,
+                    name: () => TranslationCache.ConfigShowFilterTooltipName,
+                    tooltip: () => TranslationCache.ConfigShowFilterTooltipTooltip,
+                    getValue: () => config.ShowFilterTooltip,
+                    setValue: value => config.ShowFilterTooltip = value
+                );
             }
         }
 

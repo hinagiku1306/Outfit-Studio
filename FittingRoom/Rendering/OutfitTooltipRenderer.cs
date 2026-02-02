@@ -35,11 +35,21 @@ namespace FittingRoom
             // Draw using vanilla hover text method (for proper formatting with divider)
             if (actualItem != null)
             {
-                // Append mod name to description if present (skip vanilla items)
-                string fullDescription = description;
+                // Build description, skipping empty/whitespace-only lines
+                string fullDescription = "";
+                if (!string.IsNullOrWhiteSpace(description))
+                {
+                    fullDescription = description.Trim();
+                }
+
+                // Append mod name if present (skip vanilla items)
                 if (!string.IsNullOrEmpty(modName) && modName != TranslationCache.FilterVanilla)
                 {
-                    fullDescription += "\n\n" + TranslationCache.ItemModInfoTemplate.Replace("{{modName}}", modName);
+                    string modLine = TranslationCache.ItemModInfoTemplate.Replace("{{modName}}", modName);
+                    if (!string.IsNullOrWhiteSpace(fullDescription))
+                        fullDescription += "\n\n" + modLine;
+                    else
+                        fullDescription = modLine;
                 }
 
                 // Use the vanilla drawHoverText that includes name, divider, and description
@@ -49,9 +59,9 @@ namespace FittingRoom
             {
                 // Fallback for items without actual item instance (like No Hat)
                 string hoverText = itemName;
-                if (!string.IsNullOrEmpty(description))
+                if (!string.IsNullOrWhiteSpace(description))
                 {
-                    hoverText += "\n" + description;
+                    hoverText += "\n" + description.Trim();
                 }
                 if (!string.IsNullOrEmpty(modName) && modName != TranslationCache.FilterVanilla)
                 {
@@ -59,6 +69,107 @@ namespace FittingRoom
                 }
                 IClickableMenu.drawToolTip(b, hoverText, "", null);
             }
+        }
+
+        public void DrawTooltipForAllCategory(
+            SpriteBatch b,
+            OutfitCategoryManager.Category itemCategory,
+            string itemId)
+        {
+            var (itemName, description, modName, actualItem) = GetItemDataByCategory(itemCategory, itemId);
+
+            if (actualItem != null)
+            {
+                string fullDescription = "";
+                if (!string.IsNullOrWhiteSpace(description))
+                {
+                    fullDescription = description.Trim();
+                }
+
+                if (!string.IsNullOrEmpty(modName) && modName != TranslationCache.FilterVanilla)
+                {
+                    string modLine = TranslationCache.ItemModInfoTemplate.Replace("{{modName}}", modName);
+                    if (!string.IsNullOrWhiteSpace(fullDescription))
+                        fullDescription += "\n\n" + modLine;
+                    else
+                        fullDescription = modLine;
+                }
+
+                IClickableMenu.drawHoverText(b, fullDescription, Game1.smallFont, 0, 0, -1, itemName, -1, null, actualItem);
+            }
+            else if (!string.IsNullOrEmpty(itemName))
+            {
+                string hoverText = itemName;
+                if (!string.IsNullOrWhiteSpace(description))
+                {
+                    hoverText += "\n" + description.Trim();
+                }
+                if (!string.IsNullOrEmpty(modName) && modName != TranslationCache.FilterVanilla)
+                {
+                    hoverText += "\n\n" + TranslationCache.ItemModInfoTemplate.Replace("{{modName}}", modName);
+                }
+                IClickableMenu.drawToolTip(b, hoverText, "", null);
+            }
+        }
+
+        private (string itemName, string description, string modName, Item? item) GetItemDataByCategory(
+            OutfitCategoryManager.Category itemCategory,
+            string itemId)
+        {
+            string itemName = "";
+            string description = "";
+            string modName = "";
+            Item? actualItem = null;
+
+            switch (itemCategory)
+            {
+                case OutfitCategoryManager.Category.Shirts:
+                    {
+                        string qualifiedId = "(S)" + itemId;
+                        actualItem = ItemRegistry.Create(qualifiedId);
+                        if (actualItem != null)
+                        {
+                            itemName = actualItem.DisplayName;
+                            description = actualItem.getDescription();
+                        }
+                        modName = filterManager.GetModNameForItem(itemId);
+                    }
+                    break;
+
+                case OutfitCategoryManager.Category.Pants:
+                    {
+                        string qualifiedId = "(P)" + itemId;
+                        actualItem = ItemRegistry.Create(qualifiedId);
+                        if (actualItem != null)
+                        {
+                            itemName = actualItem.DisplayName;
+                            description = actualItem.getDescription();
+                        }
+                        modName = filterManager.GetModNameForItem(itemId);
+                    }
+                    break;
+
+                case OutfitCategoryManager.Category.Hats:
+                    if (!string.IsNullOrEmpty(itemId) && itemId != OutfitLayoutConstants.NoHatId)
+                    {
+                        string qualifiedId = "(H)" + itemId;
+                        actualItem = ItemRegistry.Create(qualifiedId);
+                        if (actualItem != null)
+                        {
+                            itemName = actualItem.DisplayName;
+                            description = actualItem.getDescription();
+                        }
+                        modName = filterManager.GetModNameForHat(itemId);
+                    }
+                    else
+                    {
+                        itemName = TranslationCache.ItemNoHat;
+                        description = "";
+                    }
+                    break;
+            }
+
+            return (itemName, description, modName, actualItem);
         }
 
         private (string itemName, string description, string modName, Item? item) GetItemData(

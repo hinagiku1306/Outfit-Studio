@@ -35,8 +35,29 @@ namespace FittingRoom
             }
             else if (category == OutfitCategoryManager.Category.Hats && listIndex == 0)
             {
-                // Draw "No Hat" indicator (empty slot)
                 DrawNoHatIndicator(b, slot);
+            }
+        }
+
+        public void DrawItemFromAllCategory(SpriteBatch b, OutfitCategoryManager.Category itemCategory, string itemId, Rectangle slot)
+        {
+            if (itemCategory == OutfitCategoryManager.Category.Hats && itemId == OutfitLayoutConstants.NoHatId)
+            {
+                DrawNoHatIndicator(b, slot);
+                return;
+            }
+
+            string prefix = itemCategory switch
+            {
+                OutfitCategoryManager.Category.Shirts => "(S)",
+                OutfitCategoryManager.Category.Pants => "(P)",
+                OutfitCategoryManager.Category.Hats => "(H)",
+                _ => ""
+            };
+
+            if (!string.IsNullOrEmpty(prefix))
+            {
+                DrawItemUsingVanillaMethod(b, prefix + itemId, slot);
             }
         }
 

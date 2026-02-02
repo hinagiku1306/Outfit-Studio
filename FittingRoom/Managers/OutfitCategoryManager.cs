@@ -18,8 +18,9 @@ namespace FittingRoom
         public readonly List<string> ShirtIds = new();
         public readonly List<string> PantsIds = new();
         public readonly List<string> HatIds = new(); // Includes NoHatId for no hat
+        public readonly List<(Category ItemCategory, string ItemId)> AllItemIds = new();
 
-        public enum Category { Shirts, Pants, Hats }
+        public enum Category { All, Shirts, Pants, Hats }
 
         public OutfitCategoryManager(IMonitor monitor, OutfitFilterManager? filterManager = null)
         {
@@ -28,6 +29,18 @@ namespace FittingRoom
             LoadShirts();
             LoadPants();
             LoadHats();
+            BuildAllItemsList();
+        }
+
+        private void BuildAllItemsList()
+        {
+            AllItemIds.Clear();
+            foreach (var id in ShirtIds)
+                AllItemIds.Add((Category.Shirts, id));
+            foreach (var id in PantsIds)
+                AllItemIds.Add((Category.Pants, id));
+            foreach (var id in HatIds)
+                AllItemIds.Add((Category.Hats, id));
         }
 
         private void LoadShirts()
@@ -100,6 +113,7 @@ namespace FittingRoom
         {
             return CurrentCategory switch
             {
+                Category.All => AllItemIds.Count,
                 Category.Shirts => ShirtIds.Count,
                 Category.Pants => PantsIds.Count,
                 Category.Hats => HatIds.Count,

@@ -461,6 +461,18 @@ namespace FittingRoom
 
             switch (category)
             {
+                case OutfitCategoryManager.Category.All:
+                    foreach (var id in shirtIds)
+                        modNames.Add(GetModNameForItem(id));
+                    foreach (var id in pantsIds)
+                        modNames.Add(GetModNameForItem(id));
+                    foreach (var hatId in hatIds)
+                    {
+                        if (hatId != OutfitLayoutConstants.NoHatId)
+                            modNames.Add(GetModNameForHat(hatId));
+                    }
+                    break;
+
                 case OutfitCategoryManager.Category.Shirts:
                     foreach (var id in shirtIds)
                     {
@@ -717,6 +729,7 @@ namespace FittingRoom
             {
                 return category switch
                 {
+                    OutfitCategoryManager.Category.All => shirtIds.Count + pantsIds.Count + hatIds.Count,
                     OutfitCategoryManager.Category.Shirts => shirtIds.Count,
                     OutfitCategoryManager.Category.Pants => pantsIds.Count,
                     OutfitCategoryManager.Category.Hats => hatIds.Count,
@@ -726,6 +739,9 @@ namespace FittingRoom
 
             return category switch
             {
+                OutfitCategoryManager.Category.All => GetFilteredShirtIds(shirtIds, modFilter).Count +
+                                                       GetFilteredPantsIds(pantsIds, modFilter).Count +
+                                                       GetFilteredHatIds(hatIds, modFilter).Count,
                 OutfitCategoryManager.Category.Shirts => GetFilteredShirtIds(shirtIds, modFilter).Count,
                 OutfitCategoryManager.Category.Pants => GetFilteredPantsIds(pantsIds, modFilter).Count,
                 OutfitCategoryManager.Category.Hats => GetFilteredHatIds(hatIds, modFilter).Count,

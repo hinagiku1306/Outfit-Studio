@@ -10,6 +10,7 @@ namespace FittingRoom
         public bool ShowItemInfo { get; set; } = false;
         public bool ResetFilterOnTabSwitch { get; set; } = false;
         public bool ResetSearchOnTabSwitch { get; set; } = false;
+        public bool ShowFilterTooltip { get; set; } = true;
 
         // Dev-only: Enable debug/trace logging (manually edit config.json)
         public bool EnableDebugLogging { get; set; } = false;
