@@ -95,6 +95,11 @@ namespace FittingRoom
             yPositionOnScreen = uiBuilder.Y;
 
             UpdateTextBoxBounds();
+
+            if (tagDropdownManager.IsOpen)
+            {
+                tagDropdownManager.BuildOptions();
+            }
         }
 
         private void CacheItemObjects()
@@ -319,7 +324,7 @@ namespace FittingRoom
                 new Rectangle(0, 0, Game1.uiViewport.Width, Game1.uiViewport.Height),
                 Color.Black * BackgroundOverlayOpacity);
 
-            IClickableMenu.drawTextureBox(b, xPositionOnScreen, yPositionOnScreen, width, height, Color.White);
+            UIHelpers.DrawTextureBox(b, xPositionOnScreen, yPositionOnScreen, width, height, Color.White);
 
             bool showPlaceholder = string.IsNullOrEmpty(nameTextBox.Text);
             uiBuilder.DrawNameInput(b, nameTextBox.Text ?? "", showPlaceholder);
@@ -331,9 +336,9 @@ namespace FittingRoom
             int mouseX = Game1.getMouseX();
             int mouseY = Game1.getMouseY();
 
+            uiBuilder.DrawItemSlot(b, uiBuilder.HatSlot, includeHat, HasHat(), mouseX, mouseY);
             uiBuilder.DrawItemSlot(b, uiBuilder.ShirtSlot, includeShirt, HasShirt(), mouseX, mouseY);
             uiBuilder.DrawItemSlot(b, uiBuilder.PantsSlot, includePants, HasPants(), mouseX, mouseY);
-            uiBuilder.DrawItemSlot(b, uiBuilder.HatSlot, includeHat, HasHat(), mouseX, mouseY);
             DrawItemSprites(b, includeShirt, includePants, includeHat);
 
             uiBuilder.DrawTagDropdown(b, tagDropdownManager.SelectedTagDisplay, tagDropdownManager.IsOpen);
@@ -482,25 +487,38 @@ namespace FittingRoom
             const float includedTransparency = 1f;
             const float excludedTransparency = 0.4f;
 
+            // Draw items in z-order: Hat (back) → Shirt → Pants (front)
+            if (HasHat() && cachedHat != null)
+            {
+                Rectangle slot = uiBuilder.HatSlot;
+                float transparency = hatIncluded ? includedTransparency : excludedTransparency;
+                Vector2 drawPos = new Vector2(
+                    slot.X + (slot.Width - DrawnItemSize) / 2,
+                    slot.Y + (slot.Height - DrawnItemSize) / 2
+                );
+                cachedHat.drawInMenu(b, drawPos, 1f, transparency, 0.9f, StackDrawType.Hide);
+            }
+
             if (HasShirt() && cachedShirt != null)
             {
                 Rectangle slot = uiBuilder.ShirtSlot;
                 float transparency = shirtIncluded ? includedTransparency : excludedTransparency;
-                cachedShirt.drawInMenu(b, new Vector2(slot.X, slot.Y), 1f, transparency, 0.9f, StackDrawType.Hide);
+                Vector2 drawPos = new Vector2(
+                    slot.X + (slot.Width - DrawnItemSize) / 2,
+                    slot.Y + (slot.Height - DrawnItemSize) / 2
+                );
+                cachedShirt.drawInMenu(b, drawPos, 1f, transparency, 0.9f, StackDrawType.Hide);
             }
 
             if (HasPants() && cachedPants != null)
             {
                 Rectangle slot = uiBuilder.PantsSlot;
                 float transparency = pantsIncluded ? includedTransparency : excludedTransparency;
-                cachedPants.drawInMenu(b, new Vector2(slot.X, slot.Y), 1f, transparency, 0.9f, StackDrawType.Hide);
-            }
-
-            if (HasHat() && cachedHat != null)
-            {
-                Rectangle slot = uiBuilder.HatSlot;
-                float transparency = hatIncluded ? includedTransparency : excludedTransparency;
-                cachedHat.drawInMenu(b, new Vector2(slot.X, slot.Y), 1f, transparency, 0.9f, StackDrawType.Hide);
+                Vector2 drawPos = new Vector2(
+                    slot.X + (slot.Width - DrawnItemSize) / 2,
+                    slot.Y + (slot.Height - DrawnItemSize) / 2
+                );
+                cachedPants.drawInMenu(b, drawPos, 1f, transparency, 0.9f, StackDrawType.Hide);
             }
         }
 

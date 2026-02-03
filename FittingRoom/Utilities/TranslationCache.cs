@@ -91,6 +91,13 @@ namespace FittingRoom
         public static string ConfigResetSearchOnTabSwitchTooltip { get; private set; } = "";
         public static string ConfigShowFilterTooltipName { get; private set; } = "";
         public static string ConfigShowFilterTooltipTooltip { get; private set; } = "";
+        public static string ConfigGridLayoutSection { get; private set; } = "";
+        public static string ConfigVisibleRowsName { get; private set; } = "";
+        public static string ConfigVisibleRowsTooltip { get; private set; } = "";
+        public static string ConfigVisibleColumnsName { get; private set; } = "";
+        public static string ConfigVisibleColumnsTooltip { get; private set; } = "";
+        public static string ConfigSlotSizeName { get; private set; } = "";
+        public static string ConfigSlotSizeTooltip { get; private set; } = "";
 
         /// <summary>
         /// Initialize all translations from the translation helper.
@@ -174,6 +181,13 @@ namespace FittingRoom
             ConfigResetSearchOnTabSwitchTooltip = i18n.Get("config.reset-search-on-tab-switch.tooltip");
             ConfigShowFilterTooltipName = i18n.Get("config.show-filter-tooltip.name");
             ConfigShowFilterTooltipTooltip = i18n.Get("config.show-filter-tooltip.tooltip");
+            ConfigGridLayoutSection = i18n.Get("config.grid-layout.section");
+            ConfigVisibleRowsName = i18n.Get("config.visible-rows.name");
+            ConfigVisibleRowsTooltip = i18n.Get("config.visible-rows.tooltip");
+            ConfigVisibleColumnsName = i18n.Get("config.visible-columns.name");
+            ConfigVisibleColumnsTooltip = i18n.Get("config.visible-columns.tooltip");
+            ConfigSlotSizeName = i18n.Get("config.slot-size.name");
+            ConfigSlotSizeTooltip = i18n.Get("config.slot-size.tooltip");
         }
     }
 }

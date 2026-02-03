@@ -13,6 +13,8 @@ namespace FittingRoom
     /// </summary>
     public class OutfitDrawingHelper
     {
+        private const int DropdownPanelYOffset = -4;
+
         private readonly OutfitUIBuilder uiBuilder;
         private readonly OutfitDropdownManager dropdownManager;
         private readonly OutfitState state;
@@ -40,13 +42,16 @@ namespace FittingRoom
             if (options.Count == 0 || uiBuilder.ModFilterDropdown == null)
                 return;
 
+            Rectangle panelAnchor = uiBuilder.ModFilterDropdown.bounds;
+            panelAnchor.Y += DropdownPanelYOffset;
+
             string? hoveredText = UIHelpers.DrawDropdownOptions(
                 b,
-                uiBuilder.ModFilterDropdown.bounds,
+                panelAnchor,
                 options,
                 dropdownManager.FirstVisibleIndex,
                 dropdownManager.MaxVisibleItems,
-                isSelected: null, // No selection highlighting for filter dropdown
+                isSelected: null,
                 enableTruncation: true
             );
 

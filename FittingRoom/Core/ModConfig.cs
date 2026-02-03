@@ -12,6 +12,11 @@ namespace FittingRoom
         public bool ResetSearchOnTabSwitch { get; set; } = false;
         public bool ShowFilterTooltip { get; set; } = true;
 
+        // Grid layout configuration
+        public int VisibleRows { get; set; } = OutfitLayoutConstants.DefaultVisibleRows;
+        public int VisibleColumns { get; set; } = OutfitLayoutConstants.DefaultVisibleColumns;
+        public int SlotSize { get; set; } = OutfitLayoutConstants.DefaultSlotSize;
+
         // Dev-only: Enable debug/trace logging (manually edit config.json)
         public bool EnableDebugLogging { get; set; } = false;
     }

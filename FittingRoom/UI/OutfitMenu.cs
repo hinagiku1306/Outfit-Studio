@@ -45,7 +45,7 @@ namespace FittingRoom
 
             itemRenderer = new OutfitItemRenderer(mod.Monitor, mod.Helper.ModRegistry);
             state = new OutfitState();
-            uiBuilder = new OutfitUIBuilder();
+            uiBuilder = new OutfitUIBuilder(mod.GetConfig());
             dropdownManager = new OutfitDropdownManager(filterManager, categoryManager, state, uiBuilder);
             searchManager = new OutfitSearchManager(uiBuilder, state);
             tooltipRenderer = new OutfitTooltipRenderer(filterManager, categoryManager);
@@ -214,7 +214,7 @@ namespace FittingRoom
             OutfitUIBuilder.DrawOverlay(b);
 
             // Draw menu box
-            drawTextureBox(b, xPositionOnScreen, yPositionOnScreen, width, height, Color.White);
+            UIHelpers.DrawTextureBox(b, xPositionOnScreen, yPositionOnScreen, width, height, Color.White);
 
             // === LEFT PANEL: Player Preview ===
             uiBuilder.DrawPlayerPreview(b);

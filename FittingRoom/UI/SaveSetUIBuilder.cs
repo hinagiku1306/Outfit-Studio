@@ -11,7 +11,6 @@ namespace FittingRoom
     public class SaveSetUIBuilder
     {
         private const int TextureBoxVerticalPadding = 32;
-        private const int PreviewToSlotsGap = 20;
         private const float FavoriteIconScale = 3.5f;
         private const int FavoriteIconGap = 8;
 
@@ -124,18 +123,18 @@ namespace FittingRoom
             currentY += SaveSetSectionPadding * 2;
 
             int itemSlotsHeight = (SaveSetItemSlotSize * 3) + (SaveSetItemSlotGap * 2);
-            int previewGroupWidth = SaveSetPreviewWidth + PreviewToSlotsGap + SaveSetItemSlotSize;
+            int previewGroupWidth = SaveSetPreviewWidth + SaveSetPreviewToSlotsGap + SaveSetItemSlotSize;
             int previewGroupX = contentX + (contentWidth - previewGroupWidth) / 2;
 
             int previewY = currentY + (PreviewSectionHeight - SaveSetPreviewHeight) / 2;
             PreviewBox = new Rectangle(previewGroupX, previewY, SaveSetPreviewWidth, SaveSetPreviewHeight);
 
-            int itemSlotsX = previewGroupX + SaveSetPreviewWidth + PreviewToSlotsGap;
+            int itemSlotsX = previewGroupX + SaveSetPreviewWidth + SaveSetPreviewToSlotsGap;
             int itemSlotsY = currentY + (PreviewSectionHeight - itemSlotsHeight) / 2;
 
-            ShirtSlot = new Rectangle(itemSlotsX, itemSlotsY, SaveSetItemSlotSize, SaveSetItemSlotSize);
-            PantsSlot = new Rectangle(itemSlotsX, itemSlotsY + SaveSetItemSlotSize + SaveSetItemSlotGap, SaveSetItemSlotSize, SaveSetItemSlotSize);
-            HatSlot = new Rectangle(itemSlotsX, itemSlotsY + (SaveSetItemSlotSize + SaveSetItemSlotGap) * 2, SaveSetItemSlotSize, SaveSetItemSlotSize);
+            HatSlot = new Rectangle(itemSlotsX, itemSlotsY, SaveSetItemSlotSize, SaveSetItemSlotSize);
+            ShirtSlot = new Rectangle(itemSlotsX, itemSlotsY + SaveSetItemSlotSize + SaveSetItemSlotGap, SaveSetItemSlotSize, SaveSetItemSlotSize);
+            PantsSlot = new Rectangle(itemSlotsX, itemSlotsY + (SaveSetItemSlotSize + SaveSetItemSlotGap) * 2, SaveSetItemSlotSize, SaveSetItemSlotSize);
 
             currentY += PreviewSectionHeight;
             currentY += SaveSetSectionPadding * 2;
@@ -157,7 +156,7 @@ namespace FittingRoom
             favoriteRowX = contentX + (contentWidth - favoriteWidth) / 2;
 
             FavoriteCheckbox = new ClickableComponent(
-                new Rectangle(favoriteRowX, currentY, iconSize, FavoriteSectionHeight),
+                new Rectangle(favoriteRowX, currentY, favoriteWidth, FavoriteSectionHeight),
                 "favoriteCheckbox"
             );
 
@@ -189,7 +188,7 @@ namespace FittingRoom
 
         public void DrawTitle(SpriteBatch b)
         {
-            IClickableMenu.drawTextureBox(b, TitleBox.bounds.X, TitleBox.bounds.Y,
+            UIHelpers.DrawTextureBox(b, TitleBox.bounds.X, TitleBox.bounds.Y,
                 TitleBox.bounds.Width, TitleBox.bounds.Height, Color.White);
 
             Vector2 titleSize = Game1.dialogueFont.MeasureString(TranslationCache.SaveSetTitle);
@@ -210,7 +209,7 @@ namespace FittingRoom
                 new Vector2(contentX, labelY), Game1.textColor);
 
             // Draw text box background
-            IClickableMenu.drawTextureBox(b, bounds.X, bounds.Y, bounds.Width, bounds.Height, Color.White);
+            UIHelpers.DrawTextureBox(b, bounds.X, bounds.Y, bounds.Width, bounds.Height, Color.White);
 
             // Draw text or placeholder (matching search bar padding)
             string displayText = showPlaceholder ? TranslationCache.SaveSetNamePlaceholder : currentText;
@@ -247,7 +246,7 @@ namespace FittingRoom
 
         public void DrawItemSlot(SpriteBatch b, Rectangle slot, bool isIncluded, bool hasItem, int mouseX, int mouseY)
         {
-            IClickableMenu.drawTextureBox(b, slot.X - 4, slot.Y - 4, slot.Width + 8, slot.Height + 8, Color.White);
+            UIHelpers.DrawTextureBoxNoShadow(b, slot.X - 4, slot.Y - 4, slot.Width + 8, slot.Height + 8, Color.White);
 
             bool isExcluded = !hasItem || !isIncluded;
             if (isExcluded)
@@ -289,8 +288,9 @@ namespace FittingRoom
 
             float textHeight = Game1.smallFont.MeasureString("A").Y;
             int labelY = bounds.Y + (int)((FavoriteSectionHeight - textHeight) / 2);
+            Color textColor = isChecked ? Game1.textColor : Game1.textColor * 0.5f;
             Utility.drawTextWithShadow(b, TranslationCache.SaveSetFavorite, Game1.smallFont,
-                new Vector2(bounds.X + iconSize + FavoriteIconGap, labelY), Game1.textColor);
+                new Vector2(bounds.X + iconSize + FavoriteIconGap, labelY), textColor);
         }
 
         public void DrawButtons(SpriteBatch b)

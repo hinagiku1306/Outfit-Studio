@@ -45,12 +45,15 @@ namespace FittingRoom
         /// <summary>
         /// Draws a text button with label and bold text on hover.
         /// </summary>
-        public static void DrawTextButton(SpriteBatch b, ClickableComponent button, string label)
+        /// <param name="shadowOffset">Shadow offset (0 = none, 4 = default, 8 = vanilla)</param>
+        /// <param name="shadowOpacity">Shadow opacity (0 = none, 0.4 = default/vanilla)</param>
+        public static void DrawTextButton(SpriteBatch b, ClickableComponent button, string label, int shadowOffset = 4, float shadowOpacity = 0.4f)
         {
             bool isHovered = button.containsPoint(Game1.getMouseX(), Game1.getMouseY());
 
-            IClickableMenu.drawTextureBox(b, button.bounds.X, button.bounds.Y,
-                button.bounds.Width, button.bounds.Height, Color.White);
+            DrawTextureBox(b, button.bounds.X, button.bounds.Y,
+                button.bounds.Width, button.bounds.Height, Color.White,
+                scale: 1f, shadowOffset: shadowOffset, shadowOpacity: shadowOpacity);
 
             Vector2 textSize = Game1.smallFont.MeasureString(label);
             Vector2 textPos = new Vector2(
@@ -93,6 +96,33 @@ namespace FittingRoom
         private static int lastTruncationWidth = -1;
 
         /// <summary>
+        /// Draws a texture box with customizable shadow. Compatible with interface recolor mods.
+        /// Default shadow: 4px offset, 40% opacity.
+        /// </summary>
+        /// <param name="shadowOffset">Shadow offset in pixels (0 = no shadow, 4 = default, 8 = vanilla)</param>
+        /// <param name="shadowOpacity">Shadow opacity (0 = invisible, 0.4 = default/vanilla)</param>
+        public static void DrawTextureBox(SpriteBatch b, int x, int y, int width, int height, Color color, float scale = 1f, int shadowOffset = 4, float shadowOpacity = 0.4f)
+        {
+            if (shadowOffset > 0 && shadowOpacity > 0f)
+            {
+                IClickableMenu.drawTextureBox(b, Game1.menuTexture, MenuBoxSourceRect,
+                    x - shadowOffset, y + shadowOffset, width, height,
+                    Color.Black * shadowOpacity, scale, drawShadow: false);
+            }
+
+            IClickableMenu.drawTextureBox(b, Game1.menuTexture, MenuBoxSourceRect,
+                x, y, width, height, color, scale, drawShadow: false);
+        }
+
+        /// <summary>
+        /// Draws a texture box without shadow. Convenience wrapper for DrawTextureBox.
+        /// </summary>
+        public static void DrawTextureBoxNoShadow(SpriteBatch b, int x, int y, int width, int height, Color color, float scale = 1f)
+        {
+            DrawTextureBox(b, x, y, width, height, color, scale, shadowOffset: 0, shadowOpacity: 0f);
+        }
+
+        /// <summary>
         /// Draws a dropdown button with text, optional label, optional arrow, and optional clear button.
         /// Centralizes dropdown button rendering for consistent appearance.
         /// </summary>
@@ -122,7 +152,7 @@ namespace FittingRoom
             }
 
             // Draw texture box
-            IClickableMenu.drawTextureBox(b, bounds.X, bounds.Y, bounds.Width, bounds.Height,
+            DrawTextureBox(b, bounds.X, bounds.Y, bounds.Width, bounds.Height,
                 isOpen ? Color.Wheat : Color.White);
 
             // Calculate max text width based on whether we have clear button and/or arrow
@@ -203,7 +233,7 @@ namespace FittingRoom
             int optionHeight = options[0].bounds.Height;
             int dropdownHeight = Math.Min(visibleCount, maxVisibleItems) * optionHeight;
 
-            IClickableMenu.drawTextureBox(b,
+            DrawTextureBoxNoShadow(b,
                 anchorBounds.X - 4,
                 anchorBounds.Bottom - 4,
                 anchorBounds.Width + 8,

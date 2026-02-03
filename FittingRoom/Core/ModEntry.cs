@@ -93,6 +93,42 @@ namespace FittingRoom
                     getValue: () => config.ShowFilterTooltip,
                     setValue: value => config.ShowFilterTooltip = value
                 );
+
+                // Grid Layout section
+                gmcmApi.AddSectionTitle(
+                    mod: ModManifest,
+                    text: () => TranslationCache.ConfigGridLayoutSection
+                );
+
+                gmcmApi.AddNumberOption(
+                    mod: ModManifest,
+                    name: () => TranslationCache.ConfigVisibleRowsName,
+                    tooltip: () => TranslationCache.ConfigVisibleRowsTooltip,
+                    getValue: () => config.VisibleRows,
+                    setValue: value => config.VisibleRows = value,
+                    min: OutfitLayoutConstants.MinVisibleRows,
+                    max: OutfitLayoutConstants.MaxVisibleRows
+                );
+
+                gmcmApi.AddNumberOption(
+                    mod: ModManifest,
+                    name: () => TranslationCache.ConfigVisibleColumnsName,
+                    tooltip: () => TranslationCache.ConfigVisibleColumnsTooltip,
+                    getValue: () => config.VisibleColumns,
+                    setValue: value => config.VisibleColumns = value,
+                    min: OutfitLayoutConstants.MinVisibleColumns,
+                    max: OutfitLayoutConstants.MaxVisibleColumns
+                );
+
+                gmcmApi.AddNumberOption(
+                    mod: ModManifest,
+                    name: () => TranslationCache.ConfigSlotSizeName,
+                    tooltip: () => TranslationCache.ConfigSlotSizeTooltip,
+                    getValue: () => config.SlotSize,
+                    setValue: value => config.SlotSize = value,
+                    min: OutfitLayoutConstants.MinSlotSize,
+                    max: OutfitLayoutConstants.MaxSlotSize
+                );
             }
         }
 

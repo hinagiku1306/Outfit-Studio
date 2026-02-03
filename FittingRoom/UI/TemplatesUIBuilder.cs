@@ -155,7 +155,7 @@ namespace FittingRoom
         public void DrawLeftPanel(SpriteBatch b, List<string> templates, int selectedIndex)
         {
             // Draw panel outline
-            IClickableMenu.drawTextureBox(b, LeftPanel.X - 8, LeftPanel.Y - 8,
+            UIHelpers.DrawTextureBox(b, LeftPanel.X - 8, LeftPanel.Y - 8,
                 LeftPanel.Width + 16, LeftPanel.Height + 16, Color.White);
 
             // Draw filter/sort/search placeholders
@@ -184,7 +184,7 @@ namespace FittingRoom
         public void DrawRightPanel(SpriteBatch b, string selectedName)
         {
             // Draw panel outline
-            IClickableMenu.drawTextureBox(b, RightPanel.X - 8, RightPanel.Y - 8,
+            UIHelpers.DrawTextureBox(b, RightPanel.X - 8, RightPanel.Y - 8,
                 RightPanel.Width + 16, RightPanel.Height + 16, Color.White);
 
             // Draw "Template Details" label
@@ -192,7 +192,7 @@ namespace FittingRoom
                 new Vector2(RightPanel.X + 8, RightPanel.Y + 8), Game1.textColor);
 
             // Draw preview box
-            IClickableMenu.drawTextureBox(b, PreviewBox.X - 4, PreviewBox.Y - 4 + 32,
+            UIHelpers.DrawTextureBox(b, PreviewBox.X - 4, PreviewBox.Y - 4 + 32,
                 PreviewBox.Width + 8, PreviewBox.Height + 8, Color.White);
             Utility.drawTextWithShadow(b, TranslationCache.TemplatesPreviewLabel, Game1.smallFont,
                 new Vector2(PreviewBox.X + 8, PreviewBox.Y + PreviewBox.Height / 2 + 32), Color.Gray);
@@ -245,7 +245,7 @@ namespace FittingRoom
 
         private void DrawTextButton(SpriteBatch b, ClickableComponent button, string label)
         {
-            IClickableMenu.drawTextureBox(b, button.bounds.X, button.bounds.Y,
+            UIHelpers.DrawTextureBox(b, button.bounds.X, button.bounds.Y,
                 button.bounds.Width, button.bounds.Height, Color.White);
 
             Vector2 textSize = Game1.smallFont.MeasureString(label);
@@ -257,7 +257,7 @@ namespace FittingRoom
 
         private void DrawTextBox(SpriteBatch b, ClickableComponent box, string placeholder)
         {
-            IClickableMenu.drawTextureBox(b, box.bounds.X, box.bounds.Y,
+            UIHelpers.DrawTextureBox(b, box.bounds.X, box.bounds.Y,
                 box.bounds.Width, box.bounds.Height, Color.White);
 
             Utility.drawTextWithShadow(b, placeholder, Game1.smallFont,

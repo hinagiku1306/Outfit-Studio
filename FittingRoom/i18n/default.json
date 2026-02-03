@@ -10,6 +10,13 @@
     "config.reset-search-on-tab-switch.tooltip": "If enabled, the search text will be cleared when switching between Clothing tabs.",
     "config.show-filter-tooltip.name": "Show Filter Tooltip",
     "config.show-filter-tooltip.tooltip": "If enabled, hovering over a truncated filter name will show the full name in a tooltip.",
+    "config.grid-layout.section": "Grid Layout",
+    "config.visible-rows.name": "Visible Rows",
+    "config.visible-rows.tooltip": "Number of item rows displayed in the grid.",
+    "config.visible-columns.name": "Visible Columns",
+    "config.visible-columns.tooltip": "Number of item columns displayed in the grid.",
+    "config.slot-size.name": "Item Slot Size",
+    "config.slot-size.tooltip": "Size of each item slot in pixels.",
     // Main Menu
     "menu.title": "Fitting Room",
     "menu.tabs.all": "All",

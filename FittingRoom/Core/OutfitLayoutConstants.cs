@@ -4,41 +4,88 @@ namespace FittingRoom
 {
     /// <summary>
     /// Contains all layout constants for the OutfitMenu UI.
-    /// Organized by component/purpose for easy maintenance.
+    /// Organized by section-based layout system for maintainability.
     /// </summary>
     public static class OutfitLayoutConstants
     {
         // ============================================================
-        // MENU DIMENSIONS
+        // SPACING SYSTEM
         // ============================================================
 
-        /// <summary>Total height of the outfit menu in pixels.</summary>
-        public const int MenuTotalHeight = 700;
-
         /// <summary>Horizontal padding from menu edge to content area.</summary>
-        public const int MenuSidePadding = 70;
+        public const int BorderPaddingH = 50;
 
-        /// <summary>Top padding from menu edge to content area.</summary>
-        public const int MenuTopPadding = 20;
+        /// <summary>Extra right padding for menu balance.</summary>
+        public const int BorderPaddingRightExtra = 20;
 
-        /// <summary>Bottom padding from menu edge to content area.</summary>
-        public const int MenuBottomPadding = 25;
+        /// <summary>Vertical padding from menu edge to content area.</summary>
+        public const int BorderPaddingV = 40;
+
+        /// <summary>Horizontal gap between major sections (e.g., left panel to right panel).</summary>
+        public const int SectionGapH = 50;
+
+        /// <summary>Vertical gap between major sections.</summary>
+        public const int SectionGapV = 50;
+
+        /// <summary>Gap between elements within a section.</summary>
+        public const int ElementGap = 8;
 
         /// <summary>General inner padding used around content boxes.</summary>
         public const int ContentBoxPadding = 16;
 
-        /// <summary>Height reserved for the menu title text area.</summary>
-        public const int TitleAreaHeight = 48;
+        // ============================================================
+        // SECTION HEIGHTS
+        // ============================================================
 
-        /// <summary>Height reserved at bottom for action buttons.</summary>
-        public const int BottomButtonAreaHeight = 80;
-
-        /// <summary>Height reserved at bottom for action buttons.</summary>
-        public const int GapBetweenTabsAndItemGrid = 22;
+        /// <summary>Height of the tab row section.</summary>
+        public const int TabSectionHeight = 48;
 
         // ============================================================
-        // CHARACTER PREVIEW PANEL
+        // GRID CONFIGURATION (User Configurable via GMCM)
         // ============================================================
+
+        /// <summary>Default number of visible rows in item grid.</summary>
+        public const int DefaultVisibleRows = 4;
+
+        /// <summary>Minimum visible rows allowed.</summary>
+        public const int MinVisibleRows = 3;
+
+        /// <summary>Maximum visible rows allowed.</summary>
+        public const int MaxVisibleRows = 6;
+
+        /// <summary>Default number of visible columns in item grid.</summary>
+        public const int DefaultVisibleColumns = 5;
+
+        /// <summary>Minimum visible columns allowed.</summary>
+        public const int MinVisibleColumns = 3;
+
+        /// <summary>Maximum visible columns allowed.</summary>
+        public const int MaxVisibleColumns = 7;
+
+        /// <summary>Default size of each item slot (width and height).</summary>
+        public const int DefaultSlotSize = 80;
+
+        /// <summary>Minimum slot size allowed (slightly larger than DrawnItemSize).</summary>
+        public const int MinSlotSize = 68;
+
+        /// <summary>Maximum slot size allowed.</summary>
+        public const int MaxSlotSize = 85;
+
+        /// <summary>Gap between item slots in the grid.</summary>
+        public const int ItemSlotGap = 4;
+
+        /// <summary>Size of items when drawn via drawInMenu (vanilla standard).</summary>
+        public const int DrawnItemSize = 64;
+
+        // ============================================================
+        // LEFT PANEL (Character Preview)
+        // ============================================================
+
+        /// <summary>Width of the left panel containing character preview.</summary>
+        public const int LeftPanelWidth = 180;
+
+        /// <summary>Gap between left panel and right panel (item grid).</summary>
+        public const int PanelGap = 40;
 
         /// <summary>Width of the character preview background box.</summary>
         public const int CharacterPreviewWidth = (int)(128 * FarmerSpriteScale);
@@ -46,8 +93,8 @@ namespace FittingRoom
         /// <summary>Height of the character preview background box.</summary>
         public const int CharacterPreviewHeight = (int)(192 * FarmerSpriteScale);
 
-        /// <summary>Horizontal gap between character preview and item grid.</summary>
-        public const int GapBetweenPreviewAndGrid = 100;
+        /// <summary>Gap between portrait box and buttons below it.</summary>
+        public const int GapBetweenPortraitAndButtons = 16;
 
         /// <summary>Source rectangle width for background texture (vanilla standard).</summary>
         public const int BackgroundSourceWidth = 64;
@@ -59,7 +106,7 @@ namespace FittingRoom
         public const float CharacterPreviewScale = 1f;
 
         /// <summary>Farmer sprite scale.</summary>
-        public const float FarmerSpriteScale = 1.3f;
+        public const float FarmerSpriteScale = 1.2f;
 
         /// <summary>Width of farmer sprite at standard scale.</summary>
         public const int FarmerSpriteWidth = 16;
@@ -70,46 +117,49 @@ namespace FittingRoom
         /// <summary>Layer depth for farmer sprite rendering.</summary>
         public const float FarmerSpriteLayerDepth = 0.8f;
 
-        /// <summary>Gap between portrait box and buttons below it.</summary>
-        public const int GapBetweenPortraitAndButtons = 30;
-
         /// <summary>Time of day when night background starts (24-hour format * 100).</summary>
         public const int NightTimeStartHour = 1900;
 
         // ============================================================
-        // ITEM GRID (Right Side)
+        // TABS AND BUTTONS
         // ============================================================
 
-        /// <summary>Size of each item slot in the grid (width and height).</summary>
-        public const int ItemSlotSize = 85;
-
-        /// <summary>Gap between item slots in the grid.</summary>
-        public const int ItemSlotGap = 4;
-
-        /// <summary>Number of columns in the item grid.</summary>
-        public const int ItemGridColumns = 5;
-
-        /// <summary>Size of items when drawn via drawInMenu (vanilla standard).</summary>
-        public const int DrawnItemSize = 64;
-
-        // ============================================================
-        // CATEGORY TABS AND ACTION BUTTONS
-        // ============================================================
-
-        /// <summary>Width of category tabs and action buttons (Apply/Reset).</summary>
+        /// <summary>Width of category tabs and action buttons (deprecated, use dynamic sizing).</summary>
         public const int TabAndButtonWidth = 110;
 
         /// <summary>Height of category tabs and action buttons.</summary>
         public const int TabAndButtonHeight = 60;
 
-        /// <summary>Horizontal gap between adjacent tabs or buttons.</summary>
+        /// <summary>Horizontal gap between adjacent tabs.</summary>
         public const int TabAndButtonGap = 8;
 
-        /// <summary>Tab opacity.</summary>
+        /// <summary>Gap between bottom buttons.</summary>
+        public const int BottomButtonGap = 16;
+
+        /// <summary>Padding around text areas.</summary>
+        public const int TextPadding = 15;
+
+        /// <summary>Height reserved for the menu title text area.</summary>
+        public const int TitleAreaHeight = 48;
+
+        /// <summary>Tab opacity when inactive.</summary>
         public const float TabOpacity = 0.2f;
 
-        /// <summary>Padding around equipped text area.</summary>
-        public const int TextPadding = 15;
+        // ============================================================
+        // DIRECTION ARROWS (Left Panel)
+        // ============================================================
+
+        /// <summary>Native width of arrow sprite in source texture.</summary>
+        public const int ArrowNativeWidth = 12;
+
+        /// <summary>Native height of arrow sprite in source texture.</summary>
+        public const int ArrowNativeHeight = 11;
+
+        /// <summary>Scale factor for direction arrows (0.8x of original 4x scale).</summary>
+        public const float ArrowScale = 3.2f;
+
+        /// <summary>Gap between left and right arrow buttons.</summary>
+        public const int ArrowGap = 12;
 
         // ============================================================
         // SCROLL ARROWS & CLOSE
@@ -165,25 +215,8 @@ namespace FittingRoom
         public const string NoPantsId = "-1";
 
         // ============================================================
-        // TOP TABS
-        // ============================================================
-
-        /// <summary>Gap between title and tabs.</summary>
-        public const int TabMarginTop = 8;
-
-        // ============================================================
-        // EQUIPPED ITEMS DISPLAY
-        // ============================================================
-
-        /// <summary>Height per line of equipped text.</summary>
-        public const int EquippedTextLineHeight = 28;
-
-        // ============================================================
         // FILTER & SEARCH
         // ============================================================
-
-        /// <summary>Height for filter/search controls row.</summary>
-        public const int FilterSearchAreaHeight = 70;
 
         /// <summary>Gap between filter dropdown and search bar.</summary>
         public const int FilterSearchGap = 12;
@@ -193,13 +226,6 @@ namespace FittingRoom
 
         /// <summary>Padding between text and its box.</summary>
         public const int FilterTextPadding = 12;
-
-        // ============================================================
-        // BOTTOM BUTTONS
-        // ============================================================
-
-        /// <summary>Gap between bottom buttons.</summary>
-        public const int BottomButtonGap = 16;
 
         // ============================================================
         // CLEAR BUTTON (for dropdown and search bar)
@@ -273,10 +299,13 @@ namespace FittingRoom
         public const int SaveSetPreviewHeight = 192;
 
         /// <summary>Size of item slots for clothing sprites.</summary>
-        public const int SaveSetItemSlotSize = 64;
+        public const int SaveSetItemSlotSize = 70;
 
         /// <summary>Gap between item slots.</summary>
-        public const int SaveSetItemSlotGap = 8;
+        public const int SaveSetItemSlotGap = 4;
+
+        /// <summary>Gap between character preview and item slots.</summary>
+        public const int SaveSetPreviewToSlotsGap = 25;
 
         /// <summary>Size of favorite checkbox.</summary>
         public const int SaveSetCheckboxSize = 36;
@@ -289,5 +318,12 @@ namespace FittingRoom
 
         /// <summary>Save Set slot color when excluded or empty.</summary>
         public static readonly Color SaveSetExcludedItemSlotColor = Color.Black * 0.3f;
+
+        // ============================================================
+        // MENU TEXTURE SOURCE RECTANGLES
+        // ============================================================
+
+        /// <summary>Source rectangle for standard dialog/menu box 9-slice in Game1.menuTexture.</summary>
+        public static readonly Rectangle MenuBoxSourceRect = new Rectangle(0, 256, 60, 60);
     }
 }
