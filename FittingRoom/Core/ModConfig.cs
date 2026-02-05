@@ -6,11 +6,12 @@ namespace FittingRoom
     public class ModConfig
     {
         public KeybindList ToggleMenuKey { get; set; } = KeybindList.Parse("O");
-        public KeybindList ToggleItemInfoKey { get; set; } = KeybindList.Parse("I");
+        public KeybindList ToggleItemInfoKey { get; set; } = KeybindList.Parse("End");
         public bool ShowItemInfo { get; set; } = false;
         public bool ResetFilterOnTabSwitch { get; set; } = false;
         public bool ResetSearchOnTabSwitch { get; set; } = false;
         public bool ShowFilterTooltip { get; set; } = true;
+        public bool AutoOpenTagMenu { get; set; } = true;
 
         // Grid layout configuration
         public int VisibleRows { get; set; } = OutfitLayoutConstants.DefaultVisibleRows;

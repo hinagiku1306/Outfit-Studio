@@ -32,6 +32,21 @@ namespace FittingRoom
         }
 
         /// <summary>
+        /// Returns the position to draw content so it appears visually centered in a texture box.
+        /// Compensates for the asymmetric border of the standard menu texture (bottom is 4px thicker).
+        /// </summary>
+        /// <param name="bounds">The bounds of the texture box.</param>
+        /// <param name="contentSize">The size of the content to center.</param>
+        /// <returns>The top-left position to draw the content.</returns>
+        public static Vector2 GetVisualCenter(Rectangle bounds, Vector2 contentSize)
+        {
+            return new Vector2(
+                bounds.X + (bounds.Width - contentSize.X) / 2,
+                bounds.Y + (bounds.Height - contentSize.Y) / 2 + TextureBoxVisualOffsetY
+            );
+        }
+
+        /// <summary>
         /// Calculates the width needed for a button based on its text content.
         /// Uses fixed TabAndButtonWidth unless text requires more space.
         /// </summary>
@@ -56,10 +71,7 @@ namespace FittingRoom
                 scale: 1f, shadowOffset: shadowOffset, shadowOpacity: shadowOpacity);
 
             Vector2 textSize = Game1.smallFont.MeasureString(label);
-            Vector2 textPos = new Vector2(
-                button.bounds.X + (button.bounds.Width - textSize.X) / 2,
-                button.bounds.Y + (button.bounds.Height - textSize.Y) / 2
-            );
+            Vector2 textPos = GetVisualCenter(button.bounds, textSize);
 
             if (isHovered)
             {

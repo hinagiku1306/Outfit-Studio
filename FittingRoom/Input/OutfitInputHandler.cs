@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using FittingRoom.Services;
 using Microsoft.Xna.Framework.Input;
 using StardewValley;
-using StardewValley.Menus;
 using StardewValley.Objects;
 
 namespace FittingRoom
@@ -17,7 +16,7 @@ namespace FittingRoom
         private readonly OutfitSearchManager searchManager;
         private readonly ContinuousScrollHandler continuousScrollHandler;
         private readonly ModEntry mod;
-        private readonly TemplateManager templateManager;
+        private readonly OutfitSetStore outfitSetStore;
 
         private readonly Action onRevertAndClose;
         private readonly Action onApplyOutfit;
@@ -51,7 +50,7 @@ namespace FittingRoom
             Func<List<(OutfitCategoryManager.Category, string)>> getCurrentAllItems,
             Func<TemplatesOverlay?> getTemplatesOverlay,
             Action<TemplatesOverlay?> setTemplatesOverlay,
-            TemplateManager templateManager,
+            OutfitSetStore outfitSetStore,
             Action showSavedMessage)
         {
             this.categoryManager = categoryManager;
@@ -61,7 +60,6 @@ namespace FittingRoom
             this.searchManager = searchManager;
             this.continuousScrollHandler = continuousScrollHandler;
             this.mod = mod;
-            this.templateManager = templateManager;
             this.onRevertAndClose = onRevertAndClose;
             this.onApplyOutfit = onApplyOutfit;
             this.onResetOutfit = onResetOutfit;
@@ -74,6 +72,7 @@ namespace FittingRoom
             this.getCurrentAllItems = getCurrentAllItems;
             this.getTemplatesOverlay = getTemplatesOverlay;
             this.setTemplatesOverlay = setTemplatesOverlay;
+            this.outfitSetStore = outfitSetStore;
         }
 
         public bool HandleLeftClick(int x, int y, bool playSound)
@@ -217,7 +216,7 @@ namespace FittingRoom
             if (uiBuilder.ApplyButton.containsPoint(x, y))
             {
                 onApplyOutfit();
-                uiBuilder.ShowSavedMessage();
+                uiBuilder.ShowAppliedMessage();
                 if (playSound) Game1.playSound("coin");
                 return true;
             }
@@ -247,7 +246,7 @@ namespace FittingRoom
             // Save button - opens SaveSet overlay (swaps active menu)
             if (uiBuilder.SaveButton.containsPoint(x, y))
             {
-                Game1.activeClickableMenu = new SaveSetOverlay(Game1.activeClickableMenu, templateManager, () => showSavedMessage());
+                Game1.activeClickableMenu = new SaveSetOverlay(Game1.activeClickableMenu, outfitSetStore, () => showSavedMessage());
                 if (playSound) Game1.playSound("bigSelect");
                 return true;
             }
@@ -255,7 +254,10 @@ namespace FittingRoom
             // Templates button - opens overlay
             if (uiBuilder.TemplatesButton.containsPoint(x, y))
             {
-                setTemplatesOverlay(new TemplatesOverlay());
+                setTemplatesOverlay(new TemplatesOverlay(outfitSetStore, () =>
+                {
+                    Game1.activeClickableMenu = new SaveSetOverlay(Game1.activeClickableMenu, outfitSetStore, () => showSavedMessage());
+                }));
                 if (playSound) Game1.playSound("bigSelect");
                 return true;
             }

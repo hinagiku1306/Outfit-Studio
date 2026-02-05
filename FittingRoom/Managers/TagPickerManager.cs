@@ -1,0 +1,720 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using FittingRoom.Services;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
+using StardewValley;
+using StardewValley.Menus;
+using static FittingRoom.OutfitLayoutConstants;
+
+namespace FittingRoom
+{
+    public class TagPickerManager
+    {
+        private const int MaxTagsPerSet = 5;
+        private const int MaxTagLength = 30;
+        private const int PopupWidth = 300;
+        private const int PopupPadding = 35;
+        private const int OptionHeight = 36;
+        private const int MaxVisibleOptions = 6;
+        private const int CustomInputHeight = 40;
+        private const int DividerPadding = 12;
+        private const int CustomSectionTopPadding = 22;
+        private const int BottomPadding = 36;
+        private const int CustomLabelHeight = 36;
+        private const float ScrollArrowScale = 2.5f;
+        private const int ScrollArrowRightMargin = 48;
+
+        private readonly OutfitSetStore store;
+
+        private bool isOpen;
+        private Rectangle popupBounds;
+        private List<ClickableComponent> tagOptions = new();
+        private HashSet<string> selectedTags = new();
+        private int firstVisibleIndex;
+
+        private TextBox? customTagTextBox;
+        private ClickableComponent? addCustomButton;
+        private ClickableComponent? upArrowButton;
+        private ClickableComponent? downArrowButton;
+        private int tagListStartY;
+
+        private bool isEditMode;
+        private HashSet<string> tagsMarkedForDeletion = new();
+        private ClickableComponent? editModeButton;
+        private ClickableComponent? deleteConfirmButton;
+        private List<ClickableComponent> tagDeleteButtons = new();
+
+        private Action<HashSet<string>>? onComplete;
+
+        private Rectangle parentBounds;
+
+        public bool IsOpen => isOpen;
+        public Rectangle Bounds => popupBounds;
+        public bool IsCustomInputFocused => customTagTextBox?.Selected ?? false;
+
+        public void DeselectCustomInput()
+        {
+            if (customTagTextBox != null)
+            {
+                customTagTextBox.Selected = false;
+            }
+        }
+
+        public TagPickerManager(OutfitSetStore store)
+        {
+            this.store = store;
+        }
+
+        public void Open(Rectangle parentBounds, HashSet<string> currentTags, Action<HashSet<string>> onComplete)
+        {
+            this.parentBounds = parentBounds;
+            this.onComplete = onComplete;
+            selectedTags = new HashSet<string>(currentTags, StringComparer.OrdinalIgnoreCase);
+            firstVisibleIndex = 0;
+            isOpen = true;
+
+            CalculateLayout();
+            BuildOptions();
+            InitializeCustomTagInput();
+        }
+
+        public void Close()
+        {
+            isOpen = false;
+            isEditMode = false;
+            tagsMarkedForDeletion.Clear();
+            customTagTextBox = null;
+        }
+
+        private void CalculateLayout()
+        {
+            int titleHeight = (int)Game1.smallFont.MeasureString("A").Y;
+            int tagListHeight = MaxVisibleOptions * OptionHeight;
+
+            int totalHeight = PopupPadding
+                              + titleHeight + DividerPadding
+                              + DividerPadding
+                              + tagListHeight
+                              + CustomSectionTopPadding
+                              + CustomLabelHeight
+                              + CustomInputHeight
+                              + BottomPadding;
+
+            int popupX = parentBounds.Right;
+            int popupY = parentBounds.Y + (parentBounds.Height - totalHeight) / 2;
+
+            popupBounds = new Rectangle(popupX, popupY, PopupWidth, totalHeight);
+
+            int editBtnSize = (int)(CloseButtonSize * 1.1f);
+            int editBtnX = popupBounds.Right - editBtnSize / 2 - 12;
+            int editBtnY = popupBounds.Y - editBtnSize / 2 + 12;
+            editModeButton = new ClickableComponent(
+                new Rectangle(editBtnX, editBtnY, editBtnSize, editBtnSize),
+                "editMode"
+            );
+        }
+
+        private void BuildOptions()
+        {
+            tagOptions.Clear();
+            tagDeleteButtons.Clear();
+
+            var allTags = store.GetAllTags();
+            int titleHeight = (int)Game1.smallFont.MeasureString("A").Y;
+            int optionsY = popupBounds.Y + PopupPadding + titleHeight + DividerPadding * 2;
+            tagListStartY = optionsY;
+
+            int maxFirstVisible = Math.Max(0, allTags.Count - MaxVisibleOptions);
+            firstVisibleIndex = Math.Clamp(firstVisibleIndex, 0, maxFirstVisible);
+
+            for (int i = 0; i < allTags.Count; i++)
+            {
+                bool isVisible = i >= firstVisibleIndex && i < firstVisibleIndex + MaxVisibleOptions;
+                int visualIndex = i - firstVisibleIndex;
+
+                var option = new ClickableComponent(
+                    new Rectangle(
+                        popupBounds.X + PopupPadding,
+                        optionsY + (visualIndex * OptionHeight),
+                        popupBounds.Width - (PopupPadding * 2),
+                        OptionHeight
+                    ),
+                    allTags[i]
+                )
+                {
+                    visible = isVisible
+                };
+
+                tagOptions.Add(option);
+
+                string displayTag = TranslationCache.GetTagDisplayName(allTags[i]);
+                int tagTextWidth = (int)Game1.smallFont.MeasureString(displayTag).X;
+                int deleteBtnX = option.bounds.X + 4 + tagTextWidth + 8;
+                int deleteBtnY = optionsY + (visualIndex * OptionHeight) + (OptionHeight - TagDeleteButtonSize) / 2;
+                var deleteButton = new ClickableComponent(
+                    new Rectangle(deleteBtnX, deleteBtnY, TagDeleteButtonSize, TagDeleteButtonSize),
+                    $"delete:{allTags[i]}"
+                )
+                {
+                    visible = isVisible && isEditMode
+                };
+                tagDeleteButtons.Add(deleteButton);
+            }
+
+            int arrowWidth = (int)(ArrowNativeWidth * ScrollArrowScale);
+            int arrowHeight = (int)(ArrowNativeHeight * ScrollArrowScale);
+            int arrowX = popupBounds.Right - ScrollArrowRightMargin - arrowWidth / 2;
+
+            upArrowButton = new ClickableComponent(
+                new Rectangle(arrowX, optionsY, arrowWidth, arrowHeight),
+                "upArrow"
+            );
+
+            int tagListHeight = MaxVisibleOptions * OptionHeight;
+            downArrowButton = new ClickableComponent(
+                new Rectangle(arrowX, optionsY + tagListHeight - arrowHeight, arrowWidth, arrowHeight),
+                "downArrow"
+            );
+        }
+
+        private void InitializeCustomTagInput()
+        {
+            int tagListHeight = MaxVisibleOptions * OptionHeight;
+            int customSectionY = tagListStartY + tagListHeight + CustomSectionTopPadding;
+            int inputY = customSectionY + CustomLabelHeight;
+            int addButtonWidth = 50;
+            int addButtonHeight = CustomInputHeight + 4;
+            int inputX = popupBounds.X + PopupPadding - 10;
+            int inputWidth = popupBounds.Width - (PopupPadding * 2) - addButtonWidth - 8 + 10;
+
+            customTagTextBox = new TextBox(
+                Game1.content.Load<Texture2D>("LooseSprites\\textBox"),
+                null,
+                Game1.smallFont,
+                Game1.textColor)
+            {
+                X = inputX,
+                Y = inputY,
+                Width = inputWidth,
+                Text = ""
+            };
+
+            addCustomButton = new ClickableComponent(
+                new Rectangle(
+                    inputX + inputWidth + 8,
+                    inputY - 2,
+                    addButtonWidth,
+                    addButtonHeight
+                ),
+                "addCustom"
+            );
+        }
+
+        public bool HandleClick(int x, int y, out bool consumed)
+        {
+            consumed = false;
+
+            if (!isOpen)
+                return false;
+
+            if (editModeButton != null && editModeButton.containsPoint(x, y))
+            {
+                consumed = true;
+                if (isEditMode)
+                {
+                    ExitEditMode();
+                }
+                else
+                {
+                    EnterEditMode();
+                }
+                return true;
+            }
+
+            if (isEditMode && deleteConfirmButton != null && deleteConfirmButton.containsPoint(x, y))
+            {
+                consumed = true;
+                CommitTagDeletions();
+                return true;
+            }
+
+            if (!popupBounds.Contains(x, y))
+                return false;
+
+            consumed = true;
+
+            if (isEditMode)
+            {
+                for (int i = 0; i < tagDeleteButtons.Count; i++)
+                {
+                    var deleteBtn = tagDeleteButtons[i];
+                    if (deleteBtn.visible && deleteBtn.containsPoint(x, y))
+                    {
+                        string tag = deleteBtn.name.Replace("delete:", "");
+                        ToggleTagForDeletion(tag);
+                        Game1.playSound("smallSelect");
+                        return true;
+                    }
+                }
+                return true;
+            }
+
+            foreach (var option in tagOptions)
+            {
+                if (option.visible && option.containsPoint(x, y))
+                {
+                    string tag = option.name;
+
+                    if (selectedTags.Contains(tag))
+                    {
+                        selectedTags.Remove(tag);
+                    }
+                    else if (selectedTags.Count < MaxTagsPerSet)
+                    {
+                        selectedTags.Add(tag);
+                    }
+
+                    onComplete?.Invoke(selectedTags);
+                    Game1.playSound("smallSelect");
+                    return true;
+                }
+            }
+
+            if (addCustomButton != null && addCustomButton.containsPoint(x, y) && !isEditMode)
+            {
+                TryAddCustomTag();
+                return true;
+            }
+
+            if (customTagTextBox != null && !isEditMode)
+            {
+                Rectangle textBoxBounds = new Rectangle(
+                    customTagTextBox.X,
+                    customTagTextBox.Y,
+                    customTagTextBox.Width,
+                    CustomInputHeight
+                );
+
+                if (textBoxBounds.Contains(x, y))
+                {
+                    customTagTextBox.Selected = true;
+                }
+            }
+
+            return true;
+        }
+
+        private void TryAddCustomTag()
+        {
+            if (customTagTextBox == null)
+                return;
+
+            string newTag = customTagTextBox.Text?.Trim() ?? "";
+
+            if (string.IsNullOrEmpty(newTag))
+                return;
+
+            if (newTag.Length > MaxTagLength)
+            {
+                newTag = newTag.Substring(0, MaxTagLength);
+            }
+
+            bool tagAdded = false;
+
+            if (store.GetAllTags().Any(t => t.Equals(newTag, StringComparison.OrdinalIgnoreCase)))
+            {
+                if (!selectedTags.Contains(newTag) && selectedTags.Count < MaxTagsPerSet)
+                {
+                    var existingTag = store.GetAllTags().First(t => t.Equals(newTag, StringComparison.OrdinalIgnoreCase));
+                    selectedTags.Add(existingTag);
+                    tagAdded = true;
+                }
+            }
+            else
+            {
+                store.AddTag(newTag);
+                if (selectedTags.Count < MaxTagsPerSet)
+                {
+                    selectedTags.Add(newTag);
+                    tagAdded = true;
+                }
+                BuildOptions();
+            }
+
+            if (tagAdded)
+            {
+                onComplete?.Invoke(selectedTags);
+            }
+
+            customTagTextBox.Text = "";
+            Game1.playSound("coin");
+        }
+
+        private void EnterEditMode()
+        {
+            isEditMode = true;
+            tagsMarkedForDeletion.Clear();
+            BuildOptions();
+            InitializeDeleteConfirmButton();
+            Game1.playSound("smallSelect");
+        }
+
+        private void ExitEditMode()
+        {
+            isEditMode = false;
+            tagsMarkedForDeletion.Clear();
+            deleteConfirmButton = null;
+            BuildOptions();
+            Game1.playSound("bigDeSelect");
+        }
+
+        private void InitializeDeleteConfirmButton()
+        {
+            int tagListHeight = MaxVisibleOptions * OptionHeight;
+            int customSectionY = tagListStartY + tagListHeight + CustomSectionTopPadding;
+            int availableHeight = CustomLabelHeight + CustomInputHeight;
+
+            Vector2 textSize = Game1.smallFont.MeasureString(TranslationCache.TagsPopupDelete);
+            int buttonWidth = (int)textSize.X + TextPadding * 3;
+            int buttonHeight = (int)textSize.Y + TextPadding * 2;
+            int buttonX = popupBounds.X + (popupBounds.Width - buttonWidth) / 2;
+            int buttonY = customSectionY + availableHeight - buttonHeight;
+
+            deleteConfirmButton = new ClickableComponent(
+                new Rectangle(buttonX, buttonY, buttonWidth, buttonHeight),
+                "deleteConfirm"
+            );
+        }
+
+        private void ToggleTagForDeletion(string tag)
+        {
+            if (tagsMarkedForDeletion.Contains(tag))
+                tagsMarkedForDeletion.Remove(tag);
+            else
+                tagsMarkedForDeletion.Add(tag);
+        }
+
+        private void CommitTagDeletions()
+        {
+            if (tagsMarkedForDeletion.Count == 0)
+            {
+                ExitEditMode();
+                return;
+            }
+
+            foreach (var tag in tagsMarkedForDeletion)
+                selectedTags.Remove(tag);
+
+            store.RemoveTags(tagsMarkedForDeletion);
+            onComplete?.Invoke(selectedTags);
+            Game1.playSound("coin");
+
+            isEditMode = false;
+            tagsMarkedForDeletion.Clear();
+            deleteConfirmButton = null;
+            BuildOptions();
+        }
+
+        public bool HandleScrollWheel(int direction)
+        {
+            if (!isOpen)
+                return false;
+
+            var allTags = store.GetAllTags();
+            int maxFirstVisible = Math.Max(0, allTags.Count - MaxVisibleOptions);
+
+            if (direction > 0 && firstVisibleIndex > 0)
+            {
+                firstVisibleIndex--;
+                BuildOptions();
+                return true;
+            }
+            else if (direction < 0 && firstVisibleIndex < maxFirstVisible)
+            {
+                firstVisibleIndex++;
+                BuildOptions();
+                return true;
+            }
+
+            return false;
+        }
+
+        public bool HandleKeyPress(Keys key)
+        {
+            if (!isOpen)
+                return false;
+
+            if (key == Keys.Escape)
+            {
+                if (isEditMode)
+                {
+                    isEditMode = false;
+                    tagsMarkedForDeletion.Clear();
+                    BuildOptions();
+                    Game1.playSound("bigDeSelect");
+                    return true;
+                }
+
+                Close();
+                return false;
+            }
+
+            if (key == Keys.Enter && customTagTextBox != null && customTagTextBox.Selected && !isEditMode)
+            {
+                TryAddCustomTag();
+                return true;
+            }
+
+            return true;
+        }
+
+        public void Update()
+        {
+            if (!isEditMode)
+            {
+                customTagTextBox?.Update();
+            }
+        }
+
+        public void UpdateParentBounds(Rectangle newParentBounds)
+        {
+            parentBounds = newParentBounds;
+            Recalculate();
+        }
+
+        private void Recalculate()
+        {
+            CalculateLayout();
+            BuildOptions();
+            InitializeCustomTagInput();
+        }
+
+        public void Draw(SpriteBatch b)
+        {
+            if (!isOpen)
+                return;
+
+            UIHelpers.DrawTextureBox(b, popupBounds.X, popupBounds.Y,
+                popupBounds.Width, popupBounds.Height, Color.White);
+
+            int titleHeight = (int)Game1.smallFont.MeasureString("A").Y;
+
+            Vector2 titlePos = new Vector2(
+                popupBounds.X + PopupPadding,
+                popupBounds.Y + PopupPadding
+            );
+            string title = isEditMode ? TranslationCache.TagsPopupTitleEdit : TranslationCache.TagsPopupTitle;
+            Utility.drawTextWithShadow(b, title, Game1.smallFont,
+                titlePos, Game1.textColor);
+
+            int mouseX = Game1.getMouseX();
+            int mouseY = Game1.getMouseY();
+
+            DrawEditModeButton(b, mouseX, mouseY);
+
+            DrawTagOptions(b, mouseX, mouseY);
+
+            var allTags = store.GetAllTags();
+            int arrowHeight = (int)(ArrowNativeHeight * ScrollArrowScale);
+            int tagListHeight = MaxVisibleOptions * OptionHeight;
+
+            if (firstVisibleIndex > 0 && upArrowButton != null)
+            {
+                Rectangle upArrowSource = new Rectangle(421, 459, 11, 12);
+                Vector2 upArrowPos = new Vector2(upArrowButton.bounds.X, tagListStartY + 4);
+                b.Draw(Game1.mouseCursors, upArrowPos, upArrowSource, Color.White, 0f,
+                    Vector2.Zero, ScrollArrowScale, SpriteEffects.None, 1f);
+            }
+
+            if (firstVisibleIndex + MaxVisibleOptions < allTags.Count && downArrowButton != null)
+            {
+                Rectangle downArrowSource = new Rectangle(421, 472, 11, 12);
+                Vector2 downArrowPos = new Vector2(
+                    downArrowButton.bounds.X,
+                    tagListStartY + tagListHeight - arrowHeight - 8
+                );
+                b.Draw(Game1.mouseCursors, downArrowPos, downArrowSource, Color.White, 0f,
+                    Vector2.Zero, ScrollArrowScale, SpriteEffects.None, 1f);
+            }
+
+            DrawCustomSection(b, mouseX, mouseY, tagListHeight);
+
+            if (!isEditMode)
+            {
+                string countText = $"{selectedTags.Count}/{MaxTagsPerSet}";
+                Vector2 countSize = Game1.smallFont.MeasureString(countText);
+                Vector2 countPos = new Vector2(
+                    popupBounds.Right - PopupPadding - EditModeButtonSize - 8 - countSize.X,
+                    popupBounds.Y + PopupPadding
+                );
+                Color countColor = selectedTags.Count >= MaxTagsPerSet ? Color.Orange : Color.Gray;
+                Utility.drawTextWithShadow(b, countText, Game1.smallFont, countPos, countColor);
+            }
+        }
+
+        private void DrawEditModeButton(SpriteBatch b, int mouseX, int mouseY)
+        {
+            if (editModeButton == null)
+                return;
+
+            bool isHovered = editModeButton.containsPoint(mouseX, mouseY);
+            float buttonScale = isHovered ? 1.1f : 1f;
+
+            int bgSize = (int)(editModeButton.bounds.Width * buttonScale);
+            int bgX = editModeButton.bounds.X + (editModeButton.bounds.Width - bgSize) / 2;
+            int bgY = editModeButton.bounds.Y + (editModeButton.bounds.Height - bgSize) / 2;
+
+            Vector2 iconCenter = new Vector2(
+                editModeButton.bounds.X + editModeButton.bounds.Width / 2,
+                editModeButton.bounds.Y + editModeButton.bounds.Height / 2
+            );
+
+            if (isEditMode)
+            {
+                Rectangle closeSource = new Rectangle(337, 494, 12, 12);
+                float closeScale = (bgSize / 12f) * 0.9f;
+                Vector2 closeOrigin = new Vector2(6, 6);
+                b.Draw(Game1.mouseCursors, iconCenter, closeSource, Color.White, 0f,
+                    closeOrigin, closeScale, SpriteEffects.None, 1f);
+            }
+            else
+            {
+                UIHelpers.DrawTextureBox(b, bgX, bgY, bgSize, bgSize, Color.White);
+
+                Rectangle editSource = new Rectangle(30, 428, 10, 10);
+                float iconScale = (bgSize / 10f) * 0.6f;
+                Vector2 origin = new Vector2(5, 5);
+                b.Draw(Game1.mouseCursors, iconCenter, editSource, Color.White, 0f,
+                    origin, iconScale, SpriteEffects.None, 1f);
+            }
+        }
+
+        private void DrawTagOptions(SpriteBatch b, int mouseX, int mouseY)
+        {
+            for (int i = 0; i < tagOptions.Count; i++)
+            {
+                var option = tagOptions[i];
+                if (!option.visible)
+                    continue;
+
+                string tag = option.name;
+                bool isSelected = selectedTags.Contains(tag);
+                bool isHovered = option.containsPoint(mouseX, mouseY);
+                bool atLimit = selectedTags.Count >= MaxTagsPerSet && !isSelected;
+                bool isMarkedForDeletion = tagsMarkedForDeletion.Contains(tag);
+
+                float rowOpacity = isMarkedForDeletion ? MarkedForDeletionOpacity : 1f;
+
+                if (isEditMode)
+                {
+                    string displayTag = TranslationCache.GetTagDisplayName(tag);
+                    float textHeight = Game1.smallFont.MeasureString("A").Y;
+                    Vector2 textPos = new Vector2(
+                        option.bounds.X + 4,
+                        option.bounds.Y + (option.bounds.Height - textHeight) / 2
+                    );
+                    Utility.drawTextWithShadow(b, displayTag, Game1.smallFont, textPos, Game1.textColor * rowOpacity);
+
+                    if (i < tagDeleteButtons.Count)
+                    {
+                        var deleteBtn = tagDeleteButtons[i];
+                        if (deleteBtn.visible)
+                        {
+                            DrawDeleteButton(b, deleteBtn, isMarkedForDeletion, mouseX, mouseY, rowOpacity);
+                        }
+                    }
+                }
+                else
+                {
+                    if (isHovered && !atLimit)
+                    {
+                        b.Draw(Game1.staminaRect, option.bounds, Color.Wheat * 0.3f);
+                    }
+
+                    Rectangle checkboxSource = isSelected
+                        ? new Rectangle(236, 425, 9, 9)
+                        : new Rectangle(227, 425, 9, 9);
+
+                    int checkboxY = option.bounds.Y + (option.bounds.Height - SaveSetLocalOnlyCheckboxSize) / 2;
+                    b.Draw(Game1.mouseCursors,
+                        new Vector2(option.bounds.X + 4, checkboxY),
+                        checkboxSource, Color.White, 0f, Vector2.Zero, SaveSetLocalOnlyCheckboxScale, SpriteEffects.None, 1f);
+
+                    string displayTag = TranslationCache.GetTagDisplayName(tag);
+                    float textHeight = Game1.smallFont.MeasureString("A").Y;
+                    Vector2 textPos = new Vector2(
+                        option.bounds.X + 4 + SaveSetLocalOnlyCheckboxSize + 8,
+                        option.bounds.Y + (option.bounds.Height - textHeight) / 2
+                    );
+
+                    Color textColor = atLimit ? Color.Gray : Game1.textColor;
+                    Utility.drawTextWithShadow(b, displayTag, Game1.smallFont, textPos, textColor);
+                }
+            }
+        }
+
+        private void DrawDeleteButton(SpriteBatch b, ClickableComponent button, bool isMarked, int mouseX, int mouseY, float rowOpacity)
+        {
+            bool isHovered = button.containsPoint(mouseX, mouseY);
+            float scale = isHovered ? 2.0f : 1.8f;
+
+            Rectangle sourceRect = new Rectangle(337, 494, 12, 12);
+
+            Vector2 center = new Vector2(
+                button.bounds.X + button.bounds.Width / 2,
+                button.bounds.Y + button.bounds.Height / 2
+            );
+            Vector2 origin = new Vector2(6, 6);
+
+            b.Draw(Game1.mouseCursors, center, sourceRect, Color.White * rowOpacity, 0f,
+                origin, scale, SpriteEffects.None, 1f);
+        }
+
+        private void DrawCustomSection(SpriteBatch b, int mouseX, int mouseY, int tagListHeight)
+        {
+            if (isEditMode)
+            {
+                DrawDeleteConfirmButton(b, mouseX, mouseY, tagListHeight);
+                return;
+            }
+
+            if (customTagTextBox == null || addCustomButton == null)
+                return;
+
+            int customLabelY = tagListStartY + tagListHeight + CustomSectionTopPadding;
+            Vector2 labelPos = new Vector2(
+                popupBounds.X + PopupPadding,
+                customLabelY
+            );
+            Utility.drawTextWithShadow(b, TranslationCache.TagsPopupCustom, Game1.smallFont,
+                labelPos, Game1.textColor);
+
+            customTagTextBox.Draw(b);
+
+            bool isAddButtonHovered = addCustomButton.containsPoint(mouseX, mouseY);
+            UIHelpers.DrawTextureBox(b, addCustomButton.bounds.X, addCustomButton.bounds.Y,
+                addCustomButton.bounds.Width, addCustomButton.bounds.Height,
+                Color.White, shadowOffset: 2, shadowOpacity: 0.3f);
+
+            if (isAddButtonHovered)
+            {
+                b.Draw(Game1.staminaRect, addCustomButton.bounds, HoverEffectColor);
+            }
+
+            Vector2 addTextSize = Game1.smallFont.MeasureString(TranslationCache.TagsPopupAdd);
+            Vector2 addTextPos = UIHelpers.GetVisualCenter(addCustomButton.bounds, addTextSize);
+            Utility.drawTextWithShadow(b, TranslationCache.TagsPopupAdd, Game1.smallFont, addTextPos, Game1.textColor);
+        }
+
+        private void DrawDeleteConfirmButton(SpriteBatch b, int mouseX, int mouseY, int tagListHeight)
+        {
+            if (deleteConfirmButton == null)
+                return;
+
+            UIHelpers.DrawTextButton(b, deleteConfirmButton, TranslationCache.TagsPopupDelete);
+        }
+    }
+}

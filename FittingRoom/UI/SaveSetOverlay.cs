@@ -1,10 +1,13 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using FittingRoom.Services;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using StardewValley;
 using StardewValley.Menus;
+using StardewModdingAPI;
 using StardewValley.Objects;
 using static FittingRoom.OutfitLayoutConstants;
 
@@ -14,12 +17,14 @@ namespace FittingRoom
     {
         private readonly IClickableMenu parentMenu;
         private readonly SaveSetUIBuilder uiBuilder;
-        private readonly TemplateManager templateManager;
-        private readonly SaveSetDropdownManager tagDropdownManager;
+        private readonly OutfitSetStore store;
+        private readonly TagPickerManager tagPickerManager;
         private readonly Action onSaveComplete;
 
         private readonly TextBox nameTextBox;
-        private bool isFavorite = false;
+        private bool isFavorite;
+        private bool isLocalOnly;
+        private HashSet<string> selectedTags = new();
 
         private bool includeShirt = true;
         private bool includePants = true;
@@ -29,36 +34,39 @@ namespace FittingRoom
         private readonly string? capturedPantsId;
         private readonly string? capturedHatId;
 
-        // RenderTarget2D for character preview (matching main menu pattern)
-        private RenderTarget2D? farmerRenderTarget = null;
-        private SpriteBatch? farmerSpriteBatch = null;
+        private RenderTarget2D? farmerRenderTarget;
+        private SpriteBatch? farmerSpriteBatch;
         private bool previewDirty = true;
 
-        private static readonly FarmerSprite.AnimationFrame FrontFacingFrame = new FarmerSprite.AnimationFrame(0, 0, secondaryArm: false, flip: false);
+        private float nameBoxJiggleTimer;
+        private const float NameBoxJiggleDuration = 300f;
+        private const float NameBoxJiggleIntensity = 4f;
+
+        private static readonly FarmerSprite.AnimationFrame FrontFacingFrame = new(0, 0, secondaryArm: false, flip: false);
         private const int FarmerSpriteWidth = 16;
         private const int FarmerSpriteHeight = 32;
         private const int FarmerRenderScale = 4;
 
-        // Cached item objects for drawing
         private Clothing? cachedShirt;
         private Clothing? cachedPants;
         private Hat? cachedHat;
 
-        public SaveSetOverlay(IClickableMenu parentMenu, TemplateManager templateManager, Action onSaveComplete)
+        public SaveSetOverlay(IClickableMenu parentMenu, OutfitSetStore store, Action onSaveComplete)
         {
             this.parentMenu = parentMenu ?? throw new ArgumentNullException(nameof(parentMenu));
-            this.templateManager = templateManager ?? throw new ArgumentNullException(nameof(templateManager));
+            this.store = store ?? throw new ArgumentNullException(nameof(store));
             this.onSaveComplete = onSaveComplete ?? throw new ArgumentNullException(nameof(onSaveComplete));
+
+            tagPickerManager = new TagPickerManager(store);
 
             width = SaveSetOverlayWidth;
             height = SaveSetUIBuilder.CalculateRequiredHeight();
 
             uiBuilder = new SaveSetUIBuilder(width, height);
+            uiBuilder.UpdateTagsRowLayout();
             xPositionOnScreen = uiBuilder.X;
             yPositionOnScreen = uiBuilder.Y;
-            tagDropdownManager = new SaveSetDropdownManager(uiBuilder);
 
-            // Initialize text box
             nameTextBox = new TextBox(
                 Game1.content.Load<Texture2D>("LooseSprites\\textBox"),
                 null,
@@ -70,18 +78,20 @@ namespace FittingRoom
             };
             UpdateTextBoxBounds();
 
-            // Capture current outfit
             capturedShirtId = OutfitState.GetClothingId(Game1.player.shirtItem.Value);
             capturedPantsId = OutfitState.GetClothingId(Game1.player.pantsItem.Value);
             capturedHatId = OutfitState.GetHatIdFromItem(Game1.player.hat.Value);
 
-            // Set initial checkbox states based on what's equipped
             includeShirt = !string.IsNullOrEmpty(capturedShirtId) && capturedShirtId != NoShirtId;
             includePants = !string.IsNullOrEmpty(capturedPantsId) && capturedPantsId != NoPantsId;
             includeHat = !string.IsNullOrEmpty(capturedHatId) && capturedHatId != NoHatId;
 
-            // Cache item objects for drawing
             CacheItemObjects();
+
+            if (ModEntry.Config.AutoOpenTagMenu)
+            {
+                OpenTagPicker();
+            }
         }
 
         public override void gameWindowSizeChanged(Rectangle oldBounds, Rectangle newBounds)
@@ -91,34 +101,33 @@ namespace FittingRoom
             parentMenu.gameWindowSizeChanged(oldBounds, newBounds);
 
             uiBuilder.Recalculate();
+            uiBuilder.UpdateTagsRowLayout();
             xPositionOnScreen = uiBuilder.X;
             yPositionOnScreen = uiBuilder.Y;
 
             UpdateTextBoxBounds();
 
-            if (tagDropdownManager.IsOpen)
+            if (tagPickerManager.IsOpen)
             {
-                tagDropdownManager.BuildOptions();
+                Rectangle overlayBounds = new Rectangle(xPositionOnScreen, yPositionOnScreen, width, height);
+                tagPickerManager.UpdateParentBounds(overlayBounds);
             }
         }
 
         private void CacheItemObjects()
         {
-            // Cache shirt
             if (HasShirt() && capturedShirtId != null)
             {
                 string qualifiedId = "(S)" + capturedShirtId;
                 cachedShirt = ItemRegistry.Create<Clothing>(qualifiedId);
             }
 
-            // Cache pants
             if (HasPants() && capturedPantsId != null)
             {
                 string qualifiedId = "(P)" + capturedPantsId;
                 cachedPants = ItemRegistry.Create<Clothing>(qualifiedId);
             }
 
-            // Cache hat
             if (HasHat() && capturedHatId != null)
             {
                 string qualifiedId = "(H)" + capturedHatId;
@@ -139,22 +148,13 @@ namespace FittingRoom
 
         public override void receiveLeftClick(int x, int y, bool playSound = true)
         {
-            // Handle dropdown first if open
-            if (tagDropdownManager.IsOpen)
+            if (tagPickerManager.IsOpen)
             {
-                tagDropdownManager.HandleClick(x, y, out bool clickedOption);
-                if (clickedOption)
-                {
-                    if (playSound) Game1.playSound("smallSelect");
+                tagPickerManager.HandleClick(x, y, out bool consumed);
+                if (consumed)
                     return;
-                }
-
-                // Clicked outside dropdown, close it
-                tagDropdownManager.Close();
-                return;
             }
 
-            // Close button
             if (uiBuilder.CloseButton.containsPoint(x, y))
             {
                 CloseOverlay();
@@ -162,7 +162,6 @@ namespace FittingRoom
                 return;
             }
 
-            // Cancel button
             if (uiBuilder.CancelButton.containsPoint(x, y))
             {
                 CloseOverlay();
@@ -170,22 +169,19 @@ namespace FittingRoom
                 return;
             }
 
-            // Save button
             if (uiBuilder.SaveButton.containsPoint(x, y))
             {
                 HandleSave(playSound);
                 return;
             }
 
-            // Tag dropdown
-            if (uiBuilder.TagDropdownButton.containsPoint(x, y))
+            if (uiBuilder.AddTagsButton != null && uiBuilder.AddTagsButton.containsPoint(x, y))
             {
-                tagDropdownManager.Toggle();
+                ToggleTagPicker();
                 if (playSound) Game1.playSound("smallSelect");
                 return;
             }
 
-            // Favorite checkbox
             if (uiBuilder.FavoriteCheckbox.containsPoint(x, y))
             {
                 isFavorite = !isFavorite;
@@ -193,7 +189,16 @@ namespace FittingRoom
                 return;
             }
 
-            // Item slot clicks (toggle inclusion)
+            if (uiBuilder.LocalOnlyCheckbox != null && uiBuilder.LocalOnlyCheckbox.containsPoint(x, y))
+            {
+                if (Context.IsWorldReady)
+                {
+                    isLocalOnly = !isLocalOnly;
+                    if (playSound) Game1.playSound("smallSelect");
+                }
+                return;
+            }
+
             if (uiBuilder.ShirtSlot.Contains(x, y) && HasShirt())
             {
                 includeShirt = !includeShirt;
@@ -218,20 +223,41 @@ namespace FittingRoom
                 return;
             }
 
-            // Name input area - keep textbox selected
             if (uiBuilder.NameInputArea.containsPoint(x, y))
             {
+                tagPickerManager.DeselectCustomInput();
                 nameTextBox.Selected = true;
-                return;
             }
+        }
+
+        private void OpenTagPicker()
+        {
+            Rectangle overlayBounds = new Rectangle(xPositionOnScreen, yPositionOnScreen, width, height);
+            tagPickerManager.Open(overlayBounds, selectedTags, OnTagsChanged);
+        }
+
+        private void ToggleTagPicker()
+        {
+            if (tagPickerManager.IsOpen)
+            {
+                tagPickerManager.Close();
+            }
+            else
+            {
+                OpenTagPicker();
+            }
+        }
+
+        private void OnTagsChanged(HashSet<string> newTags)
+        {
+            selectedTags = newTags;
         }
 
         public override void receiveKeyPress(Keys key)
         {
-            // Handle dropdown input first
-            if (tagDropdownManager.IsOpen)
+            if (tagPickerManager.IsOpen)
             {
-                if (tagDropdownManager.HandleKeyPress(key))
+                if (tagPickerManager.HandleKeyPress(key))
                     return;
             }
 
@@ -248,7 +274,6 @@ namespace FittingRoom
                 return;
             }
 
-            // Block menu button from closing
             if (Game1.options.doesInputListContain(Game1.options.menuButton, key))
             {
                 return;
@@ -257,9 +282,9 @@ namespace FittingRoom
 
         public override void receiveScrollWheelAction(int direction)
         {
-            if (tagDropdownManager.IsOpen)
+            if (tagPickerManager.IsOpen)
             {
-                if (tagDropdownManager.HandleScrollWheel(direction))
+                if (tagPickerManager.HandleScrollWheel(direction))
                 {
                     Game1.playSound("shiny4");
                 }
@@ -270,7 +295,35 @@ namespace FittingRoom
         {
             base.update(time);
             nameTextBox.Update();
-            nameTextBox.Selected = true;
+
+            nameTextBox.Selected = !tagPickerManager.IsCustomInputFocused;
+
+            tagPickerManager.Update();
+
+            // Allow item info toggle keybind to work in overlay
+            if (parentMenu is OutfitMenu outfitMenu)
+            {
+                outfitMenu.HandleItemInfoToggle();
+            }
+
+            if (nameBoxJiggleTimer > 0)
+            {
+                nameBoxJiggleTimer -= (float)time.ElapsedGameTime.TotalMilliseconds;
+            }
+        }
+
+        private void StartNameBoxJiggle()
+        {
+            nameBoxJiggleTimer = NameBoxJiggleDuration;
+        }
+
+        private int GetNameBoxJiggleOffset()
+        {
+            if (nameBoxJiggleTimer <= 0)
+                return 0;
+
+            float progress = nameBoxJiggleTimer / NameBoxJiggleDuration;
+            return (int)(Math.Sin(progress * Math.PI * 6) * NameBoxJiggleIntensity * progress);
         }
 
         private void HandleSave(bool playSound)
@@ -278,17 +331,24 @@ namespace FittingRoom
             string name = nameTextBox.Text?.Trim() ?? "";
             if (string.IsNullOrEmpty(name))
             {
+                StartNameBoxJiggle();
                 if (playSound) Game1.playSound("cancel");
                 return;
             }
 
-            templateManager.CreateFromCurrentOutfit(
+            string? shirtId = includeShirt ? capturedShirtId : null;
+            string? pantsId = includePants ? capturedPantsId : null;
+            string? hatId = includeHat ? capturedHatId : null;
+
+            store.CreateFromCurrentOutfit(
                 name,
-                tagDropdownManager.SelectedTag,
+                selectedTags.ToList(),
                 isFavorite,
-                includeShirt,
-                includePants,
-                includeHat
+                !isLocalOnly,
+                shirtId,
+                pantsId,
+                hatId,
+                useCurrentOutfit: false
             );
 
             if (playSound) Game1.playSound("coin");
@@ -298,7 +358,6 @@ namespace FittingRoom
 
         private void CloseOverlay()
         {
-            // Restore parent menu as active menu
             Game1.activeClickableMenu = parentMenu;
         }
 
@@ -327,8 +386,9 @@ namespace FittingRoom
             UIHelpers.DrawTextureBox(b, xPositionOnScreen, yPositionOnScreen, width, height, Color.White);
 
             bool showPlaceholder = string.IsNullOrEmpty(nameTextBox.Text);
-            uiBuilder.DrawNameInput(b, nameTextBox.Text ?? "", showPlaceholder);
-            uiBuilder.DrawNameCursor(b, nameTextBox.Text ?? "", nameTextBox.Selected);
+            int jiggleOffset = GetNameBoxJiggleOffset();
+            uiBuilder.DrawNameInput(b, nameTextBox.Text ?? "", showPlaceholder, jiggleOffset);
+            uiBuilder.DrawNameCursor(b, nameTextBox.Text ?? "", nameTextBox.Selected && !tagPickerManager.IsCustomInputFocused, jiggleOffset);
 
             uiBuilder.DrawPreviewBackground(b);
             DrawCharacterPreview(b);
@@ -341,17 +401,17 @@ namespace FittingRoom
             uiBuilder.DrawItemSlot(b, uiBuilder.PantsSlot, includePants, HasPants(), mouseX, mouseY);
             DrawItemSprites(b, includeShirt, includePants, includeHat);
 
-            uiBuilder.DrawTagDropdown(b, tagDropdownManager.SelectedTagDisplay, tagDropdownManager.IsOpen);
-            uiBuilder.DrawFavoriteCheckbox(b, isFavorite);
+            uiBuilder.DrawTagsRow(b, mouseX, mouseY, tagPickerManager.IsOpen);
+            uiBuilder.DrawFavoriteCheckbox(b, isFavorite, uiBuilder.FavoriteCheckbox.containsPoint(mouseX, mouseY));
+            uiBuilder.DrawLocalOnlyCheckbox(b, isLocalOnly, Context.IsWorldReady,
+                uiBuilder.LocalOnlyCheckbox?.containsPoint(mouseX, mouseY) ?? false);
 
             uiBuilder.DrawButtons(b);
             uiBuilder.DrawCloseButton(b);
 
-            if (tagDropdownManager.IsOpen)
+            if (tagPickerManager.IsOpen)
             {
-                uiBuilder.DrawDropdownOptions(b, tagDropdownManager.Options,
-                    tagDropdownManager.FirstVisibleIndex, tagDropdownManager.MaxVisibleItems,
-                    tagDropdownManager.SelectedTag);
+                tagPickerManager.Draw(b);
             }
 
             DrawItemTooltips(b, mouseX, mouseY);
@@ -413,7 +473,6 @@ namespace FittingRoom
             int originalEyes = Game1.player.currentEyes;
             Game1.player.currentEyes = 0;
 
-            // Temporarily hide excluded items for preview
             var savedShirt = Game1.player.shirtItem.Value;
             var savedPants = Game1.player.pantsItem.Value;
             var savedHat = Game1.player.hat.Value;
@@ -470,7 +529,6 @@ namespace FittingRoom
             }
             finally
             {
-                // Restore original equipment
                 Game1.player.shirtItem.Value = savedShirt;
                 Game1.player.pantsItem.Value = savedPants;
                 Game1.player.hat.Value = savedHat;
@@ -487,7 +545,6 @@ namespace FittingRoom
             const float includedTransparency = 1f;
             const float excludedTransparency = 0.4f;
 
-            // Draw items in z-order: Hat (back) → Shirt → Pants (front)
             if (HasHat() && cachedHat != null)
             {
                 Rectangle slot = uiBuilder.HatSlot;
@@ -524,17 +581,21 @@ namespace FittingRoom
 
         private void DrawItemTooltips(SpriteBatch b, int mouseX, int mouseY)
         {
-            // Shirt tooltip
+            if (tagPickerManager.IsOpen)
+                return;
+
+            // Respect the ShowItemInfo config from parent menu
+            if (parentMenu is OutfitMenu outfitMenu && !outfitMenu.ShowItemInfo)
+                return;
+
             if (uiBuilder.ShirtSlot.Contains(mouseX, mouseY) && HasShirt() && cachedShirt != null)
             {
                 IClickableMenu.drawToolTip(b, cachedShirt.getDescription(), cachedShirt.DisplayName, cachedShirt);
             }
-            // Pants tooltip
             else if (uiBuilder.PantsSlot.Contains(mouseX, mouseY) && HasPants() && cachedPants != null)
             {
                 IClickableMenu.drawToolTip(b, cachedPants.getDescription(), cachedPants.DisplayName, cachedPants);
             }
-            // Hat tooltip
             else if (uiBuilder.HatSlot.Contains(mouseX, mouseY) && HasHat() && cachedHat != null)
             {
                 IClickableMenu.drawToolTip(b, cachedHat.getDescription(), cachedHat.DisplayName, cachedHat);

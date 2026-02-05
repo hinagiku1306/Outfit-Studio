@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using StardewModdingAPI;
 
 namespace FittingRoom
@@ -18,6 +20,7 @@ namespace FittingRoom
         public static string ButtonReset { get; private set; } = "";
         public static string ButtonNewOutfit { get; private set; } = "";
         public static string ButtonOutfits { get; private set; } = "";
+        public static string MessageApplied { get; private set; } = "";
         public static string MessageSaved { get; private set; } = "";
 
         // Filter options
@@ -79,6 +82,44 @@ namespace FittingRoom
         public static string SaveSetButtonCancel { get; private set; } = "";
         public static string SaveSetMessageSaved { get; private set; } = "";
         public static string SaveSetMessageNameRequired { get; private set; } = "";
+        public static string SaveSetLocalOnly { get; private set; } = "";
+        public static string SaveSetAddTags { get; private set; } = "";
+        public static string SaveSetHideTags { get; private set; } = "";
+        public static string SaveSetTagsLabel { get; private set; } = "";
+
+        // Tag picker popup
+        public static string TagsPopupTitle { get; private set; } = "";
+        public static string TagsPopupTitleEdit { get; private set; } = "";
+        public static string TagsPopupCustom { get; private set; } = "";
+        public static string TagsPopupAdd { get; private set; } = "";
+        public static string TagsPopupDelete { get; private set; } = "";
+        public static string TagsMaxReached { get; private set; } = "";
+
+        // Predefined tag translations
+        private static Dictionary<string, string> predefinedTagTranslations = new(StringComparer.OrdinalIgnoreCase);
+
+        // Templates overlay - additional
+        public static string TemplatesNoSets { get; private set; } = "";
+        public static string TemplatesSelectToView { get; private set; } = "";
+        public static string TemplatesScopeGlobal { get; private set; } = "";
+        public static string TemplatesScopeLocal { get; private set; } = "";
+        public static string TemplatesItemNone { get; private set; } = "";
+        public static string TemplatesItemMissing { get; private set; } = "";
+        public static string TemplatesEnterName { get; private set; } = "";
+
+        // Templates filter bar
+        public static string TemplatesFilterSearchSet { get; private set; } = "";
+        public static string TemplatesFilterSearchItem { get; private set; } = "";
+        public static string TemplatesFilterSearchAll { get; private set; } = "";
+        public static string TemplatesFilterTags { get; private set; } = "";
+        public static string TemplatesFilterFilter { get; private set; } = "";
+        public static string TemplatesFilterMatchAll { get; private set; } = "";
+        public static string TemplatesFilterShowInvalid { get; private set; } = "";
+        public static string TemplatesFilterFavorites { get; private set; } = "";
+        public static string TemplatesFilterGlobal { get; private set; } = "";
+        public static string TemplatesFilterLocal { get; private set; } = "";
+        public static string TemplatesFilterNoResults { get; private set; } = "";
+        public static string TemplatesFilterClearSearch { get; private set; } = "";
 
         // Config (optional - only needed if GMCM is used)
         public static string ConfigToggleMenuKeyName { get; private set; } = "";
@@ -91,6 +132,8 @@ namespace FittingRoom
         public static string ConfigResetSearchOnTabSwitchTooltip { get; private set; } = "";
         public static string ConfigShowFilterTooltipName { get; private set; } = "";
         public static string ConfigShowFilterTooltipTooltip { get; private set; } = "";
+        public static string ConfigAutoOpenTagMenuName { get; private set; } = "";
+        public static string ConfigAutoOpenTagMenuTooltip { get; private set; } = "";
         public static string ConfigGridLayoutSection { get; private set; } = "";
         public static string ConfigVisibleRowsName { get; private set; } = "";
         public static string ConfigVisibleRowsTooltip { get; private set; } = "";
@@ -114,7 +157,8 @@ namespace FittingRoom
             ButtonReset = i18n.Get("menu.buttons.reset");
             ButtonNewOutfit = i18n.Get("menu.buttons.new-outfit");
             ButtonOutfits = i18n.Get("menu.buttons.wardrobe");
-            MessageSaved = i18n.Get("menu.messages.applied");
+            MessageApplied = i18n.Get("menu.messages.applied");
+            MessageSaved = i18n.Get("menu.messages.saved");
 
             FilterAll = i18n.Get("menu.filter.all");
             FilterVanilla = i18n.Get("menu.filter.vanilla");
@@ -170,6 +214,40 @@ namespace FittingRoom
             SaveSetButtonCancel = i18n.Get("saveset.button.cancel");
             SaveSetMessageSaved = i18n.Get("saveset.message.saved");
             SaveSetMessageNameRequired = i18n.Get("saveset.message.name-required");
+            SaveSetLocalOnly = i18n.Get("saveset.local-only");
+            SaveSetAddTags = i18n.Get("saveset.add-tags");
+            SaveSetHideTags = i18n.Get("saveset.hide-tags");
+            SaveSetTagsLabel = i18n.Get("saveset.tags-label");
+
+            TagsPopupTitle = i18n.Get("tags.popup.title");
+            TagsPopupTitleEdit = i18n.Get("tags.popup.title.edit");
+            TagsPopupCustom = i18n.Get("tags.popup.custom");
+            TagsPopupAdd = i18n.Get("tags.popup.add");
+            TagsPopupDelete = i18n.Get("tags.popup.delete");
+            TagsMaxReached = i18n.Get("tags.max-reached");
+
+            InitializePredefinedTagTranslations(i18n);
+
+            TemplatesNoSets = i18n.Get("templates.no-sets");
+            TemplatesSelectToView = i18n.Get("templates.select-to-view");
+            TemplatesScopeGlobal = i18n.Get("templates.scope.global");
+            TemplatesScopeLocal = i18n.Get("templates.scope.local");
+            TemplatesItemNone = i18n.Get("templates.item.none");
+            TemplatesItemMissing = i18n.Get("templates.item.missing");
+            TemplatesEnterName = i18n.Get("templates.enter-name");
+
+            TemplatesFilterSearchSet = i18n.Get("templates.filter.search.set");
+            TemplatesFilterSearchItem = i18n.Get("templates.filter.search.item");
+            TemplatesFilterSearchAll = i18n.Get("templates.filter.search.all");
+            TemplatesFilterTags = i18n.Get("templates.filter.tags");
+            TemplatesFilterFilter = i18n.Get("templates.filter.filter");
+            TemplatesFilterMatchAll = i18n.Get("templates.filter.matchAll");
+            TemplatesFilterShowInvalid = i18n.Get("templates.filter.showInvalid");
+            TemplatesFilterFavorites = i18n.Get("templates.filter.favorites");
+            TemplatesFilterGlobal = i18n.Get("templates.filter.global");
+            TemplatesFilterLocal = i18n.Get("templates.filter.local");
+            TemplatesFilterNoResults = i18n.Get("templates.filter.noResults");
+            TemplatesFilterClearSearch = i18n.Get("templates.filter.clearSearch");
 
             ConfigToggleMenuKeyName = i18n.Get("config.toggle-menu-key.name");
             ConfigToggleMenuKeyTooltip = i18n.Get("config.toggle-menu-key.tooltip");
@@ -181,6 +259,8 @@ namespace FittingRoom
             ConfigResetSearchOnTabSwitchTooltip = i18n.Get("config.reset-search-on-tab-switch.tooltip");
             ConfigShowFilterTooltipName = i18n.Get("config.show-filter-tooltip.name");
             ConfigShowFilterTooltipTooltip = i18n.Get("config.show-filter-tooltip.tooltip");
+            ConfigAutoOpenTagMenuName = i18n.Get("config.auto-open-tag-menu.name");
+            ConfigAutoOpenTagMenuTooltip = i18n.Get("config.auto-open-tag-menu.tooltip");
             ConfigGridLayoutSection = i18n.Get("config.grid-layout.section");
             ConfigVisibleRowsName = i18n.Get("config.visible-rows.name");
             ConfigVisibleRowsTooltip = i18n.Get("config.visible-rows.tooltip");
@@ -188,6 +268,31 @@ namespace FittingRoom
             ConfigVisibleColumnsTooltip = i18n.Get("config.visible-columns.tooltip");
             ConfigSlotSizeName = i18n.Get("config.slot-size.name");
             ConfigSlotSizeTooltip = i18n.Get("config.slot-size.tooltip");
+        }
+
+        private static void InitializePredefinedTagTranslations(ITranslationHelper i18n)
+        {
+            predefinedTagTranslations.Clear();
+            predefinedTagTranslations["Spring"] = i18n.Get("saveset.tag.spring");
+            predefinedTagTranslations["Summer"] = i18n.Get("saveset.tag.summer");
+            predefinedTagTranslations["Fall"] = i18n.Get("saveset.tag.fall");
+            predefinedTagTranslations["Winter"] = i18n.Get("saveset.tag.winter");
+            predefinedTagTranslations["Wedding"] = i18n.Get("saveset.tag.wedding");
+            predefinedTagTranslations["Combat"] = i18n.Get("saveset.tag.combat");
+            predefinedTagTranslations["Daily"] = i18n.Get("saveset.tag.daily");
+            predefinedTagTranslations["Festival"] = i18n.Get("saveset.tag.festival");
+            predefinedTagTranslations["Work"] = i18n.Get("saveset.tag.work");
+            predefinedTagTranslations["Formal"] = i18n.Get("saveset.tag.formal");
+            predefinedTagTranslations["Casual"] = i18n.Get("saveset.tag.casual");
+        }
+
+        /// <summary>
+        /// Gets the translated display name for a tag.
+        /// Returns the original tag if no translation exists.
+        /// </summary>
+        public static string GetTagDisplayName(string tag)
+        {
+            return predefinedTagTranslations.TryGetValue(tag, out string? translated) ? translated : tag;
         }
     }
 }

@@ -13,14 +13,17 @@ namespace FittingRoom
         private ModConfig config = null!;
         private OutfitMenu? menu;
 
+        public static ModConfig Config { get; private set; } = null!;
+
         // Cached managers (initialized once when game launches)
         private OutfitFilterManager? filterManager;
         private OutfitCategoryManager? categoryManager;
-        private TemplateManager? templateManager;
+        private OutfitSetStore? outfitSetStore;
 
         public override void Entry(IModHelper helper)
         {
             config = helper.ReadConfig<ModConfig>();
+            Config = config;
 
             // Initialize debug logger early
             DebugLogger.Initialize(Monitor, config);
@@ -31,6 +34,7 @@ namespace FittingRoom
             helper.Events.Input.ButtonsChanged += OnButtonsChanged;
             helper.Events.GameLoop.GameLaunched += OnGameLaunched;
             helper.Events.GameLoop.SaveLoaded += OnSaveLoaded;
+            helper.Events.GameLoop.ReturnedToTitle += OnReturnedToTitle;
         }
 
         private void OnSaveLoaded(object? sender, SaveLoadedEventArgs e)
@@ -39,11 +43,23 @@ namespace FittingRoom
             filterManager = new OutfitFilterManager(Monitor, Helper);
             categoryManager = new OutfitCategoryManager(Monitor, filterManager);
             filterManager.BuildModMapping(categoryManager.ShirtIds, categoryManager.PantsIds, categoryManager.HatIds);
-            templateManager = new TemplateManager(Helper);
+
+            // Load local outfit sets for this save
+            outfitSetStore?.LoadLocalData();
+        }
+
+        private void OnReturnedToTitle(object? sender, ReturnedToTitleEventArgs e)
+        {
+            // Clear local sets when returning to title, keep global sets loaded
+            outfitSetStore?.ClearLocalData();
         }
 
         private void OnGameLaunched(object? sender, GameLaunchedEventArgs e)
         {
+            // Initialize outfit set store and load global data
+            outfitSetStore = new OutfitSetStore(Helper, Monitor);
+            outfitSetStore.LoadGlobalData();
+
             // Set up Generic Mod Config Menu integration if available
             var gmcmApi = Helper.ModRegistry.GetApi<IGenericModConfigMenuApi>("spacechase0.GenericModConfigMenu");
             if (gmcmApi != null)
@@ -92,6 +108,14 @@ namespace FittingRoom
                     tooltip: () => TranslationCache.ConfigShowFilterTooltipTooltip,
                     getValue: () => config.ShowFilterTooltip,
                     setValue: value => config.ShowFilterTooltip = value
+                );
+
+                gmcmApi.AddBoolOption(
+                    mod: ModManifest,
+                    name: () => TranslationCache.ConfigAutoOpenTagMenuName,
+                    tooltip: () => TranslationCache.ConfigAutoOpenTagMenuTooltip,
+                    getValue: () => config.AutoOpenTagMenu,
+                    setValue: value => config.AutoOpenTagMenu = value
                 );
 
                 // Grid Layout section
@@ -146,13 +170,13 @@ namespace FittingRoom
                 else
                 {
                     // Ensure managers are initialized
-                    if (categoryManager == null || filterManager == null || templateManager == null)
+                    if (categoryManager == null || filterManager == null || outfitSetStore == null)
                     {
                         Monitor.Log("Managers not initialized yet. This shouldn't happen.", LogLevel.Warn);
                         return;
                     }
 
-                    menu = new OutfitMenu(this, categoryManager, filterManager, templateManager, config.ShowItemInfo);
+                    menu = new OutfitMenu(this, categoryManager, filterManager, outfitSetStore, config.ShowItemInfo);
                     Game1.activeClickableMenu = menu;
                 }
             }

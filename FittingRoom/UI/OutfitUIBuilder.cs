@@ -59,6 +59,7 @@ namespace FittingRoom
 
         // Saved message display
         private float savedMessageTimer = 0f;
+        private bool showingSavedMessage = false;
 
         // Farmer preview rendering resources
         private RenderTarget2D? farmerRenderTarget = null;
@@ -556,11 +557,21 @@ namespace FittingRoom
         }
 
         /// <summary>
+        /// Triggers the "Applied!" message to display.
+        /// </summary>
+        public void ShowAppliedMessage()
+        {
+            savedMessageTimer = SavedMessageDurationMs;
+            showingSavedMessage = false;
+        }
+
+        /// <summary>
         /// Triggers the "Saved!" message to display.
         /// </summary>
         public void ShowSavedMessage()
         {
             savedMessageTimer = SavedMessageDurationMs;
+            showingSavedMessage = true;
         }
 
         /// <summary>
@@ -575,13 +586,13 @@ namespace FittingRoom
         }
 
         /// <summary>
-        /// Draws the "Saved!" message above the character preview if active.
+        /// Draws the "Applied!" or "Saved!" message above the character preview if active.
         /// </summary>
         public void DrawSavedMessage(SpriteBatch b)
         {
             if (savedMessageTimer > 0)
             {
-                string message = TranslationCache.MessageSaved;
+                string message = showingSavedMessage ? TranslationCache.MessageSaved : TranslationCache.MessageApplied;
                 Vector2 textSize = Game1.smallFont.MeasureString(message);
                 Vector2 textPos = new Vector2(
                     PortraitBox.Center.X - textSize.X / 2,

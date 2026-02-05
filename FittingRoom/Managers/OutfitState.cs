@@ -230,5 +230,32 @@ namespace FittingRoom
         {
             return ItemIdHelper.GetClothingIdFromItem(clothing);
         }
+
+        public static void ApplyShirt(string shirtId)
+        {
+            if (string.IsNullOrEmpty(shirtId) || shirtId == OutfitLayoutConstants.NoShirtId)
+                Game1.player.shirtItem.Value = null;
+            else
+                Game1.player.shirtItem.Value = ItemRegistry.Create<Clothing>("(S)" + shirtId);
+            Game1.player.FarmerRenderer.MarkSpriteDirty();
+        }
+
+        public static void ApplyPants(string pantsId)
+        {
+            if (string.IsNullOrEmpty(pantsId) || pantsId == OutfitLayoutConstants.NoPantsId)
+                Game1.player.pantsItem.Value = null;
+            else
+                Game1.player.pantsItem.Value = ItemRegistry.Create<Clothing>("(P)" + pantsId);
+            Game1.player.FarmerRenderer.MarkSpriteDirty();
+        }
+
+        public static void ApplyHat(string hatId)
+        {
+            if (string.IsNullOrEmpty(hatId) || hatId == OutfitLayoutConstants.NoHatId)
+                Game1.player.hat.Value = null;
+            else
+                Game1.player.hat.Value = ItemRegistry.Create<Hat>("(H)" + hatId);
+            Game1.player.FarmerRenderer.MarkSpriteDirty();
+        }
     }
 }

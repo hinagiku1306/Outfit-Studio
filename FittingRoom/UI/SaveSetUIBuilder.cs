@@ -13,24 +13,19 @@ namespace FittingRoom
         private const int TextureBoxVerticalPadding = 32;
         private const float FavoriteIconScale = 3.5f;
         private const int FavoriteIconGap = 8;
+        private const int CheckboxRowPadding = 120;
+        private const int LocalOnlyRowHeight = 36;
 
-        // Title box
         public ClickableComponent TitleBox { get; private set; } = null!;
-
-        // Character preview
         public Rectangle PreviewBox { get; private set; }
-
-        // Item slots
         public Rectangle ShirtSlot { get; private set; }
         public Rectangle PantsSlot { get; private set; }
         public Rectangle HatSlot { get; private set; }
-
-        // Input components
         public ClickableComponent NameInputArea { get; private set; } = null!;
-        public ClickableComponent TagDropdownButton { get; private set; } = null!;
         public ClickableComponent FavoriteCheckbox { get; private set; } = null!;
-
-        // Buttons
+        public ClickableComponent? LocalOnlyCheckbox { get; private set; }
+        public ClickableComponent? AddTagsButton { get; private set; }
+        public Rectangle TagRowBounds { get; private set; }
         public ClickableTextureComponent CloseButton { get; private set; } = null!;
         public ClickableComponent SaveButton { get; private set; } = null!;
         public ClickableComponent CancelButton { get; private set; } = null!;
@@ -40,20 +35,18 @@ namespace FittingRoom
         public int Width { get; private set; }
         public int Height { get; private set; }
 
-        // Calculated section heights
         public int NameSectionHeight { get; private set; }
         public int PreviewSectionHeight { get; private set; }
         public int TagSectionHeight { get; private set; }
         public int FavoriteSectionHeight { get; private set; }
+        public int LocalOnlySectionHeight { get; private set; }
         public int ButtonSectionHeight { get; private set; }
 
-        // Content area bounds
         private int contentX;
         private int contentWidth;
-
-        // Tag row position for label drawing
-        private int tagRowX;
+        private int tagsRowStartX;
         private int favoriteRowX;
+        private int localOnlyRowX;
 
         public SaveSetUIBuilder(int width, int height)
         {
@@ -74,9 +67,11 @@ namespace FittingRoom
                    + SaveSetSectionPadding * 2
                    + previewHeight
                    + SaveSetSectionPadding * 2
-                   + textRowHeight
+                   + SmallButtonHeight
                    + SaveSetSectionPadding * 2
                    + SaveSetCheckboxSize
+                   + SaveSetSectionPadding
+                   + LocalOnlyRowHeight
                    + SaveSetSectionPadding * 2
                    + textRowHeight
                    + SaveSetBorderPadding;
@@ -86,7 +81,6 @@ namespace FittingRoom
         {
             CalculateSectionHeights();
 
-            // Center just the menu on screen (no title)
             X = (Game1.uiViewport.Width - Width) / 2;
             Y = (Game1.uiViewport.Height - Height) / 2;
 
@@ -100,8 +94,9 @@ namespace FittingRoom
 
             NameSectionHeight = textRowHeight;
             PreviewSectionHeight = Math.Max(SaveSetPreviewHeight, itemSlotsHeight);
-            TagSectionHeight = textRowHeight;
+            TagSectionHeight = SmallButtonHeight;
             FavoriteSectionHeight = SaveSetCheckboxSize;
+            LocalOnlySectionHeight = LocalOnlyRowHeight;
             ButtonSectionHeight = textRowHeight;
         }
 
@@ -139,13 +134,16 @@ namespace FittingRoom
             currentY += PreviewSectionHeight;
             currentY += SaveSetSectionPadding * 2;
 
-            int tagLabelWidth = (int)Game1.smallFont.MeasureString(TranslationCache.SaveSetTagLabel).X + 12;
-            int tagRowWidth = tagLabelWidth + FilterDropdownWidth;
-            tagRowX = contentX + (contentWidth - tagRowWidth) / 2;
+            TagRowBounds = new Rectangle(contentX, currentY, contentWidth, TagSectionHeight);
+            tagsRowStartX = contentX;
 
-            TagDropdownButton = new ClickableComponent(
-                new Rectangle(tagRowX + tagLabelWidth, currentY, FilterDropdownWidth, TagSectionHeight),
-                "tagDropdown"
+            Vector2 addButtonTextSize = Game1.smallFont.MeasureString(TranslationCache.SaveSetAddTags);
+            int addButtonWidth = (int)addButtonTextSize.X + TextPadding * 2;
+            int addButtonHeight = SmallButtonHeight;
+            int addButtonY = currentY + (SmallButtonHeight - addButtonHeight) / 2;
+            AddTagsButton = new ClickableComponent(
+                new Rectangle(tagsRowStartX, addButtonY, addButtonWidth, addButtonHeight),
+                "addTags"
             );
 
             currentY += TagSectionHeight;
@@ -153,7 +151,7 @@ namespace FittingRoom
 
             int iconSize = (int)(8 * FavoriteIconScale);
             int favoriteWidth = iconSize + FavoriteIconGap + (int)Game1.smallFont.MeasureString(TranslationCache.SaveSetFavorite).X;
-            favoriteRowX = contentX + (contentWidth - favoriteWidth) / 2;
+            favoriteRowX = contentX + CheckboxRowPadding;
 
             FavoriteCheckbox = new ClickableComponent(
                 new Rectangle(favoriteRowX, currentY, favoriteWidth, FavoriteSectionHeight),
@@ -161,6 +159,17 @@ namespace FittingRoom
             );
 
             currentY += FavoriteSectionHeight;
+            currentY += SaveSetSectionPadding;
+
+            int localOnlyWidth = SaveSetLocalOnlyCheckboxSize + 8 + (int)Game1.smallFont.MeasureString(TranslationCache.SaveSetLocalOnly).X;
+            localOnlyRowX = contentX + CheckboxRowPadding;
+
+            LocalOnlyCheckbox = new ClickableComponent(
+                new Rectangle(localOnlyRowX, currentY, localOnlyWidth, LocalOnlySectionHeight),
+                "localOnlyCheckbox"
+            );
+
+            currentY += LocalOnlySectionHeight;
             currentY += SaveSetSectionPadding * 2;
 
             int saveButtonWidth = UIHelpers.CalculateButtonWidth(TranslationCache.SaveSetButtonSave);
@@ -186,39 +195,43 @@ namespace FittingRoom
             );
         }
 
-        public void DrawTitle(SpriteBatch b)
+        public void UpdateTagsRowLayout()
         {
-            UIHelpers.DrawTextureBox(b, TitleBox.bounds.X, TitleBox.bounds.Y,
-                TitleBox.bounds.Width, TitleBox.bounds.Height, Color.White);
+            int labelWidth = (int)Game1.smallFont.MeasureString(TranslationCache.SaveSetTagsLabel).X + 8;
+            Vector2 addButtonTextSize = Game1.smallFont.MeasureString(TranslationCache.SaveSetAddTags);
+            int addButtonWidth = (int)addButtonTextSize.X + TextPadding * 2;
+            int addButtonHeight = SmallButtonHeight;
 
-            Vector2 titleSize = Game1.dialogueFont.MeasureString(TranslationCache.SaveSetTitle);
-            Utility.drawTextWithShadow(b, TranslationCache.SaveSetTitle, Game1.dialogueFont,
-                new Vector2(TitleBox.bounds.X + (TitleBox.bounds.Width - titleSize.X) / 2,
-                    TitleBox.bounds.Y + (TitleBox.bounds.Height - titleSize.Y) / 2),
-                Game1.textColor);
+            int totalWidth = labelWidth + addButtonWidth;
+            int startX = contentX + (contentWidth - totalWidth) / 2;
+            tagsRowStartX = startX;
+
+            int buttonX = startX + labelWidth;
+            int buttonY = TagRowBounds.Y + (SmallButtonHeight - addButtonHeight) / 2;
+            AddTagsButton = new ClickableComponent(
+                new Rectangle(buttonX, buttonY, addButtonWidth, addButtonHeight),
+                "addTags"
+            );
         }
 
-        public void DrawNameInput(SpriteBatch b, string currentText, bool showPlaceholder)
+        public void DrawNameInput(SpriteBatch b, string currentText, bool showPlaceholder, int jiggleOffset = 0)
         {
             Rectangle bounds = NameInputArea.bounds;
 
-            // Draw label (vertically centered with input box)
             float textHeight = Game1.smallFont.MeasureString("A").Y;
             int labelY = bounds.Y + (int)((bounds.Height - textHeight) / 2);
             Utility.drawTextWithShadow(b, TranslationCache.SaveSetNameLabel, Game1.smallFont,
                 new Vector2(contentX, labelY), Game1.textColor);
 
-            // Draw text box background
-            UIHelpers.DrawTextureBox(b, bounds.X, bounds.Y, bounds.Width, bounds.Height, Color.White);
+            UIHelpers.DrawTextureBox(b, bounds.X + jiggleOffset, bounds.Y, bounds.Width, bounds.Height, Color.White);
 
-            // Draw text or placeholder (matching search bar padding)
             string displayText = showPlaceholder ? TranslationCache.SaveSetNamePlaceholder : currentText;
             Color textColor = showPlaceholder ? Color.Gray : Game1.textColor;
-            Vector2 textPosition = new Vector2(bounds.X + 20, bounds.Y + (bounds.Height - textHeight) / 2);
+            Vector2 textPosition = new Vector2(bounds.X + 20 + jiggleOffset, bounds.Y + (bounds.Height - textHeight) / 2);
             Utility.drawTextWithShadow(b, displayText, Game1.smallFont, textPosition, textColor);
         }
 
-        public void DrawNameCursor(SpriteBatch b, string currentText, bool isSelected)
+        public void DrawNameCursor(SpriteBatch b, string currentText, bool isSelected, int jiggleOffset = 0)
         {
             if (!isSelected)
                 return;
@@ -228,11 +241,13 @@ namespace FittingRoom
                 ? Vector2.Zero
                 : Game1.smallFont.MeasureString(currentText);
 
-            Vector2 textPosition = new Vector2(bounds.X + 20, bounds.Y + (bounds.Height - 32) / 2);
+            Vector2 textPosition = new Vector2(bounds.X + 20 + jiggleOffset, bounds.Y + (bounds.Height - 32) / 2);
             Vector2 cursorPosition = new Vector2(textPosition.X + textSize.X, textPosition.Y);
 
-            // Blinking cursor (matching search bar pattern)
-            if ((int)(Game1.currentGameTime.TotalGameTime.TotalMilliseconds / 500) % 2 == 0)
+            bool showCursor = Game1.currentGameTime != null
+                && (int)(Game1.currentGameTime.TotalGameTime.TotalMilliseconds / 500) % 2 == 0;
+
+            if (showCursor)
             {
                 b.Draw(Game1.staminaRect, new Rectangle((int)cursorPosition.X, (int)cursorPosition.Y, 4, 32), Game1.textColor);
             }
@@ -240,7 +255,6 @@ namespace FittingRoom
 
         public void DrawPreviewBackground(SpriteBatch b)
         {
-            // Draw background (day/night based on time, matching main menu)
             b.Draw((Game1.timeOfDay >= NightTimeStartHour) ? Game1.nightbg : Game1.daybg, PreviewBox, Color.White);
         }
 
@@ -261,20 +275,33 @@ namespace FittingRoom
             }
         }
 
-        public void DrawTagDropdown(SpriteBatch b, string currentTagDisplay, bool isOpen)
+        public void DrawTagsRow(SpriteBatch b, int mouseX, int mouseY, bool isTagMenuOpen)
         {
-            UIHelpers.DrawDropdownButton(
-                b,
-                TagDropdownButton.bounds,
-                currentTagDisplay,
-                isOpen,
-                showArrow: false,
-                label: TranslationCache.SaveSetTagLabel,
-                labelX: tagRowX
-            );
+            float textHeight = Game1.smallFont.MeasureString("A").Y;
+            int labelY = TagRowBounds.Y + (int)((SmallButtonHeight - textHeight) / 2);
+            Utility.drawTextWithShadow(b, TranslationCache.SaveSetTagsLabel, Game1.smallFont,
+                new Vector2(tagsRowStartX, labelY), Game1.textColor);
+
+            if (AddTagsButton != null)
+            {
+                bool isHovered = AddTagsButton.containsPoint(mouseX, mouseY);
+                UIHelpers.DrawTextureBox(b, AddTagsButton.bounds.X, AddTagsButton.bounds.Y,
+                    AddTagsButton.bounds.Width, AddTagsButton.bounds.Height,
+                    Color.White, shadowOffset: 2, shadowOpacity: 0.3f);
+
+                if (isHovered)
+                {
+                    b.Draw(Game1.staminaRect, AddTagsButton.bounds, HoverEffectColor);
+                }
+
+                string buttonText = isTagMenuOpen ? TranslationCache.SaveSetHideTags : TranslationCache.SaveSetAddTags;
+                Vector2 addTextSize = Game1.smallFont.MeasureString(buttonText);
+                Vector2 addTextPos = UIHelpers.GetVisualCenter(AddTagsButton.bounds, addTextSize);
+                Utility.drawTextWithShadow(b, buttonText, Game1.smallFont, addTextPos, Game1.textColor);
+            }
         }
 
-        public void DrawFavoriteCheckbox(SpriteBatch b, bool isChecked)
+        public void DrawFavoriteCheckbox(SpriteBatch b, bool isChecked, bool isHovered)
         {
             Rectangle bounds = FavoriteCheckbox.bounds;
             Rectangle sourceRect = new Rectangle(346, 392, 8, 8);
@@ -288,9 +315,43 @@ namespace FittingRoom
 
             float textHeight = Game1.smallFont.MeasureString("A").Y;
             int labelY = bounds.Y + (int)((FavoriteSectionHeight - textHeight) / 2);
-            Color textColor = isChecked ? Game1.textColor : Game1.textColor * 0.5f;
-            Utility.drawTextWithShadow(b, TranslationCache.SaveSetFavorite, Game1.smallFont,
-                new Vector2(bounds.X + iconSize + FavoriteIconGap, labelY), textColor);
+            Vector2 textPos = new Vector2(bounds.X + iconSize + FavoriteIconGap, labelY);
+
+            if (isHovered)
+            {
+                Utility.drawTextWithShadow(b, TranslationCache.SaveSetFavorite, Game1.smallFont, textPos + new Vector2(-1, 0), Game1.textColor * 0.8f);
+            }
+            Utility.drawTextWithShadow(b, TranslationCache.SaveSetFavorite, Game1.smallFont, textPos, Game1.textColor);
+        }
+
+        public void DrawLocalOnlyCheckbox(SpriteBatch b, bool isChecked, bool isEnabled, bool isHovered)
+        {
+            if (LocalOnlyCheckbox == null)
+                return;
+
+            Rectangle bounds = LocalOnlyCheckbox.bounds;
+
+            Rectangle sourceRect = isChecked && isEnabled
+                ? new Rectangle(236, 425, 9, 9)
+                : new Rectangle(227, 425, 9, 9);
+
+            Color checkboxColor = isEnabled ? Color.White : Color.White * 0.5f;
+            int checkboxY = bounds.Y + (LocalOnlySectionHeight - SaveSetLocalOnlyCheckboxSize) / 2;
+
+            b.Draw(Game1.mouseCursors,
+                new Vector2(bounds.X, checkboxY),
+                sourceRect, checkboxColor, 0f, Vector2.Zero, SaveSetLocalOnlyCheckboxScale, SpriteEffects.None, 1f);
+
+            float textHeight = Game1.smallFont.MeasureString("A").Y;
+            int labelY = bounds.Y + (int)((LocalOnlySectionHeight - textHeight) / 2);
+            Color textColor = isEnabled ? Game1.textColor : Game1.textColor * 0.5f;
+            Vector2 textPos = new Vector2(bounds.X + SaveSetLocalOnlyCheckboxSize + 8, labelY);
+
+            if (isHovered && isEnabled)
+            {
+                Utility.drawTextWithShadow(b, TranslationCache.SaveSetLocalOnly, Game1.smallFont, textPos + new Vector2(-1, 0), textColor * 0.8f);
+            }
+            Utility.drawTextWithShadow(b, TranslationCache.SaveSetLocalOnly, Game1.smallFont, textPos, textColor);
         }
 
         public void DrawButtons(SpriteBatch b)
@@ -301,20 +362,7 @@ namespace FittingRoom
 
         public void DrawCloseButton(SpriteBatch b)
         {
-            CloseButton.draw(b);
-        }
-
-        public void DrawDropdownOptions(SpriteBatch b, List<ClickableComponent> options, int firstVisibleIndex, int maxVisibleItems, string? selectedTag)
-        {
-            UIHelpers.DrawDropdownOptions(
-                b,
-                TagDropdownButton.bounds,
-                options,
-                firstVisibleIndex,
-                maxVisibleItems,
-                isSelected: selectedTag != null ? option => option.name == selectedTag : null,
-                enableTruncation: true
-            );
+            UIHelpers.DrawTextureButton(b, CloseButton);
         }
     }
 }

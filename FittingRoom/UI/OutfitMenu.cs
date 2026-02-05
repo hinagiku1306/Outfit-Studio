@@ -25,19 +25,35 @@ namespace FittingRoom
         private readonly OutfitDrawingHelper drawingHelper;
         private readonly OutfitInputHandler inputHandler;
         private readonly ModEntry mod;
-        private readonly TemplateManager templateManager;
+        private readonly OutfitSetStore outfitSetStore;
 
         private bool showItemInfo = false;
         private TemplatesOverlay? templatesOverlay = null;
 
         public bool IsOverlayBlocking { get; set; } = false;
+        public bool ShowItemInfo => showItemInfo;
 
-        public OutfitMenu(ModEntry mod, OutfitCategoryManager categoryManager, OutfitFilterManager filterManager, TemplateManager templateManager, bool showItemInfo = false)
+        /// <summary>
+        /// Checks if the item info toggle keybind was pressed and toggles if so.
+        /// Called from overlays to allow keybind to work while overlay is active.
+        /// </summary>
+        public void HandleItemInfoToggle()
+        {
+            var config = mod.GetConfig();
+            if (config.ToggleItemInfoKey.JustPressed())
+            {
+                showItemInfo = !showItemInfo;
+                mod.SetShowItemInfoPreference(showItemInfo);
+                Game1.playSound(showItemInfo ? "bigSelect" : "bigDeSelect");
+            }
+        }
+
+        public OutfitMenu(ModEntry mod, OutfitCategoryManager categoryManager, OutfitFilterManager filterManager, OutfitSetStore outfitSetStore, bool showItemInfo = false)
         {
             this.mod = mod;
             this.categoryManager = categoryManager;
             this.filterManager = filterManager;
-            this.templateManager = templateManager;
+            this.outfitSetStore = outfitSetStore;
             this.showItemInfo = showItemInfo;
 
             // Reset to All tab when opening menu
@@ -67,7 +83,7 @@ namespace FittingRoom
                 getCurrentAllItems: () => itemListProvider.GetCurrentAllItems(),
                 getTemplatesOverlay: () => templatesOverlay,
                 setTemplatesOverlay: overlay => templatesOverlay = overlay,
-                templateManager: templateManager,
+                outfitSetStore: outfitSetStore,
                 showSavedMessage: () => uiBuilder.ShowSavedMessage()
             );
 
@@ -166,13 +182,7 @@ namespace FittingRoom
             }
 
             // Handle item info toggle keybind
-            var config = mod.GetConfig();
-            if (config.ToggleItemInfoKey.JustPressed())
-            {
-                showItemInfo = !showItemInfo;
-                mod.SetShowItemInfoPreference(showItemInfo);
-                Game1.playSound(showItemInfo ? "bigSelect" : "bigDeSelect");
-            }
+            HandleItemInfoToggle();
 
             // Handle continuous scrolling when keys are held down
             int scrollAmount = continuousScrollHandler.Update(time, uiBuilder.VISIBLE_ROWS, out bool shouldPlaySound);

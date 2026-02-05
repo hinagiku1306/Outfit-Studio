@@ -25,7 +25,7 @@ namespace FittingRoom
         public const int SectionGapH = 50;
 
         /// <summary>Vertical gap between major sections.</summary>
-        public const int SectionGapV = 50;
+        public const int SectionGapV = 30;
 
         /// <summary>Gap between elements within a section.</summary>
         public const int ElementGap = 8;
@@ -282,6 +282,27 @@ namespace FittingRoom
         /// <summary>Height of bottom button area in templates.</summary>
         public const int TemplatesBottomButtonHeight = 70;
 
+        /// <summary>Height of each row in filter bar.</summary>
+        public const int TemplatesFilterRowHeight = 44;
+
+        /// <summary>Gap between filter bar elements.</summary>
+        public const int TemplatesFilterGap = 8;
+
+        /// <summary>Width of search scope dropdown.</summary>
+        public const int TemplatesSearchScopeWidth = 80;
+
+        /// <summary>Width of tags dropdown.</summary>
+        public const int TemplatesTagsDropdownWidth = 120;
+
+        /// <summary>Width of filter dropdown.</summary>
+        public const int TemplatesFilterDropdownWidth = 120;
+
+        /// <summary>Size of checkbox in filter bar.</summary>
+        public const int TemplatesCheckboxSize = 36;
+
+        /// <summary>Max visible items in filter dropdowns.</summary>
+        public const int TemplatesDropdownMaxVisible = 5;
+
         // ============================================================
         // SAVE SET OVERLAY DIMENSIONS
         // ============================================================
@@ -319,11 +340,51 @@ namespace FittingRoom
         /// <summary>Save Set slot color when excluded or empty.</summary>
         public static readonly Color SaveSetExcludedItemSlotColor = Color.Black * 0.3f;
 
+        /// <summary>Small Button height.</summary>
+        public const int SmallButtonHeight = 50;
+
+        /// <summary>Left padding before the Tags label in SaveSet overlay.</summary>
+        public const int SaveSetTagsLeftPadding = 40;
+
+        /// <summary>Scale for LocalOnly checkbox (0.8x of standard 4f scale).</summary>
+        public const float SaveSetLocalOnlyCheckboxScale = 3.2f;
+
+        /// <summary>Size of LocalOnly checkbox (9 * scale).</summary>
+        public const int SaveSetLocalOnlyCheckboxSize = 29;
+
+        // ============================================================
+        // TEXTURE BOX VISUAL CENTERING
+        // ============================================================
+
+        /// <summary>
+        /// Vertical offset to visually center content in texture boxes.
+        /// The standard menu texture (0,256,60,60) has asymmetric borders:
+        /// top=36px, bottom=40px. This 4px difference shifts visual center down by 2px.
+        /// Positive value shifts content DOWN to compensate.
+        /// </summary>
+        public const int TextureBoxVisualOffsetY = 2;
+
         // ============================================================
         // MENU TEXTURE SOURCE RECTANGLES
         // ============================================================
 
         /// <summary>Source rectangle for standard dialog/menu box 9-slice in Game1.menuTexture.</summary>
         public static readonly Rectangle MenuBoxSourceRect = new Rectangle(0, 256, 60, 60);
+
+        // ============================================================
+        // TAG EDIT MODE
+        // ============================================================
+
+        /// <summary>Size of the edit mode toggle button.</summary>
+        public const int EditModeButtonSize = 28;
+
+        /// <summary>Size of tag delete button (X icon).</summary>
+        public const int TagDeleteButtonSize = 20;
+
+        /// <summary>Opacity for disabled sections in edit mode.</summary>
+        public const float DisabledSectionOpacity = 0.5f;
+
+        /// <summary>Opacity for tags marked for deletion.</summary>
+        public const float MarkedForDeletionOpacity = 0.2f;
     }
 }
