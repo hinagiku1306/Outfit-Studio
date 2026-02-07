@@ -105,6 +105,8 @@ namespace OutfitStudio
         public static string ConfigResetSearchOnTabSwitchTooltip { get; private set; } = "";
         public static string ConfigShowTooltipName { get; private set; } = "";
         public static string ConfigShowTooltipTooltip { get; private set; } = "";
+        public static string ConfigCloseOnClickOutsideName { get; private set; } = "";
+        public static string ConfigCloseOnClickOutsideTooltip { get; private set; } = "";
         public static string ConfigAutoOpenTagMenuName { get; private set; } = "";
         public static string ConfigAutoOpenTagMenuTooltip { get; private set; } = "";
         public static string ConfigResetMatchAllOnOpenName { get; private set; } = "";
@@ -208,6 +210,8 @@ namespace OutfitStudio
             ConfigResetSearchOnTabSwitchTooltip = i18n.Get("config.reset-search-on-tab-switch.tooltip");
             ConfigShowTooltipName = i18n.Get("config.show-tooltip.name");
             ConfigShowTooltipTooltip = i18n.Get("config.show-tooltip.tooltip");
+            ConfigCloseOnClickOutsideName = i18n.Get("config.close-on-click-outside.name");
+            ConfigCloseOnClickOutsideTooltip = i18n.Get("config.close-on-click-outside.tooltip");
             ConfigAutoOpenTagMenuName = i18n.Get("config.auto-open-tag-menu.name");
             ConfigAutoOpenTagMenuTooltip = i18n.Get("config.auto-open-tag-menu.tooltip");
             ConfigResetMatchAllOnOpenName = i18n.Get("config.reset-match-all-on-open.name");

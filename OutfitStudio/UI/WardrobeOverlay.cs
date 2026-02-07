@@ -201,7 +201,7 @@ namespace OutfitStudio
 
         public override void receiveLeftClick(int x, int y, bool playSound = true)
         {
-            if (!isWithinBounds(x, y))
+            if (!isWithinBounds(x, y) && ModEntry.Config.CloseOnClickOutside)
             {
                 shouldClose = true;
                 if (playSound) Game1.playSound("bigDeSelect");

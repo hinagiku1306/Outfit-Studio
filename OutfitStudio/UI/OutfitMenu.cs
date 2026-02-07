@@ -159,7 +159,7 @@ namespace OutfitStudio
         {
             base.receiveLeftClick(x, y, playSound);
 
-            if (wardrobeOverlay == null && !isWithinBounds(x, y))
+            if (wardrobeOverlay == null && !isWithinBounds(x, y) && mod.GetConfig().CloseOnClickOutside)
             {
                 RevertAndClose();
                 return;
