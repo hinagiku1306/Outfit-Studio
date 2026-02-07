@@ -7,7 +7,8 @@ namespace OutfitStudio
     {
         public KeybindList ToggleMenuKey { get; set; } = KeybindList.Parse("O");
         public KeybindList ToggleItemInfoKey { get; set; } = KeybindList.Parse("End");
-        public bool ShowItemInfo { get; set; } = false;
+        public bool ShowItemInfo { get; set; } = true;
+        public bool CloseOnClickOutside { get; set; } = false;
         public bool ResetFilterOnTabSwitch { get; set; } = false;
         public bool ResetSearchOnTabSwitch { get; set; } = false;
         public bool ShowTooltip { get; set; } = true;

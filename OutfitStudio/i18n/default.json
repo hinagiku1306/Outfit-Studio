@@ -10,6 +10,8 @@
     "config.reset-search-on-tab-switch.tooltip": "If enabled, the search text will be cleared when switching between Clothing tabs.",
     "config.show-tooltip.name": "Truncated Text Tooltip",
     "config.show-tooltip.tooltip": "Show the full text in a tooltip when hovering over truncated text.",
+    "config.close-on-click-outside.name": "Close Menu on Click Outside",
+    "config.close-on-click-outside.tooltip": "If enabled, clicking outside the menu will close it.",
     "config.auto-open-tag-menu.name": "Auto-Open Tag Menu",
     "config.auto-open-tag-menu.tooltip": "If enabled, the tag selection menu will automatically open when saving an outfit.",
     "config.reset-match-all-on-open.name": "Reset Match All",

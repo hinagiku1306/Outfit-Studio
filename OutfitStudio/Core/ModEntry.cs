@@ -101,6 +101,14 @@ namespace OutfitStudio
 
                 gmcmApi.AddBoolOption(
                     mod: ModManifest,
+                    name: () => TranslationCache.ConfigCloseOnClickOutsideName,
+                    tooltip: () => TranslationCache.ConfigCloseOnClickOutsideTooltip,
+                    getValue: () => config.CloseOnClickOutside,
+                    setValue: value => config.CloseOnClickOutside = value
+                );
+
+                gmcmApi.AddBoolOption(
+                    mod: ModManifest,
                     name: () => TranslationCache.ConfigAutoOpenTagMenuName,
                     tooltip: () => TranslationCache.ConfigAutoOpenTagMenuTooltip,
                     getValue: () => config.AutoOpenTagMenu,

@@ -182,7 +182,7 @@ namespace OutfitStudio
                     return;
             }
 
-            if (!isWithinBounds(x, y))
+            if (!isWithinBounds(x, y) && ModEntry.Config.CloseOnClickOutside)
             {
                 CloseOverlay();
                 if (playSound) Game1.playSound("bigDeSelect");
