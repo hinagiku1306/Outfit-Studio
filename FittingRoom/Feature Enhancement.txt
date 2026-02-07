@@ -1,5 +1,0 @@
-1. Reminder for important days
-2. Auto-wear on important days
-3. Mod tutorial
-4. Inplace mod configuration changes
-5. Edit a tag
