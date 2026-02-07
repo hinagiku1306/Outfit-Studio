@@ -1,0 +1,17 @@
+{
+    "Name": "Outfit Studio",
+    "Author": "hinagiku1306",
+    "Version": "1.0.0",
+    "Description": "Toggleable menu to change and test outfits.",
+    "UniqueID": "hinagiku1306.OutfitStudio",
+    "EntryDll": "OutfitStudio.dll",
+    "MinimumApiVersion": "4.0.0",
+    "MinimumGameVersion": "1.6.0",
+    "Dependencies": [
+        {
+            "UniqueID": "spacechase0.GenericModConfigMenu",
+            "IsRequired": false
+        }
+    ],
+    "UpdateKeys": [ "Nexus:42090"]
+}
