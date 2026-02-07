@@ -21,9 +21,11 @@ namespace FittingRoom
         private readonly OutfitSetStore store;
         private readonly TagPickerManager tagPickerManager;
         private readonly Action onSaveComplete;
+        private readonly Action? onClose;
         private readonly OutfitSet? editingSet;
 
         private readonly TextBox nameTextBox;
+        private bool nameBoxFocused = true;
         private bool isFavorite;
         private bool isLocalOnly;
         private HashSet<string> selectedTags = new();
@@ -55,11 +57,12 @@ namespace FittingRoom
 
         public bool IsEditing => editingSet != null;
 
-        public SaveSetOverlay(IClickableMenu parentMenu, OutfitSetStore store, Action onSaveComplete, OutfitSet? editingSet = null)
+        public SaveSetOverlay(IClickableMenu parentMenu, OutfitSetStore store, Action onSaveComplete, OutfitSet? editingSet = null, Action? onClose = null)
         {
             this.parentMenu = parentMenu ?? throw new ArgumentNullException(nameof(parentMenu));
             this.store = store ?? throw new ArgumentNullException(nameof(store));
             this.onSaveComplete = onSaveComplete ?? throw new ArgumentNullException(nameof(onSaveComplete));
+            this.onClose = onClose;
             this.editingSet = editingSet;
 
             tagPickerManager = new TagPickerManager(store);
@@ -173,6 +176,8 @@ namespace FittingRoom
             if (tagPickerManager.IsOpen)
             {
                 tagPickerManager.HandleClick(x, y, out bool consumed);
+                if (tagPickerManager.IsCustomInputFocused)
+                    nameBoxFocused = false;
                 if (consumed)
                     return;
             }
@@ -254,6 +259,7 @@ namespace FittingRoom
 
             if (uiBuilder.NameInputArea.containsPoint(x, y))
             {
+                nameBoxFocused = true;
                 tagPickerManager.DeselectCustomInput();
                 nameTextBox.Selected = true;
             }
@@ -270,6 +276,7 @@ namespace FittingRoom
             if (tagPickerManager.IsOpen)
             {
                 tagPickerManager.Close();
+                nameBoxFocused = true;
             }
             else
             {
@@ -324,8 +331,7 @@ namespace FittingRoom
         {
             base.update(time);
             nameTextBox.Update();
-
-            nameTextBox.Selected = !tagPickerManager.IsCustomInputFocused;
+            nameTextBox.Selected = nameBoxFocused;
 
             tagPickerManager.Update();
 
@@ -401,6 +407,7 @@ namespace FittingRoom
 
         private void CloseOverlay()
         {
+            onClose?.Invoke();
             Game1.activeClickableMenu = parentMenu;
         }
 
@@ -431,7 +438,7 @@ namespace FittingRoom
             bool showPlaceholder = string.IsNullOrEmpty(nameTextBox.Text);
             int jiggleOffset = GetNameBoxJiggleOffset();
             uiBuilder.DrawNameInput(b, nameTextBox.Text ?? "", showPlaceholder, jiggleOffset);
-            uiBuilder.DrawNameCursor(b, nameTextBox.Text ?? "", nameTextBox.Selected && !tagPickerManager.IsCustomInputFocused, jiggleOffset);
+            uiBuilder.DrawNameCursor(b, nameTextBox.Text ?? "", nameBoxFocused, jiggleOffset);
 
             uiBuilder.DrawPreviewBackground(b);
             DrawCharacterPreview(b);

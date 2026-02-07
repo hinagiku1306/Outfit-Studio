@@ -30,7 +30,6 @@ namespace FittingRoom
 
             // Initialize translation cache early to avoid repeated I/O calls
             TranslationCache.Initialize(helper.Translation);
-
             helper.Events.Input.ButtonsChanged += OnButtonsChanged;
             helper.Events.GameLoop.GameLaunched += OnGameLaunched;
             helper.Events.GameLoop.SaveLoaded += OnSaveLoaded;
@@ -70,6 +69,12 @@ namespace FittingRoom
                     save: () => Helper.WriteConfig(config)
                 );
 
+                // General section
+                gmcmApi.AddSectionTitle(
+                    mod: ModManifest,
+                    text: () => TranslationCache.ConfigGeneralSection
+                );
+
                 gmcmApi.AddKeybindList(
                     mod: ModManifest,
                     name: () => TranslationCache.ConfigToggleMenuKeyName,
@@ -88,26 +93,10 @@ namespace FittingRoom
 
                 gmcmApi.AddBoolOption(
                     mod: ModManifest,
-                    name: () => TranslationCache.ConfigResetFilterOnTabSwitchName,
-                    tooltip: () => TranslationCache.ConfigResetFilterOnTabSwitchTooltip,
-                    getValue: () => config.ResetFilterOnTabSwitch,
-                    setValue: value => config.ResetFilterOnTabSwitch = value
-);
-
-                gmcmApi.AddBoolOption(
-                    mod: ModManifest,
-                    name: () => TranslationCache.ConfigResetSearchOnTabSwitchName,
-                    tooltip: () => TranslationCache.ConfigResetSearchOnTabSwitchTooltip,
-                    getValue: () => config.ResetSearchOnTabSwitch,
-                    setValue: value => config.ResetSearchOnTabSwitch = value
-                );
-
-                gmcmApi.AddBoolOption(
-                    mod: ModManifest,
-                    name: () => TranslationCache.ConfigShowFilterTooltipName,
-                    tooltip: () => TranslationCache.ConfigShowFilterTooltipTooltip,
-                    getValue: () => config.ShowFilterTooltip,
-                    setValue: value => config.ShowFilterTooltip = value
+                    name: () => TranslationCache.ConfigShowTooltipName,
+                    tooltip: () => TranslationCache.ConfigShowTooltipTooltip,
+                    getValue: () => config.ShowTooltip,
+                    setValue: value => config.ShowTooltip = value
                 );
 
                 gmcmApi.AddBoolOption(
@@ -118,34 +107,26 @@ namespace FittingRoom
                     setValue: value => config.AutoOpenTagMenu = value
                 );
 
-                gmcmApi.AddBoolOption(
-                    mod: ModManifest,
-                    name: () => TranslationCache.ConfigResetShowInvalidOnOpenName,
-                    tooltip: () => TranslationCache.ConfigResetShowInvalidOnOpenTooltip,
-                    getValue: () => config.ResetShowInvalidOnOpen,
-                    setValue: value => config.ResetShowInvalidOnOpen = value
-                );
-
-                gmcmApi.AddTextOption(
-                    mod: ModManifest,
-                    name: () => TranslationCache.ConfigDefaultSearchScopeName,
-                    tooltip: () => TranslationCache.ConfigDefaultSearchScopeTooltip,
-                    getValue: () => config.DefaultSearchScope,
-                    setValue: value => config.DefaultSearchScope = value,
-                    allowedValues: new[] { "Set", "Item", "All" },
-                    formatAllowedValue: value => value switch
-                    {
-                        "Set" => TranslationCache.WardrobeFilterSearchSet,
-                        "Item" => TranslationCache.WardrobeFilterSearchItem,
-                        "All" => TranslationCache.WardrobeFilterSearchAll,
-                        _ => value
-                    }
-                );
-
-                // Grid Layout section
+                // Main Menu section
                 gmcmApi.AddSectionTitle(
                     mod: ModManifest,
-                    text: () => TranslationCache.ConfigGridLayoutSection
+                    text: () => TranslationCache.ConfigMainMenuSection
+                );
+
+                gmcmApi.AddBoolOption(
+                    mod: ModManifest,
+                    name: () => TranslationCache.ConfigResetFilterOnTabSwitchName,
+                    tooltip: () => TranslationCache.ConfigResetFilterOnTabSwitchTooltip,
+                    getValue: () => config.ResetFilterOnTabSwitch,
+                    setValue: value => config.ResetFilterOnTabSwitch = value
+                );
+
+                gmcmApi.AddBoolOption(
+                    mod: ModManifest,
+                    name: () => TranslationCache.ConfigResetSearchOnTabSwitchName,
+                    tooltip: () => TranslationCache.ConfigResetSearchOnTabSwitchTooltip,
+                    getValue: () => config.ResetSearchOnTabSwitch,
+                    setValue: value => config.ResetSearchOnTabSwitch = value
                 );
 
                 gmcmApi.AddNumberOption(
@@ -176,6 +157,44 @@ namespace FittingRoom
                     setValue: value => config.SlotSize = value,
                     min: OutfitLayoutConstants.MinSlotSize,
                     max: OutfitLayoutConstants.MaxSlotSize
+                );
+
+                // Wardrobe Menu section
+                gmcmApi.AddSectionTitle(
+                    mod: ModManifest,
+                    text: () => TranslationCache.ConfigWardrobeMenuSection
+                );
+
+                gmcmApi.AddBoolOption(
+                    mod: ModManifest,
+                    name: () => TranslationCache.ConfigResetMatchAllOnOpenName,
+                    tooltip: () => TranslationCache.ConfigResetMatchAllOnOpenTooltip,
+                    getValue: () => config.ResetMatchAllOnOpen,
+                    setValue: value => config.ResetMatchAllOnOpen = value
+                );
+
+                gmcmApi.AddBoolOption(
+                    mod: ModManifest,
+                    name: () => TranslationCache.ConfigResetShowInvalidOnOpenName,
+                    tooltip: () => TranslationCache.ConfigResetShowInvalidOnOpenTooltip,
+                    getValue: () => config.ResetShowInvalidOnOpen,
+                    setValue: value => config.ResetShowInvalidOnOpen = value
+                );
+
+                gmcmApi.AddTextOption(
+                    mod: ModManifest,
+                    name: () => TranslationCache.ConfigDefaultSearchScopeName,
+                    tooltip: () => TranslationCache.ConfigDefaultSearchScopeTooltip,
+                    getValue: () => config.DefaultSearchScope,
+                    setValue: value => config.DefaultSearchScope = value,
+                    allowedValues: new[] { "Set", "Item", "All" },
+                    formatAllowedValue: value => value switch
+                    {
+                        "Set" => TranslationCache.WardrobeFilterSearchSet,
+                        "Item" => TranslationCache.WardrobeFilterSearchItem,
+                        "All" => TranslationCache.WardrobeFilterSearchAll,
+                        _ => value
+                    }
                 );
             }
         }

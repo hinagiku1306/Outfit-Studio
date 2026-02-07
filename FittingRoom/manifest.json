@@ -1,9 +1,9 @@
 {
     "Name": "Fitting Room",
-    "Author": "yuyu1204",
+    "Author": "hinagiku1306",
     "Version": "1.0.0",
     "Description": "Toggleable menu to change and test outfits.",
-    "UniqueID": "yuyu1204.FittingRoom",
+    "UniqueID": "hinagiku1306.FittingRoom",
     "EntryDll": "FittingRoom.dll",
     "MinimumApiVersion": "4.0.0",
     "MinimumGameVersion": "1.6.0",
@@ -13,5 +13,5 @@
             "IsRequired": false
         }
     ],
-    "UpdateKeys": []
+    "UpdateKeys": [ "Nexus:42090"]
 }

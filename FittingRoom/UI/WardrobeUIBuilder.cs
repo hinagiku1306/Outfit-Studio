@@ -47,6 +47,7 @@ namespace FittingRoom
 
         public Rectangle TagsTextBounds { get; private set; }
         public bool TagsTextTruncated { get; private set; }
+        public string? HoveredTruncatedSetName { get; private set; }
 
         public int X { get; private set; }
         public int Y { get; private set; }
@@ -521,6 +522,7 @@ namespace FittingRoom
             int mouseX = Game1.getMouseX();
             int mouseY = Game1.getMouseY();
             bool anyDropdownOpen = searchScopeOpen || tagsOpen || filterOpen;
+            HoveredTruncatedSetName = null;
 
             for (int i = 0; i < OutfitListItems.Count; i++)
             {
@@ -568,6 +570,9 @@ namespace FittingRoom
                 string truncatedText = UIHelpers.TruncateText(set.Name, maxTextWidth);
                 Utility.drawTextWithShadow(b, truncatedText, Game1.smallFont,
                     new Vector2(textX, item.bounds.Y + 12), Game1.textColor);
+
+                if (isHovered && truncatedText != set.Name)
+                    HoveredTruncatedSetName = set.Name;
             }
 
             if (sets.Count == 0)

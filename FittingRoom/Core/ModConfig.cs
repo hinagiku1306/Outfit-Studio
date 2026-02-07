@@ -10,8 +10,9 @@ namespace FittingRoom
         public bool ShowItemInfo { get; set; } = false;
         public bool ResetFilterOnTabSwitch { get; set; } = false;
         public bool ResetSearchOnTabSwitch { get; set; } = false;
-        public bool ShowFilterTooltip { get; set; } = true;
+        public bool ShowTooltip { get; set; } = true;
         public bool AutoOpenTagMenu { get; set; } = true;
+        public bool ResetMatchAllOnOpen { get; set; } = false;
         public bool ResetShowInvalidOnOpen { get; set; } = false;
         public string DefaultSearchScope { get; set; } = "Set";
 

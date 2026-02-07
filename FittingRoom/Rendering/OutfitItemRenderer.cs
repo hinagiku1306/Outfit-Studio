@@ -186,7 +186,7 @@ namespace FittingRoom
 
         private void DrawNoHatIndicator(SpriteBatch b, Rectangle slot)
         {
-            string symbol = TranslationCache.ItemNoHatSymbol;
+            string symbol = "X";
             Vector2 textPos = new Vector2(
                 slot.X + (slot.Width - Game1.smallFont.MeasureString(symbol).X) / 2,
                 slot.Y + (slot.Height - Game1.smallFont.LineSpacing) / 2

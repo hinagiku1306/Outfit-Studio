@@ -56,7 +56,7 @@ namespace FittingRoom
             );
 
             // Only show tooltip if config allows it
-            if (hoveredText != null && mod.GetConfig().ShowFilterTooltip)
+            if (hoveredText != null && mod.GetConfig().ShowTooltip)
             {
                 HoveredTruncatedFilterText = hoveredText;
             }

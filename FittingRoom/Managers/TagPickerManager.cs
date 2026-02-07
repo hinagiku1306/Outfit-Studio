@@ -40,6 +40,9 @@ namespace FittingRoom
         private ClickableComponent? upArrowButton;
         private ClickableComponent? downArrowButton;
         private int tagListStartY;
+        private List<string> truncatedTagTexts = new();
+        private List<string> fullTagTexts = new();
+        private string? hoverTooltip;
 
         private bool isEditMode;
         private HashSet<string> tagsMarkedForDeletion = new();
@@ -51,16 +54,17 @@ namespace FittingRoom
 
         private Rectangle parentBounds;
 
+        private bool customInputFocused;
+
         public bool IsOpen => isOpen;
         public Rectangle Bounds => popupBounds;
-        public bool IsCustomInputFocused => customTagTextBox?.Selected ?? false;
+        public bool IsCustomInputFocused => customInputFocused;
 
         public void DeselectCustomInput()
         {
+            customInputFocused = false;
             if (customTagTextBox != null)
-            {
                 customTagTextBox.Selected = false;
-            }
         }
 
         public TagPickerManager(OutfitSetStore store)
@@ -72,7 +76,7 @@ namespace FittingRoom
         {
             this.parentBounds = parentBounds;
             this.onComplete = onComplete;
-            selectedTags = new HashSet<string>(currentTags, StringComparer.OrdinalIgnoreCase);
+            selectedTags = new HashSet<string>(currentTags, TranslationCache.TagComparer);
             firstVisibleIndex = 0;
             isOpen = true;
 
@@ -85,6 +89,7 @@ namespace FittingRoom
         {
             isOpen = false;
             isEditMode = false;
+            customInputFocused = false;
             tagsMarkedForDeletion.Clear();
             customTagTextBox = null;
         }
@@ -121,11 +126,29 @@ namespace FittingRoom
         {
             tagOptions.Clear();
             tagDeleteButtons.Clear();
+            truncatedTagTexts.Clear();
+            fullTagTexts.Clear();
 
             var allTags = store.GetAllTags();
             int titleHeight = (int)Game1.smallFont.MeasureString("A").Y;
             int optionsY = popupBounds.Y + PopupPadding + titleHeight + DividerPadding * 2;
             tagListStartY = optionsY;
+
+            int optionWidth = popupBounds.Width - (PopupPadding * 2);
+            int arrowWidth = (int)(ArrowNativeWidth * ScrollArrowScale);
+            int scrollArrowIntrusion = arrowWidth / 2 + ScrollArrowRightMargin - PopupPadding;
+            int leftUsed = isEditMode ? 4 : (4 + SaveSetLocalOnlyCheckboxSize + 8);
+            int rightReserved = isEditMode
+                ? (8 + TagDeleteButtonSize + scrollArrowIntrusion + 4)
+                : (scrollArrowIntrusion + 8);
+            int textMaxWidth = optionWidth - leftUsed - rightReserved;
+
+            for (int i = 0; i < allTags.Count; i++)
+            {
+                string displayTag = TranslationCache.GetTagDisplayName(allTags[i]);
+                fullTagTexts.Add(displayTag);
+                truncatedTagTexts.Add(TruncateText(displayTag, Game1.smallFont, textMaxWidth));
+            }
 
             int maxFirstVisible = Math.Max(0, allTags.Count - MaxVisibleOptions);
             firstVisibleIndex = Math.Clamp(firstVisibleIndex, 0, maxFirstVisible);
@@ -133,13 +156,13 @@ namespace FittingRoom
             for (int i = 0; i < allTags.Count; i++)
             {
                 bool isVisible = i >= firstVisibleIndex && i < firstVisibleIndex + MaxVisibleOptions;
-                int visualIndex = i - firstVisibleIndex;
+                int rowY = optionsY + (i - firstVisibleIndex) * OptionHeight;
 
                 var option = new ClickableComponent(
                     new Rectangle(
                         popupBounds.X + PopupPadding,
-                        optionsY + (visualIndex * OptionHeight),
-                        popupBounds.Width - (PopupPadding * 2),
+                        rowY,
+                        optionWidth,
                         OptionHeight
                     ),
                     allTags[i]
@@ -147,13 +170,11 @@ namespace FittingRoom
                 {
                     visible = isVisible
                 };
-
                 tagOptions.Add(option);
 
-                string displayTag = TranslationCache.GetTagDisplayName(allTags[i]);
-                int tagTextWidth = (int)Game1.smallFont.MeasureString(displayTag).X;
-                int deleteBtnX = option.bounds.X + 4 + tagTextWidth + 8;
-                int deleteBtnY = optionsY + (visualIndex * OptionHeight) + (OptionHeight - TagDeleteButtonSize) / 2;
+                int textEndX = option.bounds.X + 4 + (int)Game1.smallFont.MeasureString(truncatedTagTexts[i]).X;
+                int deleteBtnX = textEndX + 8;
+                int deleteBtnY = rowY + (OptionHeight - TagDeleteButtonSize) / 2;
                 var deleteButton = new ClickableComponent(
                     new Rectangle(deleteBtnX, deleteBtnY, TagDeleteButtonSize, TagDeleteButtonSize),
                     $"delete:{allTags[i]}"
@@ -164,7 +185,7 @@ namespace FittingRoom
                 tagDeleteButtons.Add(deleteButton);
             }
 
-            int arrowWidth = (int)(ArrowNativeWidth * ScrollArrowScale);
+            int tagListHeight = MaxVisibleOptions * OptionHeight;
             int arrowHeight = (int)(ArrowNativeHeight * ScrollArrowScale);
             int arrowX = popupBounds.Right - ScrollArrowRightMargin - arrowWidth / 2;
 
@@ -173,17 +194,32 @@ namespace FittingRoom
                 "upArrow"
             );
 
-            int tagListHeight = MaxVisibleOptions * OptionHeight;
             downArrowButton = new ClickableComponent(
                 new Rectangle(arrowX, optionsY + tagListHeight - arrowHeight, arrowWidth, arrowHeight),
                 "downArrow"
             );
         }
 
+        private static string TruncateText(string text, SpriteFont font, int maxWidth)
+        {
+            if (font.MeasureString(text).X <= maxWidth)
+                return text;
+
+            string ellipsis = "...";
+            float ellipsisWidth = font.MeasureString(ellipsis).X;
+
+            for (int len = text.Length - 1; len > 0; len--)
+            {
+                if (font.MeasureString(text.Substring(0, len)).X + ellipsisWidth <= maxWidth)
+                    return text.Substring(0, len) + ellipsis;
+            }
+
+            return ellipsis;
+        }
+
         private void InitializeCustomTagInput()
         {
-            int tagListHeight = MaxVisibleOptions * OptionHeight;
-            int customSectionY = tagListStartY + tagListHeight + CustomSectionTopPadding;
+            int customSectionY = tagListStartY + MaxVisibleOptions * OptionHeight + CustomSectionTopPadding;
             int inputY = customSectionY + CustomLabelHeight;
             int addButtonWidth = 50;
             int addButtonHeight = CustomInputHeight + 4;
@@ -300,6 +336,7 @@ namespace FittingRoom
 
                 if (textBoxBounds.Contains(x, y))
                 {
+                    customInputFocused = true;
                     customTagTextBox.Selected = true;
                 }
             }
@@ -324,21 +361,22 @@ namespace FittingRoom
 
             bool tagAdded = false;
 
-            if (store.GetAllTags().Any(t => t.Equals(newTag, StringComparison.OrdinalIgnoreCase)))
+            if (store.GetAllTags().Any(t => t.Equals(newTag, TranslationCache.TagComparison)))
             {
                 if (!selectedTags.Contains(newTag) && selectedTags.Count < MaxTagsPerSet)
                 {
-                    var existingTag = store.GetAllTags().First(t => t.Equals(newTag, StringComparison.OrdinalIgnoreCase));
+                    var existingTag = store.GetAllTags().First(t => t.Equals(newTag, TranslationCache.TagComparison));
                     selectedTags.Add(existingTag);
                     tagAdded = true;
                 }
             }
             else
             {
-                store.AddTag(newTag);
+                string titleCased = TranslationCache.ToTitleCase(newTag);
+                store.AddTag(titleCased);
                 if (selectedTags.Count < MaxTagsPerSet)
                 {
-                    selectedTags.Add(newTag);
+                    selectedTags.Add(titleCased);
                     tagAdded = true;
                 }
                 BuildOptions();
@@ -373,8 +411,7 @@ namespace FittingRoom
 
         private void InitializeDeleteConfirmButton()
         {
-            int tagListHeight = MaxVisibleOptions * OptionHeight;
-            int customSectionY = tagListStartY + tagListHeight + CustomSectionTopPadding;
+            int customSectionY = tagListStartY + MaxVisibleOptions * OptionHeight + CustomSectionTopPadding;
             int availableHeight = CustomLabelHeight + CustomInputHeight;
 
             Vector2 textSize = Game1.smallFont.MeasureString(TranslationCache.TagsPopupDelete);
@@ -423,16 +460,13 @@ namespace FittingRoom
             if (!isOpen)
                 return false;
 
-            var allTags = store.GetAllTags();
-            int maxFirstVisible = Math.Max(0, allTags.Count - MaxVisibleOptions);
-
             if (direction > 0 && firstVisibleIndex > 0)
             {
                 firstVisibleIndex--;
                 BuildOptions();
                 return true;
             }
-            else if (direction < 0 && firstVisibleIndex < maxFirstVisible)
+            else if (direction < 0 && firstVisibleIndex < Math.Max(0, store.GetAllTags().Count - MaxVisibleOptions))
             {
                 firstVisibleIndex++;
                 BuildOptions();
@@ -473,9 +507,10 @@ namespace FittingRoom
 
         public void Update()
         {
-            if (!isEditMode)
+            if (!isEditMode && customTagTextBox != null)
             {
-                customTagTextBox?.Update();
+                customTagTextBox.Update();
+                customTagTextBox.Selected = customInputFocused;
             }
         }
 
@@ -497,6 +532,8 @@ namespace FittingRoom
             if (!isOpen)
                 return;
 
+            hoverTooltip = null;
+
             UIHelpers.DrawTextureBox(b, popupBounds.X, popupBounds.Y,
                 popupBounds.Width, popupBounds.Height, Color.White);
 
@@ -517,9 +554,7 @@ namespace FittingRoom
 
             DrawTagOptions(b, mouseX, mouseY);
 
-            var allTags = store.GetAllTags();
             int arrowHeight = (int)(ArrowNativeHeight * ScrollArrowScale);
-            int tagListHeight = MaxVisibleOptions * OptionHeight;
 
             if (firstVisibleIndex > 0 && upArrowButton != null)
             {
@@ -529,18 +564,18 @@ namespace FittingRoom
                     Vector2.Zero, ScrollArrowScale, SpriteEffects.None, 1f);
             }
 
-            if (firstVisibleIndex + MaxVisibleOptions < allTags.Count && downArrowButton != null)
+            if (firstVisibleIndex < Math.Max(0, store.GetAllTags().Count - MaxVisibleOptions) && downArrowButton != null)
             {
                 Rectangle downArrowSource = new Rectangle(421, 472, 11, 12);
                 Vector2 downArrowPos = new Vector2(
                     downArrowButton.bounds.X,
-                    tagListStartY + tagListHeight - arrowHeight - 8
+                    tagListStartY + MaxVisibleOptions * OptionHeight - arrowHeight - 8
                 );
                 b.Draw(Game1.mouseCursors, downArrowPos, downArrowSource, Color.White, 0f,
                     Vector2.Zero, ScrollArrowScale, SpriteEffects.None, 1f);
             }
 
-            DrawCustomSection(b, mouseX, mouseY, tagListHeight);
+            DrawCustomSection(b, mouseX, mouseY, MaxVisibleOptions * OptionHeight);
 
             if (!isEditMode)
             {
@@ -552,6 +587,12 @@ namespace FittingRoom
                 );
                 Color countColor = selectedTags.Count >= MaxTagsPerSet ? Color.Orange : Color.Gray;
                 Utility.drawTextWithShadow(b, countText, Game1.smallFont, countPos, countColor);
+            }
+
+            if (hoverTooltip != null && ModEntry.Config.ShowTooltip)
+            {
+                string wrapped = Game1.parseText(hoverTooltip, Game1.smallFont, 300);
+                IClickableMenu.drawHoverText(b, wrapped, Game1.smallFont);
             }
         }
 
@@ -607,16 +648,17 @@ namespace FittingRoom
                 bool isMarkedForDeletion = tagsMarkedForDeletion.Contains(tag);
 
                 float rowOpacity = isMarkedForDeletion ? MarkedForDeletionOpacity : 1f;
+                string displayText = i < truncatedTagTexts.Count ? truncatedTagTexts[i] : TranslationCache.GetTagDisplayName(tag);
+                string fullText = i < fullTagTexts.Count ? fullTagTexts[i] : TranslationCache.GetTagDisplayName(tag);
 
                 if (isEditMode)
                 {
-                    string displayTag = TranslationCache.GetTagDisplayName(tag);
-                    float textHeight = Game1.smallFont.MeasureString("A").Y;
+                    float textHeight = Game1.smallFont.MeasureString(displayText).Y;
                     Vector2 textPos = new Vector2(
                         option.bounds.X + 4,
                         option.bounds.Y + (option.bounds.Height - textHeight) / 2
                     );
-                    Utility.drawTextWithShadow(b, displayTag, Game1.smallFont, textPos, Game1.textColor * rowOpacity);
+                    Utility.drawTextWithShadow(b, displayText, Game1.smallFont, textPos, Game1.textColor * rowOpacity);
 
                     if (i < tagDeleteButtons.Count)
                     {
@@ -643,16 +685,18 @@ namespace FittingRoom
                         new Vector2(option.bounds.X + 4, checkboxY),
                         checkboxSource, Color.White, 0f, Vector2.Zero, SaveSetLocalOnlyCheckboxScale, SpriteEffects.None, 1f);
 
-                    string displayTag = TranslationCache.GetTagDisplayName(tag);
-                    float textHeight = Game1.smallFont.MeasureString("A").Y;
+                    float textHeight = Game1.smallFont.MeasureString(displayText).Y;
                     Vector2 textPos = new Vector2(
                         option.bounds.X + 4 + SaveSetLocalOnlyCheckboxSize + 8,
                         option.bounds.Y + (option.bounds.Height - textHeight) / 2
                     );
 
                     Color textColor = atLimit ? Color.Gray : Game1.textColor;
-                    Utility.drawTextWithShadow(b, displayTag, Game1.smallFont, textPos, textColor);
+                    Utility.drawTextWithShadow(b, displayText, Game1.smallFont, textPos, textColor);
                 }
+
+                if (isHovered && displayText != fullText)
+                    hoverTooltip = fullText;
             }
         }
 
@@ -704,9 +748,9 @@ namespace FittingRoom
                 b.Draw(Game1.staminaRect, addCustomButton.bounds, HoverEffectColor);
             }
 
-            Vector2 addTextSize = Game1.smallFont.MeasureString(TranslationCache.TagsPopupAdd);
+            Vector2 addTextSize = Game1.smallFont.MeasureString("+");
             Vector2 addTextPos = UIHelpers.GetVisualCenter(addCustomButton.bounds, addTextSize);
-            Utility.drawTextWithShadow(b, TranslationCache.TagsPopupAdd, Game1.smallFont, addTextPos, Game1.textColor);
+            Utility.drawTextWithShadow(b, "+", Game1.smallFont, addTextPos, Game1.textColor);
         }
 
         private void DrawDeleteConfirmButton(SpriteBatch b, int mouseX, int mouseY, int tagListHeight)

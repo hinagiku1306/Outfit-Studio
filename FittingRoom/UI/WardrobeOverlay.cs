@@ -112,6 +112,7 @@ namespace FittingRoom
         private void RefreshDisplayedSets()
         {
             allTags = store.GetAllTags();
+            filterState.SelectedTags.IntersectWith(allTags);
             displayedSets = store.GetFilteredSets(filterState);
 
             if (selectedSetId != null)
@@ -618,7 +619,7 @@ namespace FittingRoom
                 cachedSetId = null;
                 lastPreviewSetId = null;
                 RefreshDisplayedSets();
-            }, editingSet: SelectedSet);
+            }, editingSet: SelectedSet, onClose: RefreshDisplayedSets);
         }
 
         private void ShowDeleteConfirmation()
@@ -1057,7 +1058,12 @@ namespace FittingRoom
                 int mouseY = Game1.getMouseY();
                 DrawItemTooltips(b, mouseX, mouseY);
 
-                if (uiBuilder.TagsTextTruncated && SelectedSet != null
+                if (uiBuilder.HoveredTruncatedSetName != null && ModEntry.Config.ShowTooltip)
+                {
+                    string wrapped = Game1.parseText(uiBuilder.HoveredTruncatedSetName, Game1.smallFont, 300);
+                    IClickableMenu.drawHoverText(b, wrapped, Game1.smallFont);
+                }
+                else if (uiBuilder.TagsTextTruncated && SelectedSet != null
                     && uiBuilder.TagsTextBounds.Contains(mouseX, mouseY))
                 {
                     string fullTags = string.Join(", ", SelectedSet.Tags);

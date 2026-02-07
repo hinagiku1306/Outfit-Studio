@@ -14,7 +14,12 @@ namespace FittingRoom.Services
         private const string GlobalFileName = "outfit-sets-global.json";
         private const string LocalSaveDataKey = "FittingRoom.LocalSets";
 
-        private static readonly List<string> DefaultTags = new() { "Spring", "Summer", "Fall", "Winter", "Wedding", "Combat", "Daily" };
+        private static readonly List<string> DefaultTags = new()
+        {
+            "Spring", "Summer", "Fall", "Winter", "Wedding", "Combat", "Daily",
+            "Test Medium Wrap Tag",
+            "Test Long Wrapping Tag Name For Three Rows"
+        };
 
         private readonly IModHelper helper;
         private readonly IMonitor monitor;
@@ -23,7 +28,7 @@ namespace FittingRoom.Services
         private OutfitSetLocalData localData = new();
 
         private readonly Dictionary<string, OutfitSet> byId = new();
-        private readonly Dictionary<string, HashSet<string>> byTag = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, HashSet<string>> byTag;
         private readonly HashSet<string> favoriteIds = new();
         private readonly HashSet<string> globalIds = new();
         private readonly HashSet<string> localIds = new();
@@ -39,6 +44,7 @@ namespace FittingRoom.Services
         {
             this.helper = helper;
             this.monitor = monitor;
+            byTag = new(TranslationCache.TagComparer);
         }
 
         public void LoadGlobalData()
@@ -109,7 +115,7 @@ namespace FittingRoom.Services
             if (matchAll)
             {
                 return sets.Where(s => selectedTags.All(tag =>
-                    s.Tags.Any(t => t.Equals(tag, StringComparison.OrdinalIgnoreCase))));
+                    s.Tags.Any(t => t.Equals(tag, TranslationCache.TagComparison))));
             }
 
             HashSet<string> matchingIds = new();
@@ -261,7 +267,7 @@ namespace FittingRoom.Services
             if (cachedAllTags != null)
                 return cachedAllTags;
 
-            cachedAllTags = globalData.Tags.OrderBy(t => t, StringComparer.OrdinalIgnoreCase).ToList();
+            cachedAllTags = globalData.Tags.OrderBy(t => t, TranslationCache.TagComparer).ToList();
             return cachedAllTags;
         }
 
@@ -271,7 +277,7 @@ namespace FittingRoom.Services
             if (string.IsNullOrEmpty(trimmed))
                 return;
 
-            if (globalData.Tags.Any(t => t.Equals(trimmed, StringComparison.OrdinalIgnoreCase)))
+            if (globalData.Tags.Any(t => t.Equals(trimmed, TranslationCache.TagComparison)))
                 return;
 
             globalData.Tags.Add(trimmed);
@@ -281,7 +287,7 @@ namespace FittingRoom.Services
 
         public bool RemoveTag(string tag)
         {
-            int index = globalData.Tags.FindIndex(t => t.Equals(tag, StringComparison.OrdinalIgnoreCase));
+            int index = globalData.Tags.FindIndex(t => t.Equals(tag, TranslationCache.TagComparison));
             if (index < 0)
                 return false;
 
@@ -294,7 +300,7 @@ namespace FittingRoom.Services
                 {
                     if (byId.TryGetValue(id, out var outfit))
                     {
-                        outfit.Tags.RemoveAll(t => t.Equals(actualTag, StringComparison.OrdinalIgnoreCase));
+                        outfit.Tags.RemoveAll(t => t.Equals(actualTag, TranslationCache.TagComparison));
                     }
                 }
                 byTag.Remove(actualTag);

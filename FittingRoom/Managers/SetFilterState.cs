@@ -14,8 +14,8 @@ namespace FittingRoom.Managers
     {
         public SearchScope SearchScope { get; set; } = SearchScope.Set;
         public string SearchText { get; set; } = "";
-        public HashSet<string> SelectedTags { get; } = new(StringComparer.OrdinalIgnoreCase);
-        public bool MatchAllTags { get; set; }
+        public HashSet<string> SelectedTags { get; } = new(TranslationCache.TagComparer);
+        public bool MatchAllTags { get; set; } = true;
         public bool FavoritesOnly { get; set; }
         public bool ShowGlobal { get; set; } = true;
         public bool ShowLocal { get; set; } = true;
@@ -45,7 +45,7 @@ namespace FittingRoom.Managers
         public string ToCacheKey()
         {
             string tags = SelectedTags.Count > 0
-                ? string.Join(",", SelectedTags.OrderBy(t => t, StringComparer.OrdinalIgnoreCase))
+                ? string.Join(",", SelectedTags.OrderBy(t => t, TranslationCache.TagComparer))
                 : "";
             return $"{(int)SearchScope}|{SearchText}|{tags}|{MatchAllTags}|{FavoritesOnly}|{ShowGlobal}|{ShowLocal}|{ShowInvalid}";
         }
@@ -55,7 +55,7 @@ namespace FittingRoom.Managers
             SearchScope = SearchScope.Set;
             SearchText = "";
             SelectedTags.Clear();
-            MatchAllTags = false;
+            MatchAllTags = true;
             FavoritesOnly = false;
             ShowGlobal = true;
             ShowLocal = true;

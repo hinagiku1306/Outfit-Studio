@@ -137,7 +137,7 @@ namespace FittingRoom
             TagRowBounds = new Rectangle(contentX, currentY, contentWidth, TagSectionHeight);
             tagsRowStartX = contentX;
 
-            Vector2 addButtonTextSize = Game1.smallFont.MeasureString(TranslationCache.SaveSetAddTags);
+            Vector2 addButtonTextSize = Game1.smallFont.MeasureString("+");
             int addButtonWidth = (int)addButtonTextSize.X + TextPadding * 2;
             int addButtonHeight = SmallButtonHeight;
             int addButtonY = currentY + (SmallButtonHeight - addButtonHeight) / 2;
@@ -198,7 +198,7 @@ namespace FittingRoom
         public void UpdateTagsRowLayout()
         {
             int labelWidth = (int)Game1.smallFont.MeasureString(TranslationCache.SaveSetTagsLabel).X + 8;
-            Vector2 addButtonTextSize = Game1.smallFont.MeasureString(TranslationCache.SaveSetAddTags);
+            Vector2 addButtonTextSize = Game1.smallFont.MeasureString("+");
             int addButtonWidth = (int)addButtonTextSize.X + TextPadding * 2;
             int addButtonHeight = SmallButtonHeight;
 
@@ -294,7 +294,7 @@ namespace FittingRoom
                     b.Draw(Game1.staminaRect, AddTagsButton.bounds, HoverEffectColor);
                 }
 
-                string buttonText = isTagMenuOpen ? TranslationCache.SaveSetHideTags : TranslationCache.SaveSetAddTags;
+                string buttonText = isTagMenuOpen ? "-" : "+";
                 Vector2 addTextSize = Game1.smallFont.MeasureString(buttonText);
                 Vector2 addTextPos = UIHelpers.GetVisualCenter(AddTagsButton.bounds, addTextSize);
                 Utility.drawTextWithShadow(b, buttonText, Game1.smallFont, addTextPos, Game1.textColor);

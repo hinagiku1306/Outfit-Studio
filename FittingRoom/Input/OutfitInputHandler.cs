@@ -134,15 +134,19 @@ namespace FittingRoom
                     }
                 }
 
-                // Tab buttons work even when dropdown is open
+                // Buttons that work even when dropdown is open
                 if (uiBuilder.AllTab.containsPoint(x, y) ||
                     uiBuilder.ShirtsTab.containsPoint(x, y) ||
                     uiBuilder.PantsTab.containsPoint(x, y) ||
-                    uiBuilder.HatsTab.containsPoint(x, y))
+                    uiBuilder.HatsTab.containsPoint(x, y) ||
+                    uiBuilder.ApplyButton.containsPoint(x, y) ||
+                    uiBuilder.ResetButton.containsPoint(x, y) ||
+                    uiBuilder.SaveButton.containsPoint(x, y) ||
+                    uiBuilder.WardrobeButton.containsPoint(x, y))
                 {
                     dropdownManager.Close();
                     continuousScrollHandler.Reset();
-                    // Fall through to handle tab click below
+                    // Fall through to handle button click below
                 }
                 else
                 {
