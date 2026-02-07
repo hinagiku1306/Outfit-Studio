@@ -117,9 +117,6 @@ namespace FittingRoom
         /// <summary>Layer depth for farmer sprite rendering.</summary>
         public const float FarmerSpriteLayerDepth = 0.8f;
 
-        /// <summary>Time of day when night background starts (24-hour format * 100).</summary>
-        public const int NightTimeStartHour = 1900;
-
         // ============================================================
         // TABS AND BUTTONS
         // ============================================================
@@ -255,53 +252,33 @@ namespace FittingRoom
         public const int TooltipPadding = 16;
 
         // ============================================================
-        // TEMPLATES OVERLAY DIMENSIONS
+        // WARDROBE OVERLAY DIMENSIONS
         // ============================================================
-
-        /// <summary>Total width of templates overlay window.</summary>
-        public const int TemplatesOverlayWidth = 1000;
-
-        /// <summary>Total height of templates overlay window.</summary>
-        public const int TemplatesOverlayHeight = 700;
-
-        /// <summary>Width of left panel (template list).</summary>
-        public const int TemplatesLeftPanelWidth = 550;
-
-        /// <summary>Width of right panel (preview + details).</summary>
-        public const int TemplatesRightPanelWidth = 400;
+        // Note: Overlay width/height and panel widths are calculated dynamically in WardrobeUIBuilder.
 
         /// <summary>Gap between left and right panels.</summary>
-        public const int TemplatesPanelGap = 50;
+        public const int WardrobePanelGap = 50;
 
-        /// <summary>Height of each template list item.</summary>
-        public const int TemplatesListItemHeight = 48;
+        /// <summary>Height of each outfit list item.</summary>
+        public const int WardrobeListItemHeight = 48;
 
-        /// <summary>Size of preview box in templates.</summary>
-        public const int TemplatesPreviewSize = 256;
+        /// <summary>Size of preview box in wardrobe.</summary>
+        public const int WardrobePreviewSize = 256;
 
-        /// <summary>Height of bottom button area in templates.</summary>
-        public const int TemplatesBottomButtonHeight = 70;
+        /// <summary>Height of bottom button area in wardrobe.</summary>
+        public const int WardrobeBottomButtonHeight = 70;
 
         /// <summary>Height of each row in filter bar.</summary>
-        public const int TemplatesFilterRowHeight = 44;
+        public const int WardrobeFilterRowHeight = 44;
 
         /// <summary>Gap between filter bar elements.</summary>
-        public const int TemplatesFilterGap = 8;
-
-        /// <summary>Width of search scope dropdown.</summary>
-        public const int TemplatesSearchScopeWidth = 80;
-
-        /// <summary>Width of tags dropdown.</summary>
-        public const int TemplatesTagsDropdownWidth = 120;
-
-        /// <summary>Width of filter dropdown.</summary>
-        public const int TemplatesFilterDropdownWidth = 120;
+        public const int WardrobeFilterGap = 8;
 
         /// <summary>Size of checkbox in filter bar.</summary>
-        public const int TemplatesCheckboxSize = 36;
+        public const int WardrobeCheckboxSize = 29;
 
         /// <summary>Max visible items in filter dropdowns.</summary>
-        public const int TemplatesDropdownMaxVisible = 5;
+        public const int WardrobeDropdownMaxVisible = 5;
 
         // ============================================================
         // SAVE SET OVERLAY DIMENSIONS
@@ -330,6 +307,9 @@ namespace FittingRoom
 
         /// <summary>Size of favorite checkbox.</summary>
         public const int SaveSetCheckboxSize = 36;
+
+        /// <summary>Scale for direction arrows in wardrobe preview (matches wardrobe scroll arrow size).</summary>
+        public const float WardrobeArrowScale = 2.75f;
 
         /// <summary>Gap between Save and Cancel buttons.</summary>
         public const int SaveSetButtonGap = 20;

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using FittingRoom.Models;
 using FittingRoom.Services;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -20,6 +21,7 @@ namespace FittingRoom
         private readonly OutfitSetStore store;
         private readonly TagPickerManager tagPickerManager;
         private readonly Action onSaveComplete;
+        private readonly OutfitSet? editingSet;
 
         private readonly TextBox nameTextBox;
         private bool isFavorite;
@@ -51,11 +53,14 @@ namespace FittingRoom
         private Clothing? cachedPants;
         private Hat? cachedHat;
 
-        public SaveSetOverlay(IClickableMenu parentMenu, OutfitSetStore store, Action onSaveComplete)
+        public bool IsEditing => editingSet != null;
+
+        public SaveSetOverlay(IClickableMenu parentMenu, OutfitSetStore store, Action onSaveComplete, OutfitSet? editingSet = null)
         {
             this.parentMenu = parentMenu ?? throw new ArgumentNullException(nameof(parentMenu));
             this.store = store ?? throw new ArgumentNullException(nameof(store));
             this.onSaveComplete = onSaveComplete ?? throw new ArgumentNullException(nameof(onSaveComplete));
+            this.editingSet = editingSet;
 
             tagPickerManager = new TagPickerManager(store);
 
@@ -67,24 +72,41 @@ namespace FittingRoom
             xPositionOnScreen = uiBuilder.X;
             yPositionOnScreen = uiBuilder.Y;
 
+            if (editingSet != null)
+            {
+                capturedShirtId = editingSet.ShirtId;
+                capturedPantsId = editingSet.PantsId;
+                capturedHatId = editingSet.HatId;
+
+                includeShirt = !string.IsNullOrEmpty(capturedShirtId);
+                includePants = !string.IsNullOrEmpty(capturedPantsId);
+                includeHat = !string.IsNullOrEmpty(capturedHatId);
+
+                isFavorite = editingSet.IsFavorite;
+                isLocalOnly = !editingSet.IsGlobal;
+                selectedTags = new HashSet<string>(editingSet.Tags);
+            }
+            else
+            {
+                capturedShirtId = OutfitState.GetClothingId(Game1.player.shirtItem.Value);
+                capturedPantsId = OutfitState.GetClothingId(Game1.player.pantsItem.Value);
+                capturedHatId = OutfitState.GetHatIdFromItem(Game1.player.hat.Value);
+
+                includeShirt = !string.IsNullOrEmpty(capturedShirtId) && capturedShirtId != NoShirtId;
+                includePants = !string.IsNullOrEmpty(capturedPantsId) && capturedPantsId != NoPantsId;
+                includeHat = !string.IsNullOrEmpty(capturedHatId) && capturedHatId != NoHatId;
+            }
+
             nameTextBox = new TextBox(
                 Game1.content.Load<Texture2D>("LooseSprites\\textBox"),
                 null,
                 Game1.smallFont,
                 Game1.textColor)
             {
-                Text = "",
+                Text = editingSet?.Name ?? "",
                 Selected = true
             };
             UpdateTextBoxBounds();
-
-            capturedShirtId = OutfitState.GetClothingId(Game1.player.shirtItem.Value);
-            capturedPantsId = OutfitState.GetClothingId(Game1.player.pantsItem.Value);
-            capturedHatId = OutfitState.GetHatIdFromItem(Game1.player.hat.Value);
-
-            includeShirt = !string.IsNullOrEmpty(capturedShirtId) && capturedShirtId != NoShirtId;
-            includePants = !string.IsNullOrEmpty(capturedPantsId) && capturedPantsId != NoPantsId;
-            includeHat = !string.IsNullOrEmpty(capturedHatId) && capturedHatId != NoHatId;
 
             CacheItemObjects();
 
@@ -153,6 +175,13 @@ namespace FittingRoom
                 tagPickerManager.HandleClick(x, y, out bool consumed);
                 if (consumed)
                     return;
+            }
+
+            if (!isWithinBounds(x, y))
+            {
+                CloseOverlay();
+                if (playSound) Game1.playSound("bigDeSelect");
+                return;
             }
 
             if (uiBuilder.CloseButton.containsPoint(x, y))
@@ -340,16 +369,30 @@ namespace FittingRoom
             string? pantsId = includePants ? capturedPantsId : null;
             string? hatId = includeHat ? capturedHatId : null;
 
-            store.CreateFromCurrentOutfit(
-                name,
-                selectedTags.ToList(),
-                isFavorite,
-                !isLocalOnly,
-                shirtId,
-                pantsId,
-                hatId,
-                useCurrentOutfit: false
-            );
+            if (editingSet != null)
+            {
+                editingSet.Name = name;
+                editingSet.Tags = selectedTags.ToList();
+                editingSet.IsFavorite = isFavorite;
+                editingSet.IsGlobal = !isLocalOnly;
+                editingSet.ShirtId = shirtId;
+                editingSet.PantsId = pantsId;
+                editingSet.HatId = hatId;
+                store.Update(editingSet);
+            }
+            else
+            {
+                store.CreateFromCurrentOutfit(
+                    name,
+                    selectedTags.ToList(),
+                    isFavorite,
+                    !isLocalOnly,
+                    shirtId,
+                    pantsId,
+                    hatId,
+                    useCurrentOutfit: false
+                );
+            }
 
             if (playSound) Game1.playSound("coin");
             onSaveComplete();
@@ -479,11 +522,19 @@ namespace FittingRoom
 
             try
             {
-                if (!includeShirt)
+                if (includeShirt && !string.IsNullOrEmpty(capturedShirtId) && store.IsItemValid(capturedShirtId, "(S)"))
+                    Game1.player.shirtItem.Value = ItemRegistry.Create<Clothing>("(S)" + capturedShirtId);
+                else
                     Game1.player.shirtItem.Value = null;
-                if (!includePants)
+
+                if (includePants && !string.IsNullOrEmpty(capturedPantsId) && store.IsItemValid(capturedPantsId, "(P)"))
+                    Game1.player.pantsItem.Value = ItemRegistry.Create<Clothing>("(P)" + capturedPantsId);
+                else
                     Game1.player.pantsItem.Value = null;
-                if (!includeHat)
+
+                if (includeHat && !string.IsNullOrEmpty(capturedHatId) && store.IsItemValid(capturedHatId, "(H)"))
+                    Game1.player.hat.Value = ItemRegistry.Create<Hat>("(H)" + capturedHatId);
+                else
                     Game1.player.hat.Value = null;
 
                 Game1.player.FarmerRenderer.MarkSpriteDirty();
@@ -506,23 +557,6 @@ namespace FittingRoom
                     Game1.player
                 );
 
-                if (Game1.timeOfDay >= NightTimeStartHour)
-                {
-                    Game1.player.FarmerRenderer.draw(
-                        farmerSpriteBatch,
-                        FrontFacingFrame,
-                        0,
-                        sourceRect,
-                        centeredPosition,
-                        Vector2.Zero,
-                        0.8f,
-                        2,
-                        Color.DarkBlue * 0.3f,
-                        0f,
-                        1f,
-                        Game1.player
-                    );
-                }
                 FarmerRenderer.isDrawingForUI = false;
 
                 farmerSpriteBatch.End();

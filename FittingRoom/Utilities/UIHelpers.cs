@@ -135,7 +135,7 @@ namespace FittingRoom
         }
 
         /// <summary>
-        /// Draws a dropdown button with text, optional label, optional arrow, and optional clear button.
+        /// Draws a dropdown button with text, optional label, and optional clear button.
         /// Centralizes dropdown button rendering for consistent appearance.
         /// </summary>
         public static void DrawDropdownButton(
@@ -143,7 +143,6 @@ namespace FittingRoom
             Rectangle bounds,
             string displayText,
             bool isOpen,
-            bool showArrow = true,
             string? label = null,
             int labelX = 0,
             ClickableComponent? clearButton = null,
@@ -167,10 +166,9 @@ namespace FittingRoom
             DrawTextureBox(b, bounds.X, bounds.Y, bounds.Width, bounds.Height,
                 isOpen ? Color.Wheat : Color.White);
 
-            // Calculate max text width based on whether we have clear button and/or arrow
+            // Calculate max text width based on whether we have clear button
             int reservedRight = 20; // Base right padding
-            if (showArrow) reservedRight += 28;
-            if (hasValue && clearButton != null) reservedRight = ClearButtonSize + ClearButtonRightMargin + 28;
+            if (hasValue && clearButton != null) reservedRight = ClearButtonSize + ClearButtonRightMargin;
             int maxTextWidth = bounds.Width - reservedRight - 20;
 
             // Truncate text if needed
@@ -194,23 +192,41 @@ namespace FittingRoom
                 Utility.drawTextWithShadow(b, truncatedText, Game1.smallFont, textPos, Game1.textColor);
             }
 
-            // Draw arrow if requested
-            if (showArrow)
-            {
-                Rectangle sourceRect = new Rectangle(421, 472, 11, 12);
-                float scale = 2f;
-                Vector2 arrowPos = new Vector2(
-                    bounds.Right - 24,
-                    bounds.Y + (bounds.Height - 12 * scale) / 2
-                );
-                b.Draw(Game1.mouseCursors, arrowPos, sourceRect, Color.White, 0f, Vector2.Zero, scale, SpriteEffects.None, 1f);
-            }
-
             // Draw clear button if value exists
             if (hasValue && clearButton != null && drawClearButton != null)
             {
                 drawClearButton(b, clearButton);
             }
+        }
+
+        /// <summary>
+        /// Draws a small X clear button with hover scale effect.
+        /// </summary>
+        public static void DrawClearButton(SpriteBatch b, ClickableComponent button)
+        {
+            int mouseX = Game1.getMouseX();
+            int mouseY = Game1.getMouseY();
+            bool isHovered = button.containsPoint(mouseX, mouseY);
+
+            Rectangle sourceRect = new Rectangle(337, 494, 12, 12);
+            float scale = isHovered ? 2.2f : 2f;
+            Vector2 center = new Vector2(
+                button.bounds.X + button.bounds.Width / 2 - 2,
+                button.bounds.Y + button.bounds.Height / 2
+            );
+            Vector2 origin = new Vector2(6, 6);
+
+            b.Draw(
+                Game1.mouseCursors,
+                center,
+                sourceRect,
+                Color.White,
+                0f,
+                origin,
+                scale,
+                SpriteEffects.None,
+                1f
+            );
         }
 
         /// <summary>

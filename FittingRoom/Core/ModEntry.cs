@@ -118,6 +118,30 @@ namespace FittingRoom
                     setValue: value => config.AutoOpenTagMenu = value
                 );
 
+                gmcmApi.AddBoolOption(
+                    mod: ModManifest,
+                    name: () => TranslationCache.ConfigResetShowInvalidOnOpenName,
+                    tooltip: () => TranslationCache.ConfigResetShowInvalidOnOpenTooltip,
+                    getValue: () => config.ResetShowInvalidOnOpen,
+                    setValue: value => config.ResetShowInvalidOnOpen = value
+                );
+
+                gmcmApi.AddTextOption(
+                    mod: ModManifest,
+                    name: () => TranslationCache.ConfigDefaultSearchScopeName,
+                    tooltip: () => TranslationCache.ConfigDefaultSearchScopeTooltip,
+                    getValue: () => config.DefaultSearchScope,
+                    setValue: value => config.DefaultSearchScope = value,
+                    allowedValues: new[] { "Set", "Item", "All" },
+                    formatAllowedValue: value => value switch
+                    {
+                        "Set" => TranslationCache.WardrobeFilterSearchSet,
+                        "Item" => TranslationCache.WardrobeFilterSearchItem,
+                        "All" => TranslationCache.WardrobeFilterSearchAll,
+                        _ => value
+                    }
+                );
+
                 // Grid Layout section
                 gmcmApi.AddSectionTitle(
                     mod: ModManifest,

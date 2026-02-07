@@ -28,8 +28,9 @@ namespace FittingRoom
         private readonly Func<List<string>> getCurrentPantsIds;
         private readonly Func<List<string>> getCurrentHatIds;
         private readonly Func<List<(OutfitCategoryManager.Category, string)>> getCurrentAllItems;
-        private readonly Func<TemplatesOverlay?> getTemplatesOverlay;
-        private readonly Action<TemplatesOverlay?> setTemplatesOverlay;
+        private readonly Func<WardrobeOverlay?> getWardrobeOverlay;
+        private readonly Action<WardrobeOverlay?> setWardrobeOverlay;
+        private readonly Func<OutfitMenu?> getParentMenu;
 
         public OutfitInputHandler(
             OutfitCategoryManager categoryManager,
@@ -48,8 +49,9 @@ namespace FittingRoom
             Func<List<string>> getCurrentPantsIds,
             Func<List<string>> getCurrentHatIds,
             Func<List<(OutfitCategoryManager.Category, string)>> getCurrentAllItems,
-            Func<TemplatesOverlay?> getTemplatesOverlay,
-            Action<TemplatesOverlay?> setTemplatesOverlay,
+            Func<WardrobeOverlay?> getWardrobeOverlay,
+            Action<WardrobeOverlay?> setWardrobeOverlay,
+            Func<OutfitMenu?> getParentMenu,
             OutfitSetStore outfitSetStore,
             Action showSavedMessage)
         {
@@ -70,22 +72,23 @@ namespace FittingRoom
             this.getCurrentPantsIds = getCurrentPantsIds;
             this.getCurrentHatIds = getCurrentHatIds;
             this.getCurrentAllItems = getCurrentAllItems;
-            this.getTemplatesOverlay = getTemplatesOverlay;
-            this.setTemplatesOverlay = setTemplatesOverlay;
+            this.getWardrobeOverlay = getWardrobeOverlay;
+            this.setWardrobeOverlay = setWardrobeOverlay;
+            this.getParentMenu = getParentMenu;
             this.outfitSetStore = outfitSetStore;
         }
 
         public bool HandleLeftClick(int x, int y, bool playSound)
         {
-            // Templates overlay handling
-            var templatesOverlay = getTemplatesOverlay();
-            if (templatesOverlay != null)
+            // Wardrobe overlay handling
+            var wardrobeOverlay = getWardrobeOverlay();
+            if (wardrobeOverlay != null)
             {
-                templatesOverlay.receiveLeftClick(x, y, playSound);
+                wardrobeOverlay.receiveLeftClick(x, y, playSound);
 
-                if (templatesOverlay.readyToClose())
+                if (wardrobeOverlay.readyToClose())
                 {
-                    setTemplatesOverlay(null);
+                    setWardrobeOverlay(null);
                 }
 
                 return true;
@@ -251,13 +254,10 @@ namespace FittingRoom
                 return true;
             }
 
-            // Templates button - opens overlay
-            if (uiBuilder.TemplatesButton.containsPoint(x, y))
+            // Wardrobe button - opens overlay
+            if (uiBuilder.WardrobeButton.containsPoint(x, y))
             {
-                setTemplatesOverlay(new TemplatesOverlay(outfitSetStore, () =>
-                {
-                    Game1.activeClickableMenu = new SaveSetOverlay(Game1.activeClickableMenu, outfitSetStore, () => showSavedMessage());
-                }));
+                setWardrobeOverlay(new WardrobeOverlay(outfitSetStore, getParentMenu()));
                 if (playSound) Game1.playSound("bigSelect");
                 return true;
             }
@@ -397,17 +397,22 @@ namespace FittingRoom
 
         public bool HandleScrollWheel(int direction)
         {
-            // Handle dropdown scrolling if open (block item grid scrolling when dropdown is open)
+            var wardrobeOverlay = getWardrobeOverlay();
+            if (wardrobeOverlay != null)
+            {
+                wardrobeOverlay.receiveScrollWheelAction(direction);
+                return true;
+            }
+
             if (dropdownManager.IsOpen)
             {
                 if (dropdownManager.HandleScrollWheel(direction))
                 {
                     Game1.playSound("shiny4");
                 }
-                return true; // Always consume scroll events when dropdown is open
+                return true;
             }
 
-            // Original item grid scrolling logic
             int totalRows = Math.Max(1, (int)Math.Ceiling(getCurrentListCount() / (float)uiBuilder.COLUMNS));
             int maxScroll = Math.Max(0, totalRows - uiBuilder.VISIBLE_ROWS);
             if (direction > 0 && state.ScrollOffset > 0)
@@ -427,11 +432,17 @@ namespace FittingRoom
 
         public bool HandleKeyPress(Keys key)
         {
-            // Handle templates overlay input
-            var templatesOverlay = getTemplatesOverlay();
-            if (templatesOverlay != null)
+            // Handle wardrobe overlay input
+            var wardrobeOverlay = getWardrobeOverlay();
+            if (wardrobeOverlay != null)
             {
-                templatesOverlay.receiveKeyPress(key);
+                wardrobeOverlay.receiveKeyPress(key);
+
+                if (wardrobeOverlay.readyToClose())
+                {
+                    setWardrobeOverlay(null);
+                }
+
                 return true;
             }
 

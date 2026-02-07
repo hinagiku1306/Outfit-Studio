@@ -29,6 +29,11 @@ namespace FittingRoom.Services
         private readonly HashSet<string> localIds = new();
         private readonly HashSet<string> validIds = new();
         private readonly Dictionary<string, string> itemDisplayNames = new();
+        private readonly Dictionary<string, string> setSearchText = new();
+        private readonly Dictionary<string, string> setItemSearchText = new();
+        private List<OutfitSet>? cachedFilteredSets;
+        private string? cachedFilterKey;
+        private List<string>? cachedAllTags;
 
         public OutfitSetStore(IModHelper helper, IMonitor monitor)
         {
@@ -76,6 +81,10 @@ namespace FittingRoom.Services
 
         public List<OutfitSet> GetFilteredSets(SetFilterState filter)
         {
+            string key = filter.ToCacheKey();
+            if (cachedFilteredSets != null && cachedFilterKey == key)
+                return cachedFilteredSets;
+
             IEnumerable<OutfitSet> result = byId.Values;
 
             result = ApplyTagFilter(result, filter.SelectedTags, filter.MatchAllTags);
@@ -84,10 +93,12 @@ namespace FittingRoom.Services
             result = ApplyValidityFilter(result, filter.ShowInvalid);
             result = ApplySearchFilter(result, filter.SearchText, filter.SearchScope);
 
-            return result
+            cachedFilteredSets = result
                 .OrderByDescending(s => s.IsFavorite)
                 .ThenBy(s => s.Name, StringComparer.OrdinalIgnoreCase)
                 .ToList();
+            cachedFilterKey = key;
+            return cachedFilteredSets;
         }
 
         private IEnumerable<OutfitSet> ApplyTagFilter(IEnumerable<OutfitSet> sets, HashSet<string> selectedTags, bool matchAll)
@@ -155,43 +166,18 @@ namespace FittingRoom.Services
 
         private bool MatchesSearch(OutfitSet set, string search, SearchScope scope)
         {
-            bool matchesSetName = set.Name.Contains(search, StringComparison.OrdinalIgnoreCase);
-
             if (scope == SearchScope.Set)
-                return matchesSetName;
-
-            bool matchesItem = MatchesItemSearch(set, search);
+                return setSearchText.TryGetValue(set.Id, out var name) &&
+                       name.Contains(search, StringComparison.OrdinalIgnoreCase);
 
             if (scope == SearchScope.Item)
-                return matchesItem;
+                return setItemSearchText.TryGetValue(set.Id, out var items) &&
+                       items.Contains(search, StringComparison.OrdinalIgnoreCase);
 
-            return matchesSetName || matchesItem;
-        }
-
-        private bool MatchesItemSearch(OutfitSet set, string search)
-        {
-            if (!string.IsNullOrEmpty(set.ShirtId))
-            {
-                string? name = GetItemDisplayName(set.ShirtId, "(S)");
-                if (name != null && name.Contains(search, StringComparison.OrdinalIgnoreCase))
-                    return true;
-            }
-
-            if (!string.IsNullOrEmpty(set.PantsId))
-            {
-                string? name = GetItemDisplayName(set.PantsId, "(P)");
-                if (name != null && name.Contains(search, StringComparison.OrdinalIgnoreCase))
-                    return true;
-            }
-
-            if (!string.IsNullOrEmpty(set.HatId))
-            {
-                string? name = GetItemDisplayName(set.HatId, "(H)");
-                if (name != null && name.Contains(search, StringComparison.OrdinalIgnoreCase))
-                    return true;
-            }
-
-            return false;
+            return (setSearchText.TryGetValue(set.Id, out var n) &&
+                    n.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
+                   (setItemSearchText.TryGetValue(set.Id, out var it) &&
+                    it.Contains(search, StringComparison.OrdinalIgnoreCase));
         }
 
         public OutfitSet? GetById(string id)
@@ -215,6 +201,7 @@ namespace FittingRoom.Services
             byId[set.Id] = set;
             ValidateSet(set);
             UpdateIndexesForSet(set);
+            InvalidateFilterCache();
         }
 
         public void Update(OutfitSet set)
@@ -226,6 +213,7 @@ namespace FittingRoom.Services
             byId[set.Id] = set;
             ValidateSet(set);
             UpdateIndexesForSet(set);
+            InvalidateFilterCache();
 
             if (set.IsGlobal)
             {
@@ -254,6 +242,7 @@ namespace FittingRoom.Services
 
             RemoveFromIndexes(id);
             byId.Remove(id);
+            InvalidateFilterCache();
 
             if (set.IsGlobal)
             {
@@ -269,7 +258,11 @@ namespace FittingRoom.Services
 
         public List<string> GetAllTags()
         {
-            return globalData.Tags.OrderBy(t => t, StringComparer.OrdinalIgnoreCase).ToList();
+            if (cachedAllTags != null)
+                return cachedAllTags;
+
+            cachedAllTags = globalData.Tags.OrderBy(t => t, StringComparer.OrdinalIgnoreCase).ToList();
+            return cachedAllTags;
         }
 
         public void AddTag(string tag)
@@ -282,6 +275,7 @@ namespace FittingRoom.Services
                 return;
 
             globalData.Tags.Add(trimmed);
+            cachedAllTags = null;
             PersistGlobalData();
         }
 
@@ -306,6 +300,8 @@ namespace FittingRoom.Services
                 byTag.Remove(actualTag);
             }
 
+            cachedAllTags = null;
+            InvalidateFilterCache();
             PersistGlobalData();
             return true;
         }
@@ -369,20 +365,14 @@ namespace FittingRoom.Services
 
         public void ApplySet(OutfitSet set)
         {
-            if (!string.IsNullOrEmpty(set.ShirtId) && IsItemValid(set.ShirtId, "(S)"))
-            {
-                OutfitState.ApplyShirt(set.ShirtId);
-            }
+            if (ItemIdHelper.IsNoShirtId(set.ShirtId) || IsItemValid(set.ShirtId, "(S)"))
+                OutfitState.ApplyShirt(set.ShirtId ?? "");
 
-            if (!string.IsNullOrEmpty(set.PantsId) && IsItemValid(set.PantsId, "(P)"))
-            {
-                OutfitState.ApplyPants(set.PantsId);
-            }
+            if (ItemIdHelper.IsNoPantsId(set.PantsId) || IsItemValid(set.PantsId, "(P)"))
+                OutfitState.ApplyPants(set.PantsId ?? "");
 
-            if (!string.IsNullOrEmpty(set.HatId) && IsItemValid(set.HatId, "(H)"))
-            {
-                OutfitState.ApplyHat(set.HatId);
-            }
+            if (ItemIdHelper.IsNoHatId(set.HatId) || IsItemValid(set.HatId, "(H)"))
+                OutfitState.ApplyHat(set.HatId ?? "");
         }
 
         private OutfitSetGlobalData CreateDefaultGlobalData()
@@ -399,6 +389,12 @@ namespace FittingRoom.Services
             return data;
         }
 
+        private void InvalidateFilterCache()
+        {
+            cachedFilteredSets = null;
+            cachedFilterKey = null;
+        }
+
         private void RebuildIndexes()
         {
             byId.Clear();
@@ -407,6 +403,10 @@ namespace FittingRoom.Services
             globalIds.Clear();
             localIds.Clear();
             validIds.Clear();
+            setSearchText.Clear();
+            setItemSearchText.Clear();
+            InvalidateFilterCache();
+            cachedAllTags = null;
 
             foreach (var set in globalData.Sets)
             {
@@ -445,6 +445,16 @@ namespace FittingRoom.Services
                 }
                 ids.Add(set.Id);
             }
+
+            setSearchText[set.Id] = set.Name;
+            var parts = new List<string>(3);
+            if (!string.IsNullOrEmpty(set.ShirtId))
+                parts.Add(GetItemDisplayName(set.ShirtId, "(S)") ?? "");
+            if (!string.IsNullOrEmpty(set.PantsId))
+                parts.Add(GetItemDisplayName(set.PantsId, "(P)") ?? "");
+            if (!string.IsNullOrEmpty(set.HatId))
+                parts.Add(GetItemDisplayName(set.HatId, "(H)") ?? "");
+            setItemSearchText[set.Id] = string.Join(" ", parts);
         }
 
         private void RemoveFromIndexes(string id)
@@ -453,6 +463,8 @@ namespace FittingRoom.Services
             globalIds.Remove(id);
             localIds.Remove(id);
             validIds.Remove(id);
+            setSearchText.Remove(id);
+            setItemSearchText.Remove(id);
 
             foreach (var tagSet in byTag.Values)
             {
@@ -470,9 +482,9 @@ namespace FittingRoom.Services
 
         private void ValidateSet(OutfitSet set)
         {
-            bool shirtValid = string.IsNullOrEmpty(set.ShirtId) || IsItemValid(set.ShirtId, "(S)");
-            bool pantsValid = string.IsNullOrEmpty(set.PantsId) || IsItemValid(set.PantsId, "(P)");
-            bool hatValid = string.IsNullOrEmpty(set.HatId) || IsItemValid(set.HatId, "(H)");
+            bool shirtValid = ItemIdHelper.IsNoShirtId(set.ShirtId) || IsItemValid(set.ShirtId, "(S)");
+            bool pantsValid = ItemIdHelper.IsNoPantsId(set.PantsId) || IsItemValid(set.PantsId, "(P)");
+            bool hatValid = ItemIdHelper.IsNoHatId(set.HatId) || IsItemValid(set.HatId, "(H)");
 
             set.IsValid = shirtValid && pantsValid && hatValid;
 

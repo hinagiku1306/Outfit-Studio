@@ -40,25 +40,24 @@ namespace FittingRoom
         public static string LookupPants { get; private set; } = "";
         public static string LookupHat { get; private set; } = "";
 
-        // Templates overlay
-        public static string TemplatesTitle { get; private set; } = "";
-        public static string TemplatesFilter { get; private set; } = "";
-        public static string TemplatesSort { get; private set; } = "";
-        public static string TemplatesSearch { get; private set; } = "";
-        public static string TemplatesName { get; private set; } = "";
-        public static string TemplatesTags { get; private set; } = "";
-        public static string TemplatesShirt { get; private set; } = "";
-        public static string TemplatesPants { get; private set; } = "";
-        public static string TemplatesHat { get; private set; } = "";
-        public static string TemplatesButtonLoad { get; private set; } = "";
-        public static string TemplatesButtonApplyClose { get; private set; } = "";
-        public static string TemplatesButtonNew { get; private set; } = "";
-        public static string TemplatesButtonDuplicate { get; private set; } = "";
-        public static string TemplatesButtonRename { get; private set; } = "";
-        public static string TemplatesButtonDelete { get; private set; } = "";
-        public static string TemplatesButtonFavorite { get; private set; } = "";
-        public static string TemplatesDetailsLabel { get; private set; } = "";
-        public static string TemplatesPreviewLabel { get; private set; } = "";
+        // Wardrobe overlay
+        public static string WardrobeTitle { get; private set; } = "";
+        public static string WardrobeFilter { get; private set; } = "";
+        public static string WardrobeSort { get; private set; } = "";
+        public static string WardrobeSearch { get; private set; } = "";
+        public static string WardrobeTags { get; private set; } = "";
+        public static string WardrobeShirt { get; private set; } = "";
+        public static string WardrobePants { get; private set; } = "";
+        public static string WardrobeHat { get; private set; } = "";
+        public static string WardrobeButtonLoad { get; private set; } = "";
+        public static string WardrobeButtonApplyClose { get; private set; } = "";
+        public static string WardrobeButtonNew { get; private set; } = "";
+        public static string WardrobeButtonDuplicate { get; private set; } = "";
+        public static string WardrobeButtonEdit { get; private set; } = "";
+        public static string WardrobeButtonDelete { get; private set; } = "";
+        public static string WardrobeButtonFavorite { get; private set; } = "";
+        public static string WardrobeDetailsLabel { get; private set; } = "";
+        public static string WardrobePreviewLabel { get; private set; } = "";
 
         // Save Set overlay
         public static string SaveSetTitle { get; private set; } = "";
@@ -98,28 +97,33 @@ namespace FittingRoom
         // Predefined tag translations
         private static Dictionary<string, string> predefinedTagTranslations = new(StringComparer.OrdinalIgnoreCase);
 
-        // Templates overlay - additional
-        public static string TemplatesNoSets { get; private set; } = "";
-        public static string TemplatesSelectToView { get; private set; } = "";
-        public static string TemplatesScopeGlobal { get; private set; } = "";
-        public static string TemplatesScopeLocal { get; private set; } = "";
-        public static string TemplatesItemNone { get; private set; } = "";
-        public static string TemplatesItemMissing { get; private set; } = "";
-        public static string TemplatesEnterName { get; private set; } = "";
+        // Wardrobe overlay - additional
+        public static string WardrobeNoSets { get; private set; } = "";
+        public static string WardrobeSelectToView { get; private set; } = "";
+        public static string WardrobeScopeGlobal { get; private set; } = "";
+        public static string WardrobeScopeLocal { get; private set; } = "";
+        public static string WardrobeItemNone { get; private set; } = "";
+        public static string WardrobeItemMissing { get; private set; } = "";
+        public static string WardrobeEnterName { get; private set; } = "";
 
-        // Templates filter bar
-        public static string TemplatesFilterSearchSet { get; private set; } = "";
-        public static string TemplatesFilterSearchItem { get; private set; } = "";
-        public static string TemplatesFilterSearchAll { get; private set; } = "";
-        public static string TemplatesFilterTags { get; private set; } = "";
-        public static string TemplatesFilterFilter { get; private set; } = "";
-        public static string TemplatesFilterMatchAll { get; private set; } = "";
-        public static string TemplatesFilterShowInvalid { get; private set; } = "";
-        public static string TemplatesFilterFavorites { get; private set; } = "";
-        public static string TemplatesFilterGlobal { get; private set; } = "";
-        public static string TemplatesFilterLocal { get; private set; } = "";
-        public static string TemplatesFilterNoResults { get; private set; } = "";
-        public static string TemplatesFilterClearSearch { get; private set; } = "";
+        // Wardrobe filter bar
+        public static string WardrobeFilterSearchSet { get; private set; } = "";
+        public static string WardrobeFilterSearchItem { get; private set; } = "";
+        public static string WardrobeFilterSearchAll { get; private set; } = "";
+        public static string WardrobeFilterTags { get; private set; } = "";
+        public static string WardrobeFilterFilter { get; private set; } = "";
+        public static string WardrobeFilterMatchAll { get; private set; } = "";
+        public static string WardrobeFilterShowInvalid { get; private set; } = "";
+        public static string WardrobeFilterFavorites { get; private set; } = "";
+        public static string WardrobeFilterGlobal { get; private set; } = "";
+        public static string WardrobeFilterLocal { get; private set; } = "";
+        public static string WardrobeFilterNoResults { get; private set; } = "";
+        public static string WardrobeFilterClearSearch { get; private set; } = "";
+
+        // Delete confirmation
+        public static string DeleteConfirmQuestion { get; private set; } = "";
+        public static string DeleteConfirmYes { get; private set; } = "";
+        public static string DeleteConfirmNo { get; private set; } = "";
 
         // Config (optional - only needed if GMCM is used)
         public static string ConfigToggleMenuKeyName { get; private set; } = "";
@@ -134,6 +138,10 @@ namespace FittingRoom
         public static string ConfigShowFilterTooltipTooltip { get; private set; } = "";
         public static string ConfigAutoOpenTagMenuName { get; private set; } = "";
         public static string ConfigAutoOpenTagMenuTooltip { get; private set; } = "";
+        public static string ConfigResetShowInvalidOnOpenName { get; private set; } = "";
+        public static string ConfigResetShowInvalidOnOpenTooltip { get; private set; } = "";
+        public static string ConfigDefaultSearchScopeName { get; private set; } = "";
+        public static string ConfigDefaultSearchScopeTooltip { get; private set; } = "";
         public static string ConfigGridLayoutSection { get; private set; } = "";
         public static string ConfigVisibleRowsName { get; private set; } = "";
         public static string ConfigVisibleRowsTooltip { get; private set; } = "";
@@ -174,24 +182,23 @@ namespace FittingRoom
             LookupPants = i18n.Get("menu.lookup.pants");
             LookupHat = i18n.Get("menu.lookup.hat");
 
-            TemplatesTitle = i18n.Get("templates.title");
-            TemplatesFilter = i18n.Get("templates.filter");
-            TemplatesSort = i18n.Get("templates.sort");
-            TemplatesSearch = i18n.Get("templates.search");
-            TemplatesName = i18n.Get("templates.name");
-            TemplatesTags = i18n.Get("templates.tags");
-            TemplatesShirt = i18n.Get("templates.shirt");
-            TemplatesPants = i18n.Get("templates.pants");
-            TemplatesHat = i18n.Get("templates.hat");
-            TemplatesButtonLoad = i18n.Get("templates.button.load");
-            TemplatesButtonApplyClose = i18n.Get("templates.button.apply-close");
-            TemplatesButtonNew = i18n.Get("templates.button.new");
-            TemplatesButtonDuplicate = i18n.Get("templates.button.duplicate");
-            TemplatesButtonRename = i18n.Get("templates.button.rename");
-            TemplatesButtonDelete = i18n.Get("templates.button.delete");
-            TemplatesButtonFavorite = i18n.Get("templates.button.favorite");
-            TemplatesDetailsLabel = i18n.Get("templates.details-label");
-            TemplatesPreviewLabel = i18n.Get("templates.preview-label");
+            WardrobeTitle = i18n.Get("wardrobe.title");
+            WardrobeFilter = i18n.Get("wardrobe.filter");
+            WardrobeSort = i18n.Get("wardrobe.sort");
+            WardrobeSearch = i18n.Get("wardrobe.search");
+            WardrobeTags = i18n.Get("wardrobe.tags");
+            WardrobeShirt = i18n.Get("wardrobe.shirt");
+            WardrobePants = i18n.Get("wardrobe.pants");
+            WardrobeHat = i18n.Get("wardrobe.hat");
+            WardrobeButtonLoad = i18n.Get("wardrobe.button.load");
+            WardrobeButtonApplyClose = i18n.Get("wardrobe.button.apply-close");
+            WardrobeButtonNew = i18n.Get("wardrobe.button.new");
+            WardrobeButtonDuplicate = i18n.Get("wardrobe.button.duplicate");
+            WardrobeButtonEdit = i18n.Get("wardrobe.button.edit");
+            WardrobeButtonDelete = i18n.Get("wardrobe.button.delete");
+            WardrobeButtonFavorite = i18n.Get("wardrobe.button.favorite");
+            WardrobeDetailsLabel = i18n.Get("wardrobe.details-label");
+            WardrobePreviewLabel = i18n.Get("wardrobe.preview-label");
 
             SaveSetTitle = i18n.Get("saveset.title");
             SaveSetNameLabel = i18n.Get("saveset.name-label");
@@ -228,26 +235,30 @@ namespace FittingRoom
 
             InitializePredefinedTagTranslations(i18n);
 
-            TemplatesNoSets = i18n.Get("templates.no-sets");
-            TemplatesSelectToView = i18n.Get("templates.select-to-view");
-            TemplatesScopeGlobal = i18n.Get("templates.scope.global");
-            TemplatesScopeLocal = i18n.Get("templates.scope.local");
-            TemplatesItemNone = i18n.Get("templates.item.none");
-            TemplatesItemMissing = i18n.Get("templates.item.missing");
-            TemplatesEnterName = i18n.Get("templates.enter-name");
+            WardrobeNoSets = i18n.Get("wardrobe.no-sets");
+            WardrobeSelectToView = i18n.Get("wardrobe.select-to-view");
+            WardrobeScopeGlobal = i18n.Get("wardrobe.scope.global");
+            WardrobeScopeLocal = i18n.Get("wardrobe.scope.local");
+            WardrobeItemNone = i18n.Get("wardrobe.item.none");
+            WardrobeItemMissing = i18n.Get("wardrobe.item.missing");
+            WardrobeEnterName = i18n.Get("wardrobe.enter-name");
 
-            TemplatesFilterSearchSet = i18n.Get("templates.filter.search.set");
-            TemplatesFilterSearchItem = i18n.Get("templates.filter.search.item");
-            TemplatesFilterSearchAll = i18n.Get("templates.filter.search.all");
-            TemplatesFilterTags = i18n.Get("templates.filter.tags");
-            TemplatesFilterFilter = i18n.Get("templates.filter.filter");
-            TemplatesFilterMatchAll = i18n.Get("templates.filter.matchAll");
-            TemplatesFilterShowInvalid = i18n.Get("templates.filter.showInvalid");
-            TemplatesFilterFavorites = i18n.Get("templates.filter.favorites");
-            TemplatesFilterGlobal = i18n.Get("templates.filter.global");
-            TemplatesFilterLocal = i18n.Get("templates.filter.local");
-            TemplatesFilterNoResults = i18n.Get("templates.filter.noResults");
-            TemplatesFilterClearSearch = i18n.Get("templates.filter.clearSearch");
+            WardrobeFilterSearchSet = i18n.Get("wardrobe.filter.search.set");
+            WardrobeFilterSearchItem = i18n.Get("wardrobe.filter.search.item");
+            WardrobeFilterSearchAll = i18n.Get("wardrobe.filter.search.all");
+            WardrobeFilterTags = i18n.Get("wardrobe.filter.tags");
+            WardrobeFilterFilter = i18n.Get("wardrobe.filter.filter");
+            WardrobeFilterMatchAll = i18n.Get("wardrobe.filter.matchAll");
+            WardrobeFilterShowInvalid = i18n.Get("wardrobe.filter.showInvalid");
+            WardrobeFilterFavorites = i18n.Get("wardrobe.filter.favorites");
+            WardrobeFilterGlobal = i18n.Get("wardrobe.filter.global");
+            WardrobeFilterLocal = i18n.Get("wardrobe.filter.local");
+            WardrobeFilterNoResults = i18n.Get("wardrobe.filter.noResults");
+            WardrobeFilterClearSearch = i18n.Get("wardrobe.filter.clearSearch");
+
+            DeleteConfirmQuestion = i18n.Get("wardrobe.delete.confirm-question");
+            DeleteConfirmYes = i18n.Get("wardrobe.delete.yes");
+            DeleteConfirmNo = i18n.Get("wardrobe.delete.no");
 
             ConfigToggleMenuKeyName = i18n.Get("config.toggle-menu-key.name");
             ConfigToggleMenuKeyTooltip = i18n.Get("config.toggle-menu-key.tooltip");
@@ -261,6 +272,10 @@ namespace FittingRoom
             ConfigShowFilterTooltipTooltip = i18n.Get("config.show-filter-tooltip.tooltip");
             ConfigAutoOpenTagMenuName = i18n.Get("config.auto-open-tag-menu.name");
             ConfigAutoOpenTagMenuTooltip = i18n.Get("config.auto-open-tag-menu.tooltip");
+            ConfigResetShowInvalidOnOpenName = i18n.Get("config.reset-show-invalid-on-open.name");
+            ConfigResetShowInvalidOnOpenTooltip = i18n.Get("config.reset-show-invalid-on-open.tooltip");
+            ConfigDefaultSearchScopeName = i18n.Get("config.default-search-scope.name");
+            ConfigDefaultSearchScopeTooltip = i18n.Get("config.default-search-scope.tooltip");
             ConfigGridLayoutSection = i18n.Get("config.grid-layout.section");
             ConfigVisibleRowsName = i18n.Get("config.visible-rows.name");
             ConfigVisibleRowsTooltip = i18n.Get("config.visible-rows.tooltip");

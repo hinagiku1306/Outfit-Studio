@@ -68,10 +68,17 @@ namespace FittingRoom
         }
 
         /// <summary>Updates search state and detects text changes.</summary>
-        public void Update()
+        public void Update(bool allowFocus = true)
         {
-            searchBox.Update();
-            searchBox.Selected = true; // Keep always focused for typing
+            if (allowFocus)
+            {
+                searchBox.Update();
+                searchBox.Selected = true;
+            }
+            else
+            {
+                searchBox.Selected = false;
+            }
 
             if (searchBox.Text != lastSearchText)
             {

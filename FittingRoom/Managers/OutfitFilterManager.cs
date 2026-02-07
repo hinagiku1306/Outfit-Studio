@@ -15,7 +15,7 @@ namespace FittingRoom
         private readonly ModDetectionService detectionService;
         private readonly FilterCacheService cacheService;
 
-        /// <summary>
+        /// <summary>Pt
         /// Initialize the filter manager.
         public OutfitFilterManager(IMonitor monitor, IModHelper? modHelper = null)
         {

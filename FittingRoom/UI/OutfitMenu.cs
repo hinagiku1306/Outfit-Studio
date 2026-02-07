@@ -28,10 +28,16 @@ namespace FittingRoom
         private readonly OutfitSetStore outfitSetStore;
 
         private bool showItemInfo = false;
-        private TemplatesOverlay? templatesOverlay = null;
+        private WardrobeOverlay? wardrobeOverlay = null;
 
         public bool IsOverlayBlocking { get; set; } = false;
         public bool ShowItemInfo => showItemInfo;
+
+        public void NotifyOutfitApplied()
+        {
+            state.SaveAppliedOutfit();
+            uiBuilder.MarkPreviewDirty();
+        }
 
         /// <summary>
         /// Checks if the item info toggle keybind was pressed and toggles if so.
@@ -81,8 +87,9 @@ namespace FittingRoom
                 getCurrentPantsIds: () => itemListProvider.GetCurrentPantsIds(),
                 getCurrentHatIds: () => itemListProvider.GetCurrentHatIds(),
                 getCurrentAllItems: () => itemListProvider.GetCurrentAllItems(),
-                getTemplatesOverlay: () => templatesOverlay,
-                setTemplatesOverlay: overlay => templatesOverlay = overlay,
+                getWardrobeOverlay: () => wardrobeOverlay,
+                setWardrobeOverlay: overlay => wardrobeOverlay = overlay,
+                getParentMenu: () => this,
                 outfitSetStore: outfitSetStore,
                 showSavedMessage: () => uiBuilder.ShowSavedMessage()
             );
@@ -151,6 +158,13 @@ namespace FittingRoom
         public override void receiveLeftClick(int x, int y, bool playSound = true)
         {
             base.receiveLeftClick(x, y, playSound);
+
+            if (wardrobeOverlay == null && !isWithinBounds(x, y))
+            {
+                RevertAndClose();
+                return;
+            }
+
             inputHandler.HandleLeftClick(x, y, playSound);
         }
 
@@ -171,9 +185,17 @@ namespace FittingRoom
         public override void update(GameTime time)
         {
             base.update(time);
+
+            if (wardrobeOverlay != null)
+            {
+                wardrobeOverlay.update(time);
+                return;
+            }
+
             uiBuilder.Update((float)time.ElapsedGameTime.TotalMilliseconds);
 
-            searchManager.Update();
+            bool hasOverlay = IsOverlayBlocking;
+            searchManager.Update(allowFocus: !hasOverlay);
 
             if (searchManager.HasSearchTextChanged)
             {
@@ -218,7 +240,7 @@ namespace FittingRoom
 
         public override void draw(SpriteBatch b)
         {
-            bool hasOverlay = templatesOverlay != null || IsOverlayBlocking;
+            bool hasOverlay = wardrobeOverlay != null || IsOverlayBlocking;
 
             // Draw semi-transparent background overlay
             OutfitUIBuilder.DrawOverlay(b);
@@ -381,10 +403,10 @@ namespace FittingRoom
                 }
             }
 
-            // Draw templates overlay if open
-            if (templatesOverlay != null)
+            // Draw wardrobe overlay if open
+            if (wardrobeOverlay != null)
             {
-                templatesOverlay.draw(b);
+                wardrobeOverlay.draw(b);
             }
 
             // Only draw cursor if no overlay (overlays draw their own cursor)

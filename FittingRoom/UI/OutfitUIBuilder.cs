@@ -41,7 +41,7 @@ namespace FittingRoom
 
         // Left panel buttons
         public ClickableComponent SaveButton { get; private set; } = null!;
-        public ClickableComponent TemplatesButton { get; private set; } = null!;
+        public ClickableComponent WardrobeButton { get; private set; } = null!;
 
         // Direction preview arrows
         public ClickableTextureComponent LeftArrowButton { get; private set; } = null!;
@@ -258,21 +258,21 @@ namespace FittingRoom
                 "Lookup"
             );
 
-            // Save/Templates buttons below arrows (centered in left panel)
+            // Save/Wardrobe buttons below arrows (centered in left panel)
             int newOutfitButtonWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ButtonNewOutfit);
             int outfitsButtonWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ButtonOutfits);
             int leftButtonWidth = Math.Max(newOutfitButtonWidth, outfitsButtonWidth);
 
             int leftButtonsStartX = centerX - leftButtonWidth / 2;
             int saveButtonY = arrowY + arrowHeight + GapBetweenPortraitAndButtons;
-            int templatesButtonY = saveButtonY + TabAndButtonHeight + ElementGap;
+            int wardrobeButtonY = saveButtonY + TabAndButtonHeight + ElementGap;
 
             SaveButton = new ClickableComponent(
                 new Rectangle(leftButtonsStartX, saveButtonY, leftButtonWidth, TabAndButtonHeight),
                 TranslationCache.ButtonNewOutfit
             );
-            TemplatesButton = new ClickableComponent(
-                new Rectangle(leftButtonsStartX, templatesButtonY, leftButtonWidth, TabAndButtonHeight),
+            WardrobeButton = new ClickableComponent(
+                new Rectangle(leftButtonsStartX, wardrobeButtonY, leftButtonWidth, TabAndButtonHeight),
                 TranslationCache.ButtonOutfits
             );
         }
@@ -396,7 +396,7 @@ namespace FittingRoom
         /// </summary>
         public void DrawPlayerPreview(SpriteBatch b)
         {
-            b.Draw((Game1.timeOfDay >= NightTimeStartHour) ? Game1.nightbg : Game1.daybg, PortraitBox, Color.White);
+            b.Draw(Game1.daybg, PortraitBox, Color.White);
 
             InitializeFarmerRenderResources();
 
@@ -429,10 +429,6 @@ namespace FittingRoom
             FarmerRenderer.isDrawingForUI = true;
             DrawFarmerToRenderTarget(sourceRect, Color.White);
 
-            if (Game1.timeOfDay >= NightTimeStartHour)
-            {
-                DrawFarmerToRenderTarget(sourceRect, Color.DarkBlue * 0.3f);
-            }
             FarmerRenderer.isDrawingForUI = false;
 
             farmerSpriteBatch.End();
@@ -510,7 +506,7 @@ namespace FittingRoom
             UIHelpers.DrawTextureButton(b, RightArrowButton);
 
             UIHelpers.DrawTextButton(b, SaveButton, TranslationCache.ButtonNewOutfit);
-            UIHelpers.DrawTextButton(b, TemplatesButton, TranslationCache.ButtonOutfits);
+            UIHelpers.DrawTextButton(b, WardrobeButton, TranslationCache.ButtonOutfits);
         }
 
         /// <summary>
@@ -626,10 +622,9 @@ namespace FittingRoom
                 ModFilterDropdown.bounds,
                 displayText,
                 isOpen,
-                showArrow: false,
                 clearButton: FilterClearButton,
                 hasValue: hasFilter,
-                drawClearButton: DrawClearButton
+                drawClearButton: UIHelpers.DrawClearButton
             );
         }
 
@@ -644,36 +639,8 @@ namespace FittingRoom
 
             if (hasText && SearchClearButton != null)
             {
-                DrawClearButton(b, SearchClearButton);
+                UIHelpers.DrawClearButton(b, SearchClearButton);
             }
-        }
-
-        /// <summary>Draws a small X clear button.</summary>
-        private void DrawClearButton(SpriteBatch b, ClickableComponent button)
-        {
-            int mouseX = Game1.getMouseX();
-            int mouseY = Game1.getMouseY();
-            bool isHovered = button.containsPoint(mouseX, mouseY);
-
-            Rectangle sourceRect = new Rectangle(337, 494, 12, 12);
-            float scale = isHovered ? 2.2f : 2f;
-            Vector2 center = new Vector2(
-                button.bounds.X + button.bounds.Width / 2,
-                button.bounds.Y + button.bounds.Height / 2
-            );
-            Vector2 origin = new Vector2(6, 6);
-
-            b.Draw(
-                Game1.mouseCursors,
-                center,
-                sourceRect,
-                Color.White,
-                0f,
-                origin,
-                scale,
-                SpriteEffects.None,
-                1f
-            );
         }
 
         /// <summary>Draws the lookup icon on the character preview.</summary>

@@ -255,7 +255,7 @@ namespace FittingRoom
 
         public void DrawPreviewBackground(SpriteBatch b)
         {
-            b.Draw((Game1.timeOfDay >= NightTimeStartHour) ? Game1.nightbg : Game1.daybg, PreviewBox, Color.White);
+            b.Draw(Game1.daybg, PreviewBox, Color.White);
         }
 
         public void DrawItemSlot(SpriteBatch b, Rectangle slot, bool isIncluded, bool hasItem, int mouseX, int mouseY)

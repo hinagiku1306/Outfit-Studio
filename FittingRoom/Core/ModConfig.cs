@@ -12,6 +12,8 @@ namespace FittingRoom
         public bool ResetSearchOnTabSwitch { get; set; } = false;
         public bool ShowFilterTooltip { get; set; } = true;
         public bool AutoOpenTagMenu { get; set; } = true;
+        public bool ResetShowInvalidOnOpen { get; set; } = false;
+        public string DefaultSearchScope { get; set; } = "Set";
 
         // Grid layout configuration
         public int VisibleRows { get; set; } = OutfitLayoutConstants.DefaultVisibleRows;

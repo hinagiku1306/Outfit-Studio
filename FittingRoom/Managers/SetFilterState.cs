@@ -12,20 +12,14 @@ namespace FittingRoom.Managers
 
     public class SetFilterState
     {
-        private const int SearchDebounceMs = 300;
-
         public SearchScope SearchScope { get; set; } = SearchScope.Set;
-        public string SearchText { get; private set; } = "";
+        public string SearchText { get; set; } = "";
         public HashSet<string> SelectedTags { get; } = new(StringComparer.OrdinalIgnoreCase);
         public bool MatchAllTags { get; set; }
         public bool FavoritesOnly { get; set; }
         public bool ShowGlobal { get; set; } = true;
         public bool ShowLocal { get; set; } = true;
         public bool ShowInvalid { get; set; } = true;
-
-        private string pendingSearchText = "";
-        private double lastSearchChangeTime;
-        private bool searchPending;
 
         public bool HasActiveFilters =>
             !string.IsNullOrEmpty(SearchText) ||
@@ -34,39 +28,6 @@ namespace FittingRoom.Managers
             !ShowGlobal ||
             !ShowLocal ||
             !ShowInvalid;
-
-        public void SetSearchText(string text, double currentTime)
-        {
-            pendingSearchText = text ?? "";
-            lastSearchChangeTime = currentTime;
-            searchPending = true;
-        }
-
-        public bool UpdateSearchDebounce(double currentTime)
-        {
-            if (!searchPending)
-                return false;
-
-            if (currentTime - lastSearchChangeTime >= SearchDebounceMs)
-            {
-                SearchText = pendingSearchText;
-                searchPending = false;
-                return true;
-            }
-
-            return false;
-        }
-
-        public void ForceApplySearch()
-        {
-            if (searchPending)
-            {
-                SearchText = pendingSearchText;
-                searchPending = false;
-            }
-        }
-
-        public string GetPendingSearchText() => pendingSearchText;
 
         public void ToggleTag(string tag)
         {
@@ -81,12 +42,18 @@ namespace FittingRoom.Managers
             SelectedTags.Clear();
         }
 
+        public string ToCacheKey()
+        {
+            string tags = SelectedTags.Count > 0
+                ? string.Join(",", SelectedTags.OrderBy(t => t, StringComparer.OrdinalIgnoreCase))
+                : "";
+            return $"{(int)SearchScope}|{SearchText}|{tags}|{MatchAllTags}|{FavoritesOnly}|{ShowGlobal}|{ShowLocal}|{ShowInvalid}";
+        }
+
         public void Reset()
         {
             SearchScope = SearchScope.Set;
             SearchText = "";
-            pendingSearchText = "";
-            searchPending = false;
             SelectedTags.Clear();
             MatchAllTags = false;
             FavoritesOnly = false;
