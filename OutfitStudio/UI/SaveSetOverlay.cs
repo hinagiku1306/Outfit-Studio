@@ -676,9 +676,6 @@ namespace OutfitStudio
 
         private void DrawItemTooltips(SpriteBatch b, int mouseX, int mouseY)
         {
-            if (tagPickerManager.IsOpen)
-                return;
-
             // Respect the ShowItemInfo config from parent menu
             if (parentMenu is OutfitMenu outfitMenu && !outfitMenu.ShowItemInfo)
                 return;

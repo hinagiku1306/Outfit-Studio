@@ -15,7 +15,7 @@ namespace OutfitStudio
         public bool AutoOpenTagMenu { get; set; } = true;
         public bool AutoFocusSearchBar { get; set; } = true;
         public bool ArrowKeyScrolling { get; set; } = true;
-        public bool AutoOpenDyeColorMenu { get; set; } = true;
+        public bool AutoOpenDyeColorMenu { get; set; } = false;
         public bool ResetMatchAllOnOpen { get; set; } = false;
         public bool ResetShowInvalidOnOpen { get; set; } = false;
         public string DefaultSearchScope { get; set; } = "Set";

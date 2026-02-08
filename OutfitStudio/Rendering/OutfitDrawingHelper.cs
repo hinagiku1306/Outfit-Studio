@@ -152,13 +152,13 @@ namespace OutfitStudio
                 case OutfitCategoryManager.Category.Shirts:
                     var shirt = Game1.player.shirtItem.Value;
                     if (shirt == null)
-                        return TranslationCache.ItemNoShirt;
+                        return TranslationCache.CommonNone;
                     return shirt.DisplayName ?? OutfitState.GetClothingId(shirt);
 
                 case OutfitCategoryManager.Category.Pants:
                     var pants = Game1.player.pantsItem.Value;
                     if (pants == null)
-                        return TranslationCache.ItemNoPants;
+                        return TranslationCache.CommonNone;
                     return pants.DisplayName ?? OutfitState.GetClothingId(pants);
 
                 case OutfitCategoryManager.Category.Hats:

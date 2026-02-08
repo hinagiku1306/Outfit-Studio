@@ -225,7 +225,7 @@ namespace OutfitStudio
             );
             barOffsetX = maxLabelWidth + 10;
 
-            int resetButtonWidth = UIHelpers.CalculateButtonWidth(TranslationCache.DyeColorReset);
+            int resetButtonWidth = UIHelpers.CalculateButtonWidth(TranslationCache.CommonReset);
             int resetButtonHeight = TabAndButtonHeight;
 
             int titleToSliderGap = 10;
@@ -302,15 +302,15 @@ namespace OutfitStudio
             // Reset button (no hover when disabled)
             if (IsDyeable)
             {
-                UIHelpers.DrawTextButton(b, resetButton, TranslationCache.DyeColorReset);
+                UIHelpers.DrawTextButton(b, resetButton, TranslationCache.CommonReset);
             }
             else
             {
                 UIHelpers.DrawTextureBox(b, resetButton.bounds.X, resetButton.bounds.Y,
                     resetButton.bounds.Width, resetButton.bounds.Height, boxTint);
-                Vector2 textSize = Game1.smallFont.MeasureString(TranslationCache.DyeColorReset);
+                Vector2 textSize = Game1.smallFont.MeasureString(TranslationCache.CommonReset);
                 Vector2 textPos = UIHelpers.GetVisualCenter(resetButton.bounds, textSize);
-                Utility.drawTextWithShadow(b, TranslationCache.DyeColorReset, Game1.smallFont, textPos, textTint);
+                Utility.drawTextWithShadow(b, TranslationCache.CommonReset, Game1.smallFont, textPos, textTint);
             }
 
             // Tooltip

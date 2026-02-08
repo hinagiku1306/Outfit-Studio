@@ -270,8 +270,8 @@ namespace OutfitStudio
             rowTooltips = tooltipsList.ToArray();
 
             int buttonY = ButtonBoxBounds.Y + (ConfigButtonBoxHeight - TabAndButtonHeight) / 2;
-            int saveWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ConfigSave);
-            int cancelWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ConfigCancel);
+            int saveWidth = UIHelpers.CalculateButtonWidth(TranslationCache.CommonSave);
+            int cancelWidth = UIHelpers.CalculateButtonWidth(TranslationCache.CommonCancel);
             int totalBtnWidth = saveWidth + cancelWidth + ConfigBottomButtonGap;
             int btnStartX = X + (Width - totalBtnWidth) / 2;
 
@@ -429,8 +429,8 @@ namespace OutfitStudio
 
         public void DrawButtons(SpriteBatch b)
         {
-            UIHelpers.DrawTextButton(b, SaveButton, TranslationCache.ConfigSave);
-            UIHelpers.DrawTextButton(b, CancelButton, TranslationCache.ConfigCancel);
+            UIHelpers.DrawTextButton(b, SaveButton, TranslationCache.CommonSave);
+            UIHelpers.DrawTextButton(b, CancelButton, TranslationCache.CommonCancel);
         }
 
         public void DrawCloseButton(SpriteBatch b)

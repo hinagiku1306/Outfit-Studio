@@ -166,7 +166,7 @@ namespace OutfitStudio
             currentY += SaveSetSectionPadding * 2;
 
             int iconSize = (int)(8 * FavoriteIconScale);
-            int favoriteWidth = iconSize + FavoriteIconGap + (int)Game1.smallFont.MeasureString(TranslationCache.SaveSetFavorite).X;
+            int favoriteWidth = iconSize + FavoriteIconGap + (int)Game1.smallFont.MeasureString(TranslationCache.CommonFavorite).X;
             favoriteRowX = contentX + CheckboxRowPadding;
 
             FavoriteCheckbox = new ClickableComponent(
@@ -188,8 +188,8 @@ namespace OutfitStudio
             currentY += LocalOnlySectionHeight;
             currentY += SaveSetSectionPadding * 2;
 
-            int saveButtonWidth = UIHelpers.CalculateButtonWidth(TranslationCache.SaveSetButtonSave);
-            int cancelButtonWidth = UIHelpers.CalculateButtonWidth(TranslationCache.SaveSetButtonCancel);
+            int saveButtonWidth = UIHelpers.CalculateButtonWidth(TranslationCache.CommonSave);
+            int cancelButtonWidth = UIHelpers.CalculateButtonWidth(TranslationCache.CommonCancel);
             int totalButtonWidth = saveButtonWidth + cancelButtonWidth + SaveSetButtonGap;
             int buttonStartX = X + (Width / 2) - (totalButtonWidth / 2);
 
@@ -357,9 +357,9 @@ namespace OutfitStudio
 
             if (isHovered)
             {
-                Utility.drawTextWithShadow(b, TranslationCache.SaveSetFavorite, Game1.smallFont, textPos + new Vector2(-1, 0), Game1.textColor * 0.8f);
+                Utility.drawTextWithShadow(b, TranslationCache.CommonFavorite, Game1.smallFont, textPos + new Vector2(-1, 0), Game1.textColor * 0.8f);
             }
-            Utility.drawTextWithShadow(b, TranslationCache.SaveSetFavorite, Game1.smallFont, textPos, Game1.textColor);
+            Utility.drawTextWithShadow(b, TranslationCache.CommonFavorite, Game1.smallFont, textPos, Game1.textColor);
         }
 
         public void DrawLocalOnlyCheckbox(SpriteBatch b, bool isChecked, bool isEnabled, bool isHovered)
@@ -394,8 +394,8 @@ namespace OutfitStudio
 
         public void DrawButtons(SpriteBatch b)
         {
-            UIHelpers.DrawTextButton(b, SaveButton, TranslationCache.SaveSetButtonSave);
-            UIHelpers.DrawTextButton(b, CancelButton, TranslationCache.SaveSetButtonCancel);
+            UIHelpers.DrawTextButton(b, SaveButton, TranslationCache.CommonSave);
+            UIHelpers.DrawTextButton(b, CancelButton, TranslationCache.CommonCancel);
         }
 
         public void DrawCloseButton(SpriteBatch b)

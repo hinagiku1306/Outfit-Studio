@@ -8,5 +8,5 @@
 
 10. Ctrl+A to select all text in input box
 
-12. Random name generator
-13.
+13. Festival outfit presets
+14. Seasonal outfit swap
