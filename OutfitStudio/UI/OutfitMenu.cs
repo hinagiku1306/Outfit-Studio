@@ -359,14 +359,10 @@ namespace OutfitStudio
             var hatIds = currentCategory != OutfitCategoryManager.Category.All ? itemListProvider.GetCurrentHatIds() : null;
             int listCount = allItems?.Count ?? itemListProvider.GetCurrentListCount();
 
-            // Cache equipped item IDs once for All tab selection highlighting
-            string? equippedShirtId = null, equippedPantsId = null, equippedHatId = null;
-            if (allItems != null)
-            {
-                equippedShirtId = OutfitState.GetClothingId(Game1.player.shirtItem.Value);
-                equippedPantsId = OutfitState.GetClothingId(Game1.player.pantsItem.Value);
-                equippedHatId = OutfitState.GetHatIdFromItem(Game1.player.hat.Value);
-            }
+            // Cache equipped item IDs once for selection highlighting
+            string equippedShirtId = OutfitState.GetClothingId(Game1.player.shirtItem.Value);
+            string equippedPantsId = OutfitState.GetClothingId(Game1.player.pantsItem.Value);
+            string equippedHatId = OutfitState.GetHatIdFromItem(Game1.player.hat.Value);
 
             // Draw item list background and scroll buttons
             uiBuilder.DrawItemList(b, state.ScrollOffset, listCount);
@@ -400,9 +396,22 @@ namespace OutfitStudio
                 }
                 else
                 {
-                    // Category tabs: use category-specific index
-                    int currentIndex = state.GetCurrentIndex(currentCategory);
-                    isSelected = listIndex == currentIndex;
+                    // Category tabs: check by item ID against equipped item
+                    string? equippedId = currentCategory switch
+                    {
+                        OutfitCategoryManager.Category.Shirts => equippedShirtId,
+                        OutfitCategoryManager.Category.Pants => equippedPantsId,
+                        OutfitCategoryManager.Category.Hats => equippedHatId,
+                        _ => null
+                    };
+                    List<string>? ids = currentCategory switch
+                    {
+                        OutfitCategoryManager.Category.Shirts => shirtIds,
+                        OutfitCategoryManager.Category.Pants => pantsIds,
+                        OutfitCategoryManager.Category.Hats => hatIds,
+                        _ => null
+                    };
+                    isSelected = ids != null && listIndex < ids.Count && ids[listIndex] == equippedId;
                 }
 
                 // Highlight selected item

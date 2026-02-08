@@ -221,17 +221,6 @@ namespace OutfitStudio
             Game1.player.FarmerRenderer.MarkSpriteDirty();
         }
 
-        public int GetCurrentIndex(OutfitCategoryManager.Category category)
-        {
-            return category switch
-            {
-                OutfitCategoryManager.Category.Shirts => shirtIndex,
-                OutfitCategoryManager.Category.Pants => pantsIndex,
-                OutfitCategoryManager.Category.Hats => hatIndex,
-                _ => 0
-            };
-        }
-
         public void SetCurrentIndex(OutfitCategoryManager.Category category, int index)
         {
             switch (category)

@@ -10,6 +10,13 @@ namespace OutfitStudio
     /// </summary>
     public static class TranslationCache
     {
+        // Common (shared across menus)
+        public static string CommonSave { get; private set; } = "";
+        public static string CommonCancel { get; private set; } = "";
+        public static string CommonReset { get; private set; } = "";
+        public static string CommonFavorite { get; private set; } = "";
+        public static string CommonNone { get; private set; } = "";
+
         // Menu UI
         public static string MenuTitle { get; private set; } = "";
         public static string TabAll { get; private set; } = "";
@@ -17,7 +24,6 @@ namespace OutfitStudio
         public static string TabPants { get; private set; } = "";
         public static string TabHats { get; private set; } = "";
         public static string ButtonApply { get; private set; } = "";
-        public static string ButtonReset { get; private set; } = "";
         public static string ButtonNewOutfit { get; private set; } = "";
         public static string ButtonOutfits { get; private set; } = "";
         public static string MessageApplied { get; private set; } = "";
@@ -30,8 +36,6 @@ namespace OutfitStudio
 
         // Item info
         public static string ItemNoHat { get; private set; } = "";
-        public static string ItemNoShirt { get; private set; } = "";
-        public static string ItemNoPants { get; private set; } = "";
         public static string ItemModInfoTemplate { get; private set; } = ""; // "Mod: {{modName}}"
 
         // Lookup tooltip labels
@@ -40,7 +44,6 @@ namespace OutfitStudio
         public static string LookupHat { get; private set; } = "";
 
         // Wardrobe overlay
-        public static string WardrobeFilter { get; private set; } = "";
         public static string WardrobeSearch { get; private set; } = "";
         public static string WardrobeTags { get; private set; } = "";
         public static string WardrobeButtonApplyClose { get; private set; } = "";
@@ -50,9 +53,6 @@ namespace OutfitStudio
         // Save Set overlay
         public static string SaveSetNameLabel { get; private set; } = "";
         public static string SaveSetNamePlaceholder { get; private set; } = "";
-        public static string SaveSetFavorite { get; private set; } = "";
-        public static string SaveSetButtonSave { get; private set; } = "";
-        public static string SaveSetButtonCancel { get; private set; } = "";
         public static string SaveSetLocalOnly { get; private set; } = "";
         public static string SaveSetTagsLabel { get; private set; } = "";
 
@@ -84,7 +84,6 @@ namespace OutfitStudio
         public static string WardrobeFilterFilter { get; private set; } = "";
         public static string WardrobeFilterMatchAll { get; private set; } = "";
         public static string WardrobeFilterShowInvalid { get; private set; } = "";
-        public static string WardrobeFilterFavorites { get; private set; } = "";
         public static string WardrobeFilterGlobal { get; private set; } = "";
         public static string WardrobeFilterLocal { get; private set; } = "";
         public static string WardrobeFilterInvalid { get; private set; } = "";
@@ -134,15 +133,10 @@ namespace OutfitStudio
 
         // Dye color panel
         public static string DyeColorTitle { get; private set; } = "";
-        public static string DyeColorReset { get; private set; } = "";
-        public static string DyeColorTooltip { get; private set; } = "";
 
         // Config overlay
         public static string ConfigSettingsTitle { get; private set; } = "";
-        public static string ConfigResetDefaults { get; private set; } = "";
         public static string ConfigKeybindListening { get; private set; } = "";
-        public static string ConfigSave { get; private set; } = "";
-        public static string ConfigCancel { get; private set; } = "";
 
         /// <summary>
         /// Initialize all translations from the translation helper.
@@ -150,13 +144,18 @@ namespace OutfitStudio
         /// </summary>
         public static void Initialize(ITranslationHelper i18n)
         {
+            CommonSave = i18n.Get("common.save");
+            CommonCancel = i18n.Get("common.cancel");
+            CommonReset = i18n.Get("common.reset");
+            CommonFavorite = i18n.Get("common.favorite");
+            CommonNone = i18n.Get("common.none");
+
             MenuTitle = i18n.Get("menu.title");
             TabAll = i18n.Get("menu.tabs.all");
             TabShirts = i18n.Get("menu.tabs.shirts");
             TabPants = i18n.Get("menu.tabs.pants");
             TabHats = i18n.Get("menu.tabs.hats");
             ButtonApply = i18n.Get("menu.buttons.apply");
-            ButtonReset = i18n.Get("menu.buttons.reset");
             ButtonNewOutfit = i18n.Get("menu.buttons.new-outfit");
             ButtonOutfits = i18n.Get("menu.buttons.wardrobe");
             MessageApplied = i18n.Get("menu.messages.applied");
@@ -167,15 +166,12 @@ namespace OutfitStudio
             FilterUnknown = i18n.Get("menu.filter.unknown");
 
             ItemNoHat = i18n.Get("menu.item.no-hat");
-            ItemNoShirt = i18n.Get("menu.item.no-shirt");
-            ItemNoPants = i18n.Get("menu.item.no-pants");
             ItemModInfoTemplate = i18n.Get("menu.item.mod-info");
 
             LookupShirt = i18n.Get("menu.lookup.shirt");
             LookupPants = i18n.Get("menu.lookup.pants");
             LookupHat = i18n.Get("menu.lookup.hat");
 
-            WardrobeFilter = i18n.Get("wardrobe.filter");
             WardrobeSearch = i18n.Get("wardrobe.search");
             WardrobeTags = i18n.Get("wardrobe.tags");
             WardrobeButtonApplyClose = i18n.Get("wardrobe.button.apply-close");
@@ -184,9 +180,6 @@ namespace OutfitStudio
 
             SaveSetNameLabel = i18n.Get("saveset.name-label");
             SaveSetNamePlaceholder = i18n.Get("saveset.name-placeholder");
-            SaveSetFavorite = i18n.Get("saveset.favorite");
-            SaveSetButtonSave = i18n.Get("saveset.button.save");
-            SaveSetButtonCancel = i18n.Get("saveset.button.cancel");
             SaveSetLocalOnly = i18n.Get("saveset.local-only");
             SaveSetTagsLabel = i18n.Get("saveset.tags-label");
 
@@ -210,7 +203,6 @@ namespace OutfitStudio
             WardrobeFilterFilter = i18n.Get("wardrobe.filter.filter");
             WardrobeFilterMatchAll = i18n.Get("wardrobe.filter.matchAll");
             WardrobeFilterShowInvalid = i18n.Get("wardrobe.filter.showInvalid");
-            WardrobeFilterFavorites = i18n.Get("wardrobe.filter.favorites");
             WardrobeFilterGlobal = i18n.Get("wardrobe.filter.global");
             WardrobeFilterLocal = i18n.Get("wardrobe.filter.local");
             WardrobeFilterInvalid = i18n.Get("wardrobe.filter.invalid");
@@ -257,14 +249,9 @@ namespace OutfitStudio
             ConfigSlotSizeTooltip = i18n.Get("config.slot-size.tooltip");
 
             DyeColorTitle = i18n.Get("dyecolor.title");
-            DyeColorReset = i18n.Get("dyecolor.reset");
-            DyeColorTooltip = i18n.Get("dyecolor.tooltip");
 
             ConfigSettingsTitle = i18n.Get("config.settings.title");
-            ConfigResetDefaults = i18n.Get("config.settings.reset-defaults");
             ConfigKeybindListening = i18n.Get("config.settings.keybind-listening");
-            ConfigSave = i18n.Get("config.settings.save");
-            ConfigCancel = i18n.Get("config.settings.cancel");
 
         }
 
@@ -293,7 +280,7 @@ namespace OutfitStudio
             if (string.IsNullOrEmpty(text))
                 return text;
 
-            char[] chars = text.ToLower().ToCharArray();
+            char[] chars = text.ToCharArray();
             bool newWord = true;
             for (int i = 0; i < chars.Length; i++)
             {

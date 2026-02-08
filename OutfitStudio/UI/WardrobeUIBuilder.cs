@@ -448,7 +448,7 @@ namespace OutfitStudio
             float textHeight = Game1.smallFont.MeasureString("A").Y;
             int optionHeight = (int)Math.Ceiling(textHeight) + 16;
 
-            string[] labels = { TranslationCache.WardrobeFilterFavorites, TranslationCache.WardrobeFilterInvalid, TranslationCache.WardrobeFilterGlobal, TranslationCache.WardrobeFilterLocal };
+            string[] labels = { TranslationCache.CommonFavorite, TranslationCache.WardrobeFilterInvalid, TranslationCache.WardrobeFilterGlobal, TranslationCache.WardrobeFilterLocal };
 
             for (int i = 0; i < labels.Length; i++)
             {

@@ -2,7 +2,7 @@
     "Name": "Outfit Studio",
     "Author": "hinagiku1306",
     "Version": "1.0.0",
-    "Description": "Toggleable menu to change and test outfits.",
+    "Description": "In-game wardrobe menu to browse, customize, save, and organize outfits.",
     "UniqueID": "hinagiku1306.OutfitStudio",
     "EntryDll": "OutfitStudio.dll",
     "MinimumApiVersion": "4.0.0",

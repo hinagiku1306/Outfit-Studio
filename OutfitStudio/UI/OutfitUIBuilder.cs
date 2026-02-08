@@ -345,7 +345,7 @@ namespace OutfitStudio
             int bottomButtonsY = gridY + gridHeight + GridToButtonGap;
 
             int applyWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ButtonApply);
-            int resetWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ButtonReset);
+            int resetWidth = UIHelpers.CalculateButtonWidth(TranslationCache.CommonReset);
 
             int resetX = panelX + gridWidth - resetWidth;
             int applyX = resetX - ElementGap - applyWidth;
@@ -357,7 +357,7 @@ namespace OutfitStudio
 
             ResetButton = new ClickableComponent(
                 new Rectangle(resetX, bottomButtonsY, resetWidth, TabAndButtonHeight),
-                TranslationCache.ButtonReset
+                TranslationCache.CommonReset
             );
 
             // Grid scroll arrows (right side of grid box)
@@ -585,7 +585,7 @@ namespace OutfitStudio
         public void DrawBottomButtons(SpriteBatch b)
         {
             UIHelpers.DrawTextButton(b, ApplyButton, TranslationCache.ButtonApply);
-            UIHelpers.DrawTextButton(b, ResetButton, TranslationCache.ButtonReset);
+            UIHelpers.DrawTextButton(b, ResetButton, TranslationCache.CommonReset);
         }
 
         public void DrawFloatingButtons(SpriteBatch b)
