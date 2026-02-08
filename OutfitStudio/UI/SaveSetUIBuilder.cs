@@ -23,6 +23,7 @@ namespace OutfitStudio
         public Rectangle HatSlot { get; private set; }
         public ClickableComponent NameInputArea { get; private set; } = null!;
         public ClickableComponent NameClearButton { get; private set; } = null!;
+        public ClickableComponent NameRandomButton { get; private set; } = null!;
         public ClickableComponent FavoriteCheckbox { get; private set; } = null!;
         public ClickableComponent? LocalOnlyCheckbox { get; private set; }
         public ClickableComponent? AddTagsButton { get; private set; }
@@ -108,10 +109,15 @@ namespace OutfitStudio
 
             int currentY = Y + SaveSetBorderPadding;
 
-            int nameLabelWidth = (int)Game1.smallFont.MeasureString(TranslationCache.SaveSetNameLabel).X + 12;
-            int nameInputWidth = contentWidth - nameLabelWidth - 30;
+            int diceOffset = DiceButtonSize + 15;
+            NameRandomButton = new ClickableComponent(
+                new Rectangle(contentX, currentY + (NameSectionHeight - DiceButtonSize) / 2, DiceButtonSize, DiceButtonSize),
+                "nameRandom"
+            );
+
+            int nameInputWidth = contentWidth - diceOffset - 30;
             NameInputArea = new ClickableComponent(
-                new Rectangle(contentX + nameLabelWidth, currentY, nameInputWidth, NameSectionHeight),
+                new Rectangle(contentX + diceOffset, currentY, nameInputWidth, NameSectionHeight),
                 "nameInput"
             );
             NameClearButton = new ClickableComponent(
@@ -228,20 +234,39 @@ namespace OutfitStudio
         {
             Rectangle bounds = NameInputArea.bounds;
 
+            DrawDiceButton(b);
+
             float textHeight = Game1.smallFont.MeasureString("A").Y;
-            int labelY = bounds.Y + (int)((bounds.Height - textHeight) / 2);
-            Utility.drawTextWithShadow(b, TranslationCache.SaveSetNameLabel, Game1.smallFont,
-                new Vector2(contentX, labelY), Game1.textColor);
 
             UIHelpers.DrawTextureBox(b, bounds.X + jiggleOffset, bounds.Y, bounds.Width, bounds.Height, Color.White);
 
             string displayText = showPlaceholder ? TranslationCache.SaveSetNamePlaceholder : currentText;
+            int maxTextWidth = bounds.Width - 20 - (ClearButtonRightMargin + ClearButtonSize + 8);
+            displayText = UIHelpers.TruncateText(displayText, maxTextWidth);
             Color textColor = showPlaceholder ? Color.Gray : Game1.textColor;
             Vector2 textPosition = new Vector2(bounds.X + 20 + jiggleOffset, bounds.Y + (bounds.Height - textHeight) / 2);
             Utility.drawTextWithShadow(b, displayText, Game1.smallFont, textPosition, textColor);
 
             if (!string.IsNullOrEmpty(currentText))
                 UIHelpers.DrawClearButton(b, NameClearButton);
+        }
+
+        private void DrawDiceButton(SpriteBatch b)
+        {
+            Rectangle diceBounds = NameRandomButton.bounds;
+            int mouseX = Game1.getMouseX();
+            int mouseY = Game1.getMouseY();
+            bool isHovered = NameRandomButton.containsPoint(mouseX, mouseY);
+
+            Rectangle sourceRect = new Rectangle(381, 361, 10, 10);
+            float scale = isHovered ? 4.0f : 3.8f;
+            Vector2 center = new Vector2(
+                diceBounds.X + diceBounds.Width / 2,
+                diceBounds.Y + diceBounds.Height / 2
+            );
+            Vector2 origin = new Vector2(5, 5);
+
+            b.Draw(Game1.mouseCursors, center, sourceRect, Color.White, 0f, origin, scale, SpriteEffects.None, 1f);
         }
 
         public void DrawNameCursor(SpriteBatch b, string currentText, bool isSelected, int jiggleOffset = 0)

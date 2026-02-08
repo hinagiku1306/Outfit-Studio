@@ -246,6 +246,9 @@ namespace OutfitStudio
         /// <summary>Margin from right edge to clear button.</summary>
         public const int ClearButtonRightMargin = 12;
 
+        public const int DiceButtonSize = 40;
+        public const int DiceButtonGap = 10;
+
         // ============================================================
         // LOOKUP ICON
         // ============================================================
