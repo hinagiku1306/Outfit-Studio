@@ -117,10 +117,10 @@ namespace OutfitStudio
                 Game1.smallFont,
                 Game1.textColor)
             {
-                Text = editingSet?.Name ?? "",
                 Selected = true
             };
             UpdateTextBoxBounds();
+            nameTextBox.Text = editingSet?.Name ?? "";
 
             CacheItemObjects();
 
@@ -181,7 +181,7 @@ namespace OutfitStudio
             Rectangle bounds = uiBuilder.NameInputArea.bounds;
             nameTextBox.X = bounds.X + 12;
             nameTextBox.Y = bounds.Y + ((bounds.Height - 48) / 2);
-            nameTextBox.Width = bounds.Width - 24;
+            nameTextBox.Width = bounds.Width - ClearButtonSize - ClearButtonRightMargin - 20;
         }
 
         public override void receiveLeftClick(int x, int y, bool playSound = true)
@@ -267,6 +267,16 @@ namespace OutfitStudio
                 includeHat = !includeHat;
                 previewDirty = true;
                 if (playSound) Game1.playSound("smallSelect");
+                return;
+            }
+
+            if (uiBuilder.NameRandomButton.containsPoint(x, y))
+            {
+                nameTextBox.Text = Dialogue.randomName();
+                nameBoxFocused = true;
+                tagPickerManager.DeselectCustomInput();
+                nameTextBox.Selected = true;
+                if (playSound) Game1.playSound("drumkit6");
                 return;
             }
 

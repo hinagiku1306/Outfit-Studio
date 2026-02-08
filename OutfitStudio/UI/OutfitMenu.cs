@@ -140,6 +140,8 @@ namespace OutfitStudio
         {
             base.gameWindowSizeChanged(oldBounds, newBounds);
 
+            wardrobeOverlay?.gameWindowSizeChanged(oldBounds, newBounds);
+
             uiBuilder.Recalculate();
             searchManager.UpdateBounds();
 

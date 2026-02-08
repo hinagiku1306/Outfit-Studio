@@ -591,8 +591,10 @@ namespace OutfitStudio
 
             if (hoverTooltip != null && ModEntry.Config.ShowTooltip)
             {
-                string wrapped = Game1.parseText(hoverTooltip, Game1.smallFont, 300);
-                IClickableMenu.drawHoverText(b, wrapped, Game1.smallFont);
+                string text = hoverTooltip.Contains(' ')
+                    ? Game1.parseText(hoverTooltip, Game1.smallFont, 300)
+                    : hoverTooltip;
+                IClickableMenu.drawHoverText(b, text, Game1.smallFont);
             }
         }
 

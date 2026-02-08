@@ -1120,8 +1120,10 @@ namespace OutfitStudio
 
                 if (uiBuilder.HoveredTruncatedSetName != null && ModEntry.Config.ShowTooltip)
                 {
-                    string wrapped = Game1.parseText(uiBuilder.HoveredTruncatedSetName, Game1.smallFont, 300);
-                    IClickableMenu.drawHoverText(b, wrapped, Game1.smallFont);
+                    string text = uiBuilder.HoveredTruncatedSetName;
+                    if (text.Contains(' '))
+                        text = Game1.parseText(text, Game1.smallFont, 300);
+                    IClickableMenu.drawHoverText(b, text, Game1.smallFont);
                 }
                 else if (uiBuilder.TagsTextTruncated && SelectedSet != null
                     && uiBuilder.TagsTextBounds.Contains(mouseX, mouseY))
@@ -1134,8 +1136,10 @@ namespace OutfitStudio
 
             if (tagsDropdownTooltip != null)
             {
-                string wrapped = Game1.parseText(tagsDropdownTooltip, Game1.smallFont, 300);
-                IClickableMenu.drawHoverText(b, wrapped, Game1.smallFont);
+                string text = tagsDropdownTooltip.Contains(' ')
+                    ? Game1.parseText(tagsDropdownTooltip, Game1.smallFont, 300)
+                    : tagsDropdownTooltip;
+                IClickableMenu.drawHoverText(b, text, Game1.smallFont);
             }
             else if (!searchScopeOpen && !showDeleteConfirmation && filterState.SelectedTags.Count > 0)
             {
