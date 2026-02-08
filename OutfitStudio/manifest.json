@@ -7,11 +7,7 @@
     "EntryDll": "OutfitStudio.dll",
     "MinimumApiVersion": "4.0.0",
     "MinimumGameVersion": "1.6.0",
-    "Dependencies": [
-        {
-            "UniqueID": "spacechase0.GenericModConfigMenu",
-            "IsRequired": false
-        }
-    ],
-    "UpdateKeys": [ "Nexus:42090"]
+    "UpdateKeys": [
+        "Nexus:42090"
+    ]
 }

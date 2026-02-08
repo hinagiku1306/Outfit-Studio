@@ -235,9 +235,18 @@ namespace OutfitStudio
 
         internal ModConfig GetConfig() => config;
 
-        /// <summary>
-        /// Updates the stored item info preference and saves to config.
-        /// </summary>
+        internal void SaveConfig() => Helper.WriteConfig(config);
+
+        internal void ReopenMenu()
+        {
+            if (categoryManager == null || filterManager == null || outfitSetStore == null)
+                return;
+
+            Game1.exitActiveMenu();
+            menu = new OutfitMenu(this, categoryManager, filterManager, outfitSetStore, config.ShowItemInfo);
+            Game1.activeClickableMenu = menu;
+        }
+
         internal void SetShowItemInfoPreference(bool value)
         {
             config.ShowItemInfo = value;

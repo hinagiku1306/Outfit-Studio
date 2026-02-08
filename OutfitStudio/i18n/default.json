@@ -29,6 +29,11 @@
     "config.visible-columns.tooltip": "Number of item columns displayed in the grid.",
     "config.slot-size.name": "Item Slot Size",
     "config.slot-size.tooltip": "Size of each item slot in pixels.",
+    "config.settings.title": "Outfit Studio Settings",
+    "config.settings.reset-defaults": "Reset Defaults",
+    "config.settings.keybind-listening": "Press a key...",
+    "config.settings.save": "Save",
+    "config.settings.cancel": "Cancel",
     // Main Menu
     "menu.title": "Outfit Studio",
     "menu.tabs.all": "All",
