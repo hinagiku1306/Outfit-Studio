@@ -83,9 +83,6 @@ namespace OutfitStudio
             Recalculate();
         }
 
-        /// <summary>
-        /// Calculates the width of the outfit list panel based on its content.
-        /// </summary>
         private int CalculateOutfitListPanelWidth()
         {
             // Dropdown padding: 20px left + 20px right base = 40px (no arrow)
@@ -120,18 +117,12 @@ namespace OutfitStudio
             return panelContentWidth;
         }
 
-        /// <summary>
-        /// Calculates the width of the preview panel based on content.
-        /// </summary>
         private int CalculatePreviewPanelWidth()
         {
             int previewGroupWidth = SaveSetPreviewWidth + SaveSetPreviewToSlotsGap + SaveSetItemSlotSize;
             return previewGroupWidth + ContentBoxPadding * 2;
         }
 
-        /// <summary>
-        /// Calculates the height of the panel content area.
-        /// </summary>
         private int CalculatePanelHeight()
         {
             // Outfit list panel height: filter bar + list items

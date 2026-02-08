@@ -391,7 +391,6 @@ namespace OutfitStudio.Services
             if (ItemIdHelper.IsNoHatId(set.HatId) || IsItemValid(set.HatId, "(H)"))
                 OutfitState.ApplyHat(set.HatId ?? "");
 
-            // Apply saved dye colors
             if (set.ShirtColor != null && Game1.player.shirtItem.Value != null)
             {
                 var color = ColorHelper.ParseColor(set.ShirtColor);

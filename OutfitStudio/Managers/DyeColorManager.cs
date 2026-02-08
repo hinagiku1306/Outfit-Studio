@@ -10,11 +10,11 @@ namespace OutfitStudio
     public class DyeColorManager
     {
         private bool isOpen;
-        private int hueValue;   // 0-100
-        private int satValue;   // 0-100
-        private int valValue;   // 0-100
+        private int hueValue;
+        private int satValue;
+        private int valValue;
         private Color originalColor;
-        private int activeSliderIndex = -1; // -1=none, 0=hue, 1=sat, 2=val
+        private int activeSliderIndex = -1;
 
         private Rectangle panelBounds;
         private Rectangle hueBarBounds;
@@ -215,7 +215,6 @@ namespace OutfitStudio
             int titleHeight = (int)Game1.smallFont.MeasureString("A").Y;
             int sliderSectionHeight = 3 * DyeColorSliderRowHeight + 2 * DyeColorSliderGap;
 
-            // Compute label-to-slider offset: max label width + 10px gap
             int maxLabelWidth = Math.Max(
                 (int)Game1.smallFont.MeasureString("H").X,
                 Math.Max(
@@ -240,7 +239,6 @@ namespace OutfitStudio
             int panelX = menuBounds.Right;
             int panelY = menuBounds.Y + (menuBounds.Height - totalContentHeight) / 2;
 
-            // Clamp to viewport right edge
             if (panelX + DyeColorPanelWidth > Game1.uiViewport.Width)
                 panelX = Game1.uiViewport.Width - DyeColorPanelWidth;
 
@@ -259,7 +257,6 @@ namespace OutfitStudio
             valBarBounds = new Rectangle(contentX + barOffsetX, currentY + (DyeColorSliderRowHeight - DyeColorSliderTrackHeight) / 2, contentWidth - barOffsetX, DyeColorSliderTrackHeight);
             currentY += DyeColorSliderRowHeight + sliderToResetGap;
 
-            // Reset button centered
             resetButton = new ClickableComponent(
                 new Rectangle(
                     panelBounds.X + (panelBounds.Width - resetButtonWidth) / 2,
@@ -282,11 +279,9 @@ namespace OutfitStudio
             Color textTint = IsDyeable ? Game1.textColor : Game1.textColor * TabOpacity;
             Color elementTint = IsDyeable ? Color.White : Color.White * 0.5f;
 
-            // Panel background
             UIHelpers.DrawTextureBox(b, panelBounds.X, panelBounds.Y,
                 panelBounds.Width, panelBounds.Height, Color.White);
 
-            // Title
             Vector2 titlePos = new Vector2(
                 panelBounds.X + DyeColorPanelPadding,
                 panelBounds.Y + DyeColorPanelPadding
@@ -294,12 +289,10 @@ namespace OutfitStudio
             Utility.drawTextWithShadow(b, TranslationCache.DyeColorTitle, Game1.smallFont,
                 titlePos, textTint);
 
-            // Draw sliders
             DrawSliderRow(b, "H", hueBarBounds, hueValue, 0, textTint, elementTint);
             DrawSliderRow(b, "S", satBarBounds, satValue, 1, textTint, elementTint);
             DrawSliderRow(b, "V", valBarBounds, valValue, 2, textTint, elementTint);
 
-            // Reset button (no hover when disabled)
             if (IsDyeable)
             {
                 UIHelpers.DrawTextButton(b, resetButton, TranslationCache.CommonReset);
@@ -313,7 +306,6 @@ namespace OutfitStudio
                 Utility.drawTextWithShadow(b, TranslationCache.CommonReset, Game1.smallFont, textPos, textTint);
             }
 
-            // Tooltip
             if (hoverTooltip != null && ModEntry.Config.ShowTooltip)
             {
                 string wrapped = Game1.parseText(hoverTooltip, Game1.smallFont, 300);
@@ -324,14 +316,12 @@ namespace OutfitStudio
         private void DrawSliderRow(SpriteBatch b, string label, Rectangle barBounds, int value, int sliderIndex,
             Color textTint, Color elementTint)
         {
-            // Label positioned at contentX (barBounds.X - barOffsetX)
             Vector2 labelPos = new Vector2(
                 barBounds.X - barOffsetX,
                 barBounds.Y + (DyeColorSliderTrackHeight / 2) - Game1.smallFont.MeasureString(label).Y / 2
             );
             Utility.drawTextWithShadow(b, label, Game1.smallFont, labelPos, textTint);
 
-            // Gradient bar
             int chunkWidth = barBounds.Width / DyeColorGradientChunks;
             for (int i = 0; i < DyeColorGradientChunks; i++)
             {
@@ -345,7 +335,6 @@ namespace OutfitStudio
                 b.Draw(Game1.staminaRect, chunkRect, chunkColor);
             }
 
-            // Cursor handle
             float normalizedValue = value / 100f;
             int cursorX = barBounds.X + (int)(normalizedValue * barBounds.Width);
             int cursorY = barBounds.Y + barBounds.Height / 2;
@@ -361,9 +350,9 @@ namespace OutfitStudio
             float chunkRatio = (float)chunkIndex / DyeColorGradientChunks;
             return sliderIndex switch
             {
-                0 => ColorPicker.HsvToRgb(chunkRatio * 360.0, 0.9, 0.9), // Hue: cycle through hues
-                1 => ColorPicker.HsvToRgb(hueValue / 100.0 * 360.0, chunkRatio, valValue / 100.0), // Sat: vary saturation
-                2 => ColorPicker.HsvToRgb(hueValue / 100.0 * 360.0, satValue / 100.0, chunkRatio), // Val: vary value
+                0 => ColorPicker.HsvToRgb(chunkRatio * 360.0, 0.9, 0.9),
+                1 => ColorPicker.HsvToRgb(hueValue / 100.0 * 360.0, chunkRatio, valValue / 100.0),
+                2 => ColorPicker.HsvToRgb(hueValue / 100.0 * 360.0, satValue / 100.0, chunkRatio),
                 _ => Color.White
             };
         }

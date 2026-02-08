@@ -7,9 +7,6 @@ using static OutfitStudio.OutfitLayoutConstants;
 
 namespace OutfitStudio
 {
-    /// <summary>
-    /// Draws clothing item sprites in the menu using vanilla inventory rendering.
-    /// </summary>
     public class OutfitItemRenderer
     {
         private static readonly HashSet<string> loggedMissingItems = new();

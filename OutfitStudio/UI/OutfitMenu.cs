@@ -42,10 +42,6 @@ namespace OutfitStudio
             uiBuilder.MarkPreviewDirty();
         }
 
-        /// <summary>
-        /// Checks if the item info toggle keybind was pressed and toggles if so.
-        /// Called from overlays to allow keybind to work while overlay is active.
-        /// </summary>
         public void HandleItemInfoToggle()
         {
             var config = mod.GetConfig();
@@ -65,7 +61,6 @@ namespace OutfitStudio
             this.outfitSetStore = outfitSetStore;
             this.showItemInfo = showItemInfo;
 
-            // Reset to All tab when opening menu
             categoryManager.CurrentCategory = OutfitCategoryManager.Category.All;
 
             itemRenderer = new OutfitItemRenderer(mod.Monitor, mod.Helper.ModRegistry);
@@ -76,7 +71,6 @@ namespace OutfitStudio
             tooltipRenderer = new OutfitTooltipRenderer(filterManager, categoryManager);
             continuousScrollHandler = new ContinuousScrollHandler(initialDelay: 400, repeatDelay: 100);
 
-            // Initialize helper classes
             itemListProvider = new OutfitItemListProvider(filterManager, categoryManager, state);
             drawingHelper = new OutfitDrawingHelper(uiBuilder, dropdownManager, state, mod);
             dyeColorManager = new DyeColorManager(
@@ -134,8 +128,6 @@ namespace OutfitStudio
             }
         }
 
-        // --- Resize handling ---
-
         public override void gameWindowSizeChanged(Rectangle oldBounds, Rectangle newBounds)
         {
             base.gameWindowSizeChanged(oldBounds, newBounds);
@@ -150,7 +142,6 @@ namespace OutfitStudio
             xPositionOnScreen = uiBuilder.X;
             yPositionOnScreen = uiBuilder.Y;
 
-            // Clamp scroll offset if visible items changed
             int totalRows = Math.Max(1, (int)Math.Ceiling(itemListProvider.GetCurrentListCount() / (float)uiBuilder.COLUMNS));
             int maxScroll = Math.Max(0, totalRows - uiBuilder.VISIBLE_ROWS);
             if (state.ScrollOffset > maxScroll)
@@ -168,7 +159,6 @@ namespace OutfitStudio
             }
         }
 
-        // --- Helper methods ---
 
         private void ResetOutfit()
         {
@@ -178,7 +168,6 @@ namespace OutfitStudio
                 itemListProvider.GetCurrentHatIds()
             );
 
-            // Sync dye panel sliders to the restored color
             if (dyeColorManager.IsOpen)
             {
                 var category = GetActiveColorCategory();
@@ -214,7 +203,6 @@ namespace OutfitStudio
             exitThisMenu();
         }
 
-        // --- Input handling ---
 
         public override void receiveLeftClick(int x, int y, bool playSound = true)
         {
@@ -279,16 +267,13 @@ namespace OutfitStudio
                 state.ScrollOffset = 0;
             }
 
-            // Handle item info toggle keybind
             HandleItemInfoToggle();
 
-            // Handle continuous scrolling when keys are held down
             int scrollAmount = continuousScrollHandler.Update(time, uiBuilder.VISIBLE_ROWS, out bool shouldPlaySound);
             if (scrollAmount != 0)
             {
                 if (dropdownManager.IsOpen)
                 {
-                    // Scroll dropdown when it's open
                     if (dropdownManager.HandleScrollAmount(scrollAmount))
                     {
                         if (shouldPlaySound) Game1.playSound("shiny4");
@@ -296,7 +281,6 @@ namespace OutfitStudio
                 }
                 else
                 {
-                    // Scroll item grid when dropdown is closed
                     int totalRows = Math.Max(1, (int)Math.Ceiling(itemListProvider.GetCurrentListCount() / (float)uiBuilder.COLUMNS));
                     int maxScroll = Math.Max(0, totalRows - uiBuilder.VISIBLE_ROWS);
 
@@ -312,26 +296,20 @@ namespace OutfitStudio
             }
         }
 
-        // --- Drawing ---
 
         public override void draw(SpriteBatch b)
         {
             bool hasOverlay = wardrobeOverlay != null || IsOverlayBlocking;
 
-            // Draw semi-transparent background overlay
             OutfitUIBuilder.DrawOverlay(b);
 
-            // Draw menu box
             UIHelpers.DrawTextureBox(b, xPositionOnScreen, yPositionOnScreen, width, height, Color.White);
 
-            // === LEFT PANEL: Player Preview ===
             uiBuilder.DrawPlayerPreview(b);
             uiBuilder.DrawLookupIcon(b);
             uiBuilder.DrawSavedMessage(b);
             uiBuilder.DrawLeftPanelButtons(b);
 
-            // === RIGHT PANEL: Category Tabs & Item List ===
-            // Draw category tabs with text labels
             uiBuilder.DrawTabWithText(b, uiBuilder.AllTab, TranslationCache.TabAll,
                 categoryManager.CurrentCategory == OutfitCategoryManager.Category.All);
 
@@ -344,14 +322,11 @@ namespace OutfitStudio
             uiBuilder.DrawTabWithText(b, uiBuilder.HatsTab, TranslationCache.TabHats,
                 categoryManager.CurrentCategory == OutfitCategoryManager.Category.Hats);
 
-            // Draw search bar
             uiBuilder.DrawSearchBar(b, searchManager.IsFocused, !string.IsNullOrEmpty(searchManager.CurrentSearchText));
             searchManager.Draw(b);
 
-            // Draw mod filter dropdown
             uiBuilder.DrawModFilterDropdown(b, state.GetModFilter(categoryManager.CurrentCategory), dropdownManager.IsOpen);
 
-            // Cache list provider results once per frame to avoid repeated allocations
             var currentCategory = categoryManager.CurrentCategory;
             var allItems = currentCategory == OutfitCategoryManager.Category.All ? itemListProvider.GetCurrentAllItems() : null;
             var shirtIds = currentCategory != OutfitCategoryManager.Category.All ? itemListProvider.GetCurrentShirtIds() : null;
@@ -359,15 +334,12 @@ namespace OutfitStudio
             var hatIds = currentCategory != OutfitCategoryManager.Category.All ? itemListProvider.GetCurrentHatIds() : null;
             int listCount = allItems?.Count ?? itemListProvider.GetCurrentListCount();
 
-            // Cache equipped item IDs once for selection highlighting
             string equippedShirtId = OutfitState.GetClothingId(Game1.player.shirtItem.Value);
             string equippedPantsId = OutfitState.GetClothingId(Game1.player.pantsItem.Value);
             string equippedHatId = OutfitState.GetHatIdFromItem(Game1.player.hat.Value);
 
-            // Draw item list background and scroll buttons
             uiBuilder.DrawItemList(b, state.ScrollOffset, listCount);
 
-            // Draw items (skip hover effects when overlay is open)
             int hoveredIndex = -1;
 
             for (int i = 0; i < uiBuilder.VISIBLE_ITEMS; i++)
@@ -381,10 +353,8 @@ namespace OutfitStudio
                 Rectangle slot = uiBuilder.ItemSlots[i].bounds;
                 bool isSelected;
 
-                // Check if item matches the current selection
                 if (allItems != null && listIndex < allItems.Count)
                 {
-                    // All tab: check by category and item ID against equipped items
                     var (itemCategory, itemId) = allItems[listIndex];
                     isSelected = itemCategory switch
                     {
@@ -396,7 +366,6 @@ namespace OutfitStudio
                 }
                 else
                 {
-                    // Category tabs: check by item ID against equipped item
                     string? equippedId = currentCategory switch
                     {
                         OutfitCategoryManager.Category.Shirts => equippedShirtId,
@@ -414,13 +383,11 @@ namespace OutfitStudio
                     isSelected = ids != null && listIndex < ids.Count && ids[listIndex] == equippedId;
                 }
 
-                // Highlight selected item
                 if (isSelected)
                 {
                     b.Draw(Game1.staminaRect, slot, Color.Wheat);
                 }
 
-                // Hover highlight (only when no overlay is open)
                 if (!hasOverlay)
                 {
                     bool isHovered = uiBuilder.ItemSlots[i].containsPoint(Game1.getMouseX(), Game1.getMouseY());
@@ -431,7 +398,6 @@ namespace OutfitStudio
                     }
                 }
 
-                // Draw item sprite with cached filtered lists
                 if (allItems != null)
                 {
                     if (listIndex < allItems.Count)
@@ -446,19 +412,15 @@ namespace OutfitStudio
                 }
             }
 
-            // Draw bottom and close buttons
             uiBuilder.DrawBottomButtons(b);
             uiBuilder.DrawCloseButton(b);
             uiBuilder.DrawFloatingButtons(b);
 
-            // Draw dye color panel (after menu, before dropdowns)
             if (dyeColorManager.IsOpen)
                 dyeColorManager.Draw(b);
 
-            // Skip dropdown and tooltips when overlay is open
             if (!hasOverlay)
             {
-                // Draw dropdown options if open
                 if (dropdownManager.IsOpen)
                 {
                     drawingHelper.DrawDropdownOptions(b);
@@ -469,7 +431,6 @@ namespace OutfitStudio
                     }
                 }
 
-                // Draw item info tooltip if toggle is active, hovering, and dropdown is closed
                 if (showItemInfo && hoveredIndex >= 0 && !dropdownManager.IsOpen)
                 {
                     if (allItems != null)
@@ -486,7 +447,6 @@ namespace OutfitStudio
                     }
                 }
 
-                // Draw lookup tooltip if hovering over lookup icon
                 if (uiBuilder.LookupButton != null && uiBuilder.LookupButton.containsPoint(Game1.getMouseX(), Game1.getMouseY()))
                 {
                     drawingHelper.DrawLookupTooltip(b);
@@ -494,13 +454,11 @@ namespace OutfitStudio
 
             }
 
-            // Draw wardrobe overlay if open
             if (wardrobeOverlay != null)
             {
                 wardrobeOverlay.draw(b);
             }
 
-            // Only draw cursor if no overlay (overlays draw their own cursor)
             if (!hasOverlay)
             {
                 drawMouse(b);

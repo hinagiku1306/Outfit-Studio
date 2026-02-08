@@ -8,26 +8,22 @@ using StardewValley.Objects;
 
 namespace OutfitStudio
 {
-    /// <summary>
-    /// Tracks current selection, original outfit (for closing menu), and applied outfit (for Reset button).
-    /// </summary>
     public class OutfitState
     {
         private int shirtIndex;
         private int pantsIndex;
         private int hatIndex;
 
-        // Original outfit - captured when menu opens, for reverting on close
+        // Captured when menu opens — used to revert on close
         private readonly string originalShirt;
         private readonly string originalPants;
         private readonly string originalHat;
 
-        // Applied outfit - set when Apply is clicked, for Reset button
+        // Set when Apply is clicked — used for Reset button
         private string appliedShirt;
         private string appliedPants;
         private string appliedHat;
 
-        // Color tracking - original (menu open) and applied (after Apply click)
         private readonly Color originalPantsColor;
         private readonly Color originalShirtColor;
         private Color appliedPantsColor;
@@ -35,7 +31,6 @@ namespace OutfitStudio
 
         private int scrollOffset = 0;
 
-        // Per-category state (null = no filter/search active)
         private readonly Dictionary<OutfitCategoryManager.Category, string?> modFilters = new();
         private readonly Dictionary<OutfitCategoryManager.Category, string?> searchTexts = new();
 
@@ -184,7 +179,6 @@ namespace OutfitStudio
             else
                 Game1.player.hat.Value = ItemRegistry.Create<Hat>("(H)" + appliedHat);
 
-            // Restore applied colors
             Game1.player.changePantsColor(appliedPantsColor);
             if (Game1.player.shirtItem.Value != null)
                 Game1.player.shirtItem.Value.clothesColor.Set(appliedShirtColor);
@@ -213,7 +207,6 @@ namespace OutfitStudio
             else
                 Game1.player.hat.Value = ItemRegistry.Create<Hat>("(H)" + appliedHat);
 
-            // Restore applied colors
             Game1.player.changePantsColor(appliedPantsColor);
             if (Game1.player.shirtItem.Value != null)
                 Game1.player.shirtItem.Value.clothesColor.Set(appliedShirtColor);
