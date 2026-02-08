@@ -123,6 +123,14 @@ namespace OutfitStudio
                     setValue: value => config.AutoFocusSearchBar = value
                 );
 
+                gmcmApi.AddBoolOption(
+                    mod: ModManifest,
+                    name: () => TranslationCache.ConfigArrowKeyScrollingName,
+                    tooltip: () => TranslationCache.ConfigArrowKeyScrollingTooltip,
+                    getValue: () => config.ArrowKeyScrolling,
+                    setValue: value => config.ArrowKeyScrolling = value
+                );
+
                 // Main Menu section
                 gmcmApi.AddSectionTitle(
                     mod: ModManifest,

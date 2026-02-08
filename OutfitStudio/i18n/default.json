@@ -16,6 +16,8 @@
     "config.auto-open-tag-menu.tooltip": "If enabled, the tag selection menu will automatically open when saving an outfit.",
     "config.auto-focus-search-bar.name": "Auto-Focus Search Bar",
     "config.auto-focus-search-bar.tooltip": "If enabled, the search bar is automatically focused when the menu opens. Useful when your toggle key is a typeable character.",
+    "config.arrow-key-scrolling.name": "Arrow Key Scrolling",
+    "config.arrow-key-scrolling.tooltip": "If enabled, use arrow keys to scroll through items and outfit lists. Up/Down scrolls by one row, Left/Right scrolls by one page.",
     "config.reset-match-all-on-open.name": "Reset Match All",
     "config.reset-match-all-on-open.tooltip": "Resets the \"Match All\" checkbox each time you open the Wardrobe. If disabled, it remembers your last choice.",
     "config.reset-show-invalid-on-open.name": "Reset Show Invalid",
