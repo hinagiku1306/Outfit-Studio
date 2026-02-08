@@ -347,14 +347,14 @@ namespace OutfitStudio
             if (canScrollUp)
             {
                 Rectangle upArrowSource = new Rectangle(421, 459, 11, 12);
-                Vector2 upArrowPos = new Vector2(anchorBounds.Right - 22, anchorBounds.Bottom + 6);
+                Vector2 upArrowPos = new Vector2(anchorBounds.Right - 24, anchorBounds.Bottom + 8);
                 b.Draw(Game1.mouseCursors, upArrowPos, upArrowSource, Color.White, 0f, Vector2.Zero, 1.5f, SpriteEffects.None, 1f);
             }
 
             if (canScrollDown)
             {
                 Rectangle downArrowSource = new Rectangle(421, 472, 11, 12);
-                Vector2 downArrowPos = new Vector2(anchorBounds.Right - 22, anchorBounds.Bottom + dropdownHeight - 22);
+                Vector2 downArrowPos = new Vector2(anchorBounds.Right - 24, anchorBounds.Bottom + dropdownHeight - 26);
                 b.Draw(Game1.mouseCursors, downArrowPos, downArrowSource, Color.White, 0f, Vector2.Zero, 1.5f, SpriteEffects.None, 1f);
             }
 

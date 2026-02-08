@@ -108,6 +108,7 @@
     "wardrobe.filter.favorites": "Favorite",
     "wardrobe.filter.global": "Global",
     "wardrobe.filter.local": "Local",
+    "wardrobe.filter.invalid": "Invalid",
     "wardrobe.filter.noResults": "No matching sets",
     // Delete confirmation
     "wardrobe.delete.confirm-question": "Delete set?",

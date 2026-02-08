@@ -22,6 +22,7 @@ namespace OutfitStudio
         public Rectangle PantsSlot { get; private set; }
         public Rectangle HatSlot { get; private set; }
         public ClickableComponent NameInputArea { get; private set; } = null!;
+        public ClickableComponent NameClearButton { get; private set; } = null!;
         public ClickableComponent FavoriteCheckbox { get; private set; } = null!;
         public ClickableComponent? LocalOnlyCheckbox { get; private set; }
         public ClickableComponent? AddTagsButton { get; private set; }
@@ -108,10 +109,19 @@ namespace OutfitStudio
             int currentY = Y + SaveSetBorderPadding;
 
             int nameLabelWidth = (int)Game1.smallFont.MeasureString(TranslationCache.SaveSetNameLabel).X + 12;
-            int nameInputWidth = contentWidth - nameLabelWidth;
+            int nameInputWidth = contentWidth - nameLabelWidth - 30;
             NameInputArea = new ClickableComponent(
                 new Rectangle(contentX + nameLabelWidth, currentY, nameInputWidth, NameSectionHeight),
                 "nameInput"
+            );
+            NameClearButton = new ClickableComponent(
+                new Rectangle(
+                    NameInputArea.bounds.Right - ClearButtonRightMargin - ClearButtonSize - 4,
+                    NameInputArea.bounds.Y + (NameSectionHeight - ClearButtonSize) / 2,
+                    ClearButtonSize,
+                    ClearButtonSize
+                ),
+                "nameClear"
             );
 
             currentY += NameSectionHeight;
@@ -229,6 +239,9 @@ namespace OutfitStudio
             Color textColor = showPlaceholder ? Color.Gray : Game1.textColor;
             Vector2 textPosition = new Vector2(bounds.X + 20 + jiggleOffset, bounds.Y + (bounds.Height - textHeight) / 2);
             Utility.drawTextWithShadow(b, displayText, Game1.smallFont, textPosition, textColor);
+
+            if (!string.IsNullOrEmpty(currentText))
+                UIHelpers.DrawClearButton(b, NameClearButton);
         }
 
         public void DrawNameCursor(SpriteBatch b, string currentText, bool isSelected, int jiggleOffset = 0)
