@@ -2,9 +2,6 @@ using System.Collections.Generic;
 
 namespace OutfitStudio
 {
-    /// <summary>
-    /// Provides filtered item lists for each category in the outfit menu.
-    /// </summary>
     public class OutfitItemListProvider
     {
         private readonly OutfitFilterManager filterManager;

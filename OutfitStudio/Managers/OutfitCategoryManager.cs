@@ -5,9 +5,6 @@ using StardewValley;
 
 namespace OutfitStudio
 {
-    /// <summary>
-    /// Manages clothing categories (shirts, pants, hats) and their item lists.
-    /// </summary>
     public class OutfitCategoryManager
     {
         private readonly IMonitor monitor;
@@ -17,7 +14,7 @@ namespace OutfitStudio
 
         public readonly List<string> ShirtIds = new();
         public readonly List<string> PantsIds = new();
-        public readonly List<string> HatIds = new(); // Includes NoHatId for no hat
+        public readonly List<string> HatIds = new(); // HatIds[0] is NoHatId
         public readonly List<(Category ItemCategory, string ItemId)> AllItemIds = new();
 
         public enum Category { All, Shirts, Pants, Hats }
@@ -71,9 +68,6 @@ namespace OutfitStudio
             }
         }
 
-        /// <summary>
-        /// Get the display name for an item at the given list index.
-        /// </summary>
         public string? GetItemDisplayName(int categoryIndex)
         {
             string? qualifiedId = GetQualifiedItemId(categoryIndex);
@@ -106,9 +100,6 @@ namespace OutfitStudio
             return null;
         }
 
-        /// <summary>
-        /// Get the total number of items in the current category.
-        /// </summary>
         public int GetCurrentListCount()
         {
             return CurrentCategory switch
@@ -121,7 +112,6 @@ namespace OutfitStudio
             };
         }
 
-        /// <summary>Get the qualified item ID for an item at the given index in the current category.</summary>
         public string? GetQualifiedItemId(int listIndex)
         {
             return ItemIdHelper.GetQualifiedItemId(CurrentCategory, listIndex, ShirtIds, PantsIds, HatIds);

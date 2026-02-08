@@ -7,9 +7,6 @@ using StardewValley.Menus;
 
 namespace OutfitStudio
 {
-    /// <summary>
-    /// Renders item tooltips with name, description, and mod source.
-    /// </summary>
     public class OutfitTooltipRenderer
     {
         private readonly OutfitFilterManager filterManager;

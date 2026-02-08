@@ -6,34 +6,15 @@ using StardewValley.Menus;
 
 namespace OutfitStudio
 {
-    /// <summary>
-    /// Manages the search bar TextBox state and interactions.
-    /// </summary>
     public class OutfitSearchManager
     {
-        // Dependencies
         private readonly OutfitUIBuilder uiBuilder;
-
-        // TextBox control
         private readonly TextBox searchBox;
-
-        // State tracking
         private string lastSearchText = "";
         private bool searchBarFocused;
 
-        /// <summary>
-        /// Gets the current search text.
-        /// </summary>
         public string CurrentSearchText => searchBox.Text;
-
-        /// <summary>
-        /// Gets whether the search text has changed since last update.
-        /// </summary>
         public bool HasSearchTextChanged { get; private set; }
-
-        /// <summary>
-        /// Gets whether the TextBox is currently focused.
-        /// </summary>
         public bool IsFocused => searchBox.Selected;
 
         public OutfitSearchManager(OutfitUIBuilder uiBuilder, OutfitState state)
@@ -41,7 +22,6 @@ namespace OutfitStudio
             this.uiBuilder = uiBuilder ?? throw new ArgumentNullException(nameof(uiBuilder));
             this.searchBarFocused = ModEntry.Config.AutoFocusSearchBar;
 
-            // Initialize TextBox with Stardew Valley's default textbox texture
             searchBox = new TextBox(
                 Game1.content.Load<Texture2D>("LooseSprites\\textBox"),
                 null,
@@ -52,11 +32,9 @@ namespace OutfitStudio
                 Selected = ModEntry.Config.AutoFocusSearchBar
             };
 
-            // Position will be set in UpdateBounds()
             UpdateBounds();
         }
 
-        /// <summary>Updates TextBox bounds to match SearchBar component.</summary>
         public void UpdateBounds()
         {
             if (uiBuilder.SearchBar == null)
@@ -69,13 +47,11 @@ namespace OutfitStudio
             searchBox.Width = bounds.Width - 32;
         }
 
-        /// <summary>Focuses the search bar (for click-to-focus when auto-focus is disabled).</summary>
         public void Focus()
         {
             searchBarFocused = true;
         }
 
-        /// <summary>Updates search state and detects text changes.</summary>
         public void Update(bool allowFocus = true)
         {
             if (allowFocus)
@@ -99,7 +75,6 @@ namespace OutfitStudio
             }
         }
 
-        /// <summary>Draws the search text and blinking cursor.</summary>
         public void Draw(SpriteBatch b)
         {
             if (uiBuilder.SearchBar == null)
@@ -129,13 +104,11 @@ namespace OutfitStudio
             }
         }
 
-        /// <summary>Unfocuses the TextBox when not in auto-focus mode.</summary>
         public void Unfocus()
         {
             searchBarFocused = false;
         }
 
-        /// <summary>Sets search text programmatically without triggering filter rebuild.</summary>
         public void SetText(string text)
         {
             searchBox.Text = text ?? "";
@@ -143,7 +116,6 @@ namespace OutfitStudio
             HasSearchTextChanged = false;
         }
 
-        /// <summary>Clears the search text.</summary>
         public void Clear()
         {
             searchBox.Text = "";
@@ -151,7 +123,6 @@ namespace OutfitStudio
             HasSearchTextChanged = true;
         }
 
-        /// <summary>Checks if a point is within the search bar bounds.</summary>
         public bool IsPointInBounds(int x, int y)
         {
             return uiBuilder.SearchBar != null && uiBuilder.SearchBar.containsPoint(x, y);

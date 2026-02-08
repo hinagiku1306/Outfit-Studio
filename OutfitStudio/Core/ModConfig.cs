@@ -20,7 +20,6 @@ namespace OutfitStudio
         public bool ResetShowInvalidOnOpen { get; set; } = false;
         public string DefaultSearchScope { get; set; } = "Set";
 
-        // Grid layout configuration
         public int VisibleRows { get; set; } = OutfitLayoutConstants.DefaultVisibleRows;
         public int VisibleColumns { get; set; } = OutfitLayoutConstants.DefaultVisibleColumns;
         public int SlotSize { get; set; } = OutfitLayoutConstants.DefaultSlotSize;

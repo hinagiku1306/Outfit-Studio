@@ -1,0 +1,30 @@
+┌───────────────────────────────┐
+│ Name: [                     ] │
+│                               │
+│ Triggers:                     │
+│ [ ] Daily                     │
+│ [ ] Seasonal: [ Dropdown ]    │
+│ [ ] Festivals: [ Dropdown ]   │
+│                               │
+│ Active Tags: [ Tag Dropdown ] │
+│                               │
+│ [ ] No repeats                │
+│ [ ] Save to this farm only    │
+│                               │
+│      [ Save ] [ Cancel ]      │
+└───────────────────────────────┘
+
+Dropdowns are multi-select
+
+
+┌───────────────────────────────┐
+│ [] Auto-change outfits        │
+│                               │ 
+| Schedules                     │
+│ [] Winter Base Outfit         │
+│ [] Daily Random Outfit        │
+│ [] Rainy Hat                  │
+│ [+]                           │
+│                               │
+│      [ Apply ] [ Close ]      │
+└───────────────────────────────┘

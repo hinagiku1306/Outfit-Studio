@@ -15,7 +15,6 @@ namespace OutfitStudio
 
         public static ModConfig Config { get; private set; } = null!;
 
-        // Cached managers (initialized once when game launches)
         private OutfitFilterManager? filterManager;
         private OutfitCategoryManager? categoryManager;
         private OutfitSetStore? outfitSetStore;
@@ -25,10 +24,7 @@ namespace OutfitStudio
             config = helper.ReadConfig<ModConfig>();
             Config = config;
 
-            // Initialize debug logger early
             DebugLogger.Initialize(Monitor, config);
-
-            // Initialize translation cache early to avoid repeated I/O calls
             TranslationCache.Initialize(helper.Translation);
             helper.Events.Input.ButtonsChanged += OnButtonsChanged;
             helper.Events.GameLoop.GameLaunched += OnGameLaunched;
@@ -38,28 +34,23 @@ namespace OutfitStudio
 
         private void OnSaveLoaded(object? sender, SaveLoadedEventArgs e)
         {
-            // Initialize managers when save is loaded (game data is now available)
             filterManager = new OutfitFilterManager(Monitor, Helper);
             categoryManager = new OutfitCategoryManager(Monitor, filterManager);
             filterManager.BuildModMapping(categoryManager.ShirtIds, categoryManager.PantsIds, categoryManager.HatIds);
 
-            // Load local outfit sets for this save
             outfitSetStore?.LoadLocalData();
         }
 
         private void OnReturnedToTitle(object? sender, ReturnedToTitleEventArgs e)
         {
-            // Clear local sets when returning to title, keep global sets loaded
             outfitSetStore?.ClearLocalData();
         }
 
         private void OnGameLaunched(object? sender, GameLaunchedEventArgs e)
         {
-            // Initialize outfit set store and load global data
             outfitSetStore = new OutfitSetStore(Helper, Monitor);
             outfitSetStore.LoadGlobalData();
 
-            // Set up Generic Mod Config Menu integration if available
             var gmcmApi = Helper.ModRegistry.GetApi<IGenericModConfigMenuApi>("spacechase0.GenericModConfigMenu");
             if (gmcmApi != null)
             {
@@ -69,7 +60,6 @@ namespace OutfitStudio
                     save: () => Helper.WriteConfig(config)
                 );
 
-                // General section
                 gmcmApi.AddSectionTitle(
                     mod: ModManifest,
                     text: () => TranslationCache.ConfigGeneralSection
@@ -131,7 +121,6 @@ namespace OutfitStudio
                     setValue: value => config.ArrowKeyScrolling = value
                 );
 
-                // Main Menu section
                 gmcmApi.AddSectionTitle(
                     mod: ModManifest,
                     text: () => TranslationCache.ConfigMainMenuSection
@@ -191,7 +180,6 @@ namespace OutfitStudio
                     max: OutfitLayoutConstants.MaxSlotSize
                 );
 
-                // Wardrobe Menu section
                 gmcmApi.AddSectionTitle(
                     mod: ModManifest,
                     text: () => TranslationCache.ConfigWardrobeMenuSection
@@ -244,7 +232,6 @@ namespace OutfitStudio
                 }
                 else
                 {
-                    // Ensure managers are initialized
                     if (categoryManager == null || filterManager == null || outfitSetStore == null)
                     {
                         Monitor.Log("Managers not initialized yet. This shouldn't happen.", LogLevel.Warn);

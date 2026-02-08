@@ -10,3 +10,4 @@
 
 13. Festival outfit presets
 14. Seasonal outfit swap
+15. Toggleable button to open wardrobe menu directly

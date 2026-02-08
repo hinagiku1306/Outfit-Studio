@@ -16,16 +16,10 @@ namespace OutfitStudio.Models
         public bool IsFavorite { get; set; }
         public bool IsGlobal { get; set; } = true;
 
-        /// <summary>
-        /// Runtime-only flag indicating whether all items in the set exist in the game.
-        /// Recalculated on load - any persisted value is ignored.
-        /// </summary>
+        // Runtime-only — recalculated on load, persisted value is ignored
         public bool IsValid { get; set; } = true;
     }
 
-    /// <summary>
-    /// Container for global outfit sets stored in mod folder JSON file.
-    /// </summary>
     public class OutfitSetGlobalData
     {
         public int Version { get; set; } = 1;
@@ -33,9 +27,6 @@ namespace OutfitStudio.Models
         public List<OutfitSet> Sets { get; set; } = new();
     }
 
-    /// <summary>
-    /// Container for local outfit sets stored in SMAPI save data.
-    /// </summary>
     public class OutfitSetLocalData
     {
         public List<OutfitSet> Sets { get; set; } = new();

@@ -8,9 +8,6 @@ using static OutfitStudio.OutfitLayoutConstants;
 
 namespace OutfitStudio
 {
-    /// <summary>
-    /// Helper class for drawing tooltips and dropdown options in the outfit menu.
-    /// </summary>
     public class OutfitDrawingHelper
     {
         private const int DropdownPanelYOffset = -4;

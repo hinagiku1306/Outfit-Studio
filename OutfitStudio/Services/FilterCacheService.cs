@@ -6,9 +6,6 @@ using StardewValley;
 
 namespace OutfitStudio
 {
-    /// <summary>
-    /// Caches filtered item lists and search results to improve performance.
-    /// </summary>
     public class FilterCacheService
     {
         private readonly ModDetectionService detectionService;
@@ -25,9 +22,6 @@ namespace OutfitStudio
             this.detectionService = detectionService ?? throw new ArgumentNullException(nameof(detectionService));
         }
 
-        /// <summary>
-        /// Gets a filtered list of shirt IDs based on the mod filter.
-        /// </summary>
         public List<string> GetFilteredShirtIds(List<string> shirtIds, string? modFilter)
         {
             if (string.IsNullOrEmpty(modFilter))
@@ -47,9 +41,6 @@ namespace OutfitStudio
             return filtered;
         }
 
-        /// <summary>
-        /// Gets a filtered list of pants IDs based on the mod filter.
-        /// </summary>
         public List<string> GetFilteredPantsIds(List<string> pantsIds, string? modFilter)
         {
             if (string.IsNullOrEmpty(modFilter))
@@ -69,9 +60,6 @@ namespace OutfitStudio
             return filtered;
         }
 
-        /// <summary>
-        /// Gets a filtered list of hat IDs based on the mod filter.
-        /// </summary>
         public List<string> GetFilteredHatIds(List<string> hatIds, string? modFilter)
         {
             if (string.IsNullOrEmpty(modFilter))
@@ -125,21 +113,15 @@ namespace OutfitStudio
             return filtered;
         }
 
-        /// <summary>Filters shirts by search text.</summary>
         public List<string> GetSearchFilteredShirtIds(List<string> shirtIds, string? searchText) =>
             SearchItemsByDisplayName(shirtIds, searchText, "(S)");
 
-        /// <summary>Filters pants by search text.</summary>
         public List<string> GetSearchFilteredPantsIds(List<string> pantsIds, string? searchText) =>
             SearchItemsByDisplayName(pantsIds, searchText, "(P)");
 
-        /// <summary>Filters hats by search text.</summary>
         public List<string> GetSearchFilteredHatIds(List<string> hatIds, string? searchText) =>
             SearchItemsByDisplayName(hatIds, searchText, "(H)");
 
-        /// <summary>
-        /// Combines mod filter and search filter for shirts (applies mod filter first, then search).
-        /// </summary>
         public List<string> GetFilteredAndSearchedShirtIds(List<string> shirtIds, string? modFilter, string? searchText)
         {
             string cacheKey = $"{modFilter ?? "All"}::{searchText ?? ""}";
@@ -152,9 +134,6 @@ namespace OutfitStudio
             return result;
         }
 
-        /// <summary>
-        /// Combines mod filter and search filter for pants (applies mod filter first, then search).
-        /// </summary>
         public List<string> GetFilteredAndSearchedPantsIds(List<string> pantsIds, string? modFilter, string? searchText)
         {
             string cacheKey = $"{modFilter ?? "All"}::{searchText ?? ""}";
@@ -167,9 +146,6 @@ namespace OutfitStudio
             return result;
         }
 
-        /// <summary>
-        /// Combines mod filter and search filter for hats (applies mod filter first, then search).
-        /// </summary>
         public List<string> GetFilteredAndSearchedHatIds(List<string> hatIds, string? modFilter, string? searchText)
         {
             string cacheKey = $"{modFilter ?? "All"}::{searchText ?? ""}";
@@ -182,9 +158,6 @@ namespace OutfitStudio
             return result;
         }
 
-        /// <summary>
-        /// Gets the count of items in the current category, respecting the active filter.
-        /// </summary>
         public int GetFilteredListCount(OutfitCategoryManager.Category category,
             List<string> shirtIds, List<string> pantsIds, List<string> hatIds, string? modFilter)
         {
@@ -212,9 +185,6 @@ namespace OutfitStudio
             };
         }
 
-        /// <summary>
-        /// Clears search-related caches to free memory.
-        /// </summary>
         public void ClearSearchCaches()
         {
             cachedCombinedShirts.Clear();

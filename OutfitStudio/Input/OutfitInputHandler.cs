@@ -90,7 +90,6 @@ namespace OutfitStudio
 
         public bool HandleLeftClick(int x, int y, bool playSound)
         {
-            // Wardrobe overlay handling
             var wardrobeOverlay = getWardrobeOverlay();
             if (wardrobeOverlay != null)
             {
@@ -104,7 +103,6 @@ namespace OutfitStudio
                 return true;
             }
 
-            // Handle dye color panel clicks (consumed = click inside panel bounds)
             var dcm = getDyeColorManager();
             if (dcm.IsOpen)
             {
@@ -112,16 +110,13 @@ namespace OutfitStudio
                 if (consumed) return true;
             }
 
-            // Handle search bar focus (click-to-focus when auto-focus is disabled)
             if (searchManager.IsPointInBounds(x, y))
                 searchManager.Focus();
             else
                 searchManager.Unfocus();
 
-            // Handle dropdown option clicks (but allow Close, Tab, and Clear buttons to work)
             if (dropdownManager.IsOpen)
             {
-                // Close button always works
                 if (uiBuilder.CloseButton.containsPoint(x, y))
                 {
                     dropdownManager.Close();
@@ -130,7 +125,6 @@ namespace OutfitStudio
                     return true;
                 }
 
-                // Filter clear button works when dropdown is open
                 if (uiBuilder.FilterClearButton != null && uiBuilder.FilterClearButton.containsPoint(x, y))
                 {
                     string? currentFilter = state.GetModFilter(categoryManager.CurrentCategory);
@@ -144,7 +138,6 @@ namespace OutfitStudio
                     }
                 }
 
-                // Search clear button works when dropdown is open
                 if (uiBuilder.SearchClearButton != null && uiBuilder.SearchClearButton.containsPoint(x, y))
                 {
                     if (!string.IsNullOrEmpty(searchManager.CurrentSearchText))
@@ -158,7 +151,6 @@ namespace OutfitStudio
                     }
                 }
 
-                // Buttons that work even when dropdown is open
                 if (uiBuilder.AllTab.containsPoint(x, y) ||
                     uiBuilder.ShirtsTab.containsPoint(x, y) ||
                     uiBuilder.PantsTab.containsPoint(x, y) ||
@@ -172,7 +164,6 @@ namespace OutfitStudio
                 {
                     dropdownManager.Close();
                     continuousScrollHandler.Reset();
-                    // Fall through to handle button click below
                 }
                 else
                 {
@@ -185,14 +176,12 @@ namespace OutfitStudio
                         if (playSound) Game1.playSound("smallSelect");
                         return true;
                     }
-                    // Clicked outside dropdown, close it
                     dropdownManager.Close();
                     continuousScrollHandler.Reset();
                     return true;
                 }
             }
 
-            // Handle filter clear button click
             if (uiBuilder.FilterClearButton != null && uiBuilder.FilterClearButton.containsPoint(x, y))
             {
                 string? currentFilter = state.GetModFilter(categoryManager.CurrentCategory);
@@ -205,7 +194,6 @@ namespace OutfitStudio
                 }
             }
 
-            // Handle search clear button click
             if (uiBuilder.SearchClearButton != null && uiBuilder.SearchClearButton.containsPoint(x, y))
             {
                 if (!string.IsNullOrEmpty(searchManager.CurrentSearchText))
@@ -218,10 +206,8 @@ namespace OutfitStudio
                 }
             }
 
-            // Handle dropdown button click (excluding clear button area)
             if (uiBuilder.ModFilterDropdown != null && uiBuilder.ModFilterDropdown.containsPoint(x, y))
             {
-                // Don't toggle if clicking the clear button
                 if (uiBuilder.FilterClearButton == null || !uiBuilder.FilterClearButton.containsPoint(x, y))
                 {
                     dropdownManager.Toggle();
@@ -231,7 +217,6 @@ namespace OutfitStudio
                 }
             }
 
-            // Category tabs
             if (HandleTabClick(uiBuilder.AllTab, OutfitCategoryManager.Category.All, x, y, playSound))
                 return true;
             if (HandleTabClick(uiBuilder.ShirtsTab, OutfitCategoryManager.Category.Shirts, x, y, playSound))
@@ -241,15 +226,12 @@ namespace OutfitStudio
             if (HandleTabClick(uiBuilder.HatsTab, OutfitCategoryManager.Category.Hats, x, y, playSound))
                 return true;
 
-            // Item slots
             if (HandleItemSlotClick(x, y, playSound))
                 return true;
 
-            // Grid scroll arrows
             if (HandleGridScrollArrowClick(x, y, playSound))
                 return true;
 
-            // Dye color button - toggles panel
             if (uiBuilder.DyeColorButton.containsPoint(x, y))
             {
                 Color currentColor = GetActiveItemColor();
@@ -260,7 +242,6 @@ namespace OutfitStudio
                 return true;
             }
 
-            // Apply button
             if (uiBuilder.ApplyButton.containsPoint(x, y))
             {
                 onApplyOutfit();
@@ -269,7 +250,6 @@ namespace OutfitStudio
                 return true;
             }
 
-            // Reset button
             if (uiBuilder.ResetButton.containsPoint(x, y))
             {
                 onResetOutfit();
@@ -277,7 +257,6 @@ namespace OutfitStudio
                 return true;
             }
 
-            // Direction preview arrows
             if (uiBuilder.LeftArrowButton.containsPoint(x, y))
             {
                 uiBuilder.RotatePreviewLeft();
@@ -291,7 +270,7 @@ namespace OutfitStudio
                 return true;
             }
 
-            // Save button - opens SaveSet overlay (swaps active menu)
+            // Type B swap: opens SaveSet overlay
             if (uiBuilder.SaveButton.containsPoint(x, y))
             {
                 Game1.activeClickableMenu = new SaveSetOverlay(Game1.activeClickableMenu, outfitSetStore, () => showSavedMessage());
@@ -299,7 +278,6 @@ namespace OutfitStudio
                 return true;
             }
 
-            // Wardrobe button - opens overlay
             if (uiBuilder.WardrobeButton.containsPoint(x, y))
             {
                 setWardrobeOverlay(new WardrobeOverlay(outfitSetStore, getParentMenu()));
@@ -307,7 +285,7 @@ namespace OutfitStudio
                 return true;
             }
 
-            // Gear button - opens config overlay (Type B swap)
+            // Type B swap: opens config overlay
             if (uiBuilder.GearButton.containsPoint(x, y))
             {
                 Game1.activeClickableMenu = new ConfigOverlay(Game1.activeClickableMenu, mod);
@@ -315,7 +293,6 @@ namespace OutfitStudio
                 return true;
             }
 
-            // Close button - reverts to applied outfit and closes
             if (uiBuilder.CloseButton.containsPoint(x, y))
             {
                 onRevertAndClose();
@@ -351,7 +328,6 @@ namespace OutfitStudio
                     state.SetSearchText(categoryManager.CurrentCategory, searchManager.CurrentSearchText);
                 }
 
-                // Sync dye color sliders to new tab's item color
                 var tabDcm = getDyeColorManager();
                 if (tabDcm.IsOpen)
                     tabDcm.SetSlidersFromColor(GetActiveItemColor());
@@ -446,7 +422,6 @@ namespace OutfitStudio
             if (itemCategory == OutfitCategoryManager.Category.Hats && ItemIdHelper.IsNoHatId(itemId))
             {
                 Game1.player.hat.Value = null;
-                // Update hat index to match the selected item in the hats list
                 int hatIndex = getCurrentHatIds().IndexOf(itemId);
                 if (hatIndex >= 0)
                     state.SetCurrentIndex(OutfitCategoryManager.Category.Hats, hatIndex);
@@ -534,7 +509,6 @@ namespace OutfitStudio
 
         public bool HandleKeyPress(Keys key)
         {
-            // Handle wardrobe overlay input
             var wardrobeOverlay = getWardrobeOverlay();
             if (wardrobeOverlay != null)
             {
@@ -548,7 +522,6 @@ namespace OutfitStudio
                 return true;
             }
 
-            // Handle dropdown scrolling when dropdown is open
             bool wasDropdownOpen = dropdownManager.IsOpen;
             if (dropdownManager.HandleKeyPress(key))
             {
@@ -595,8 +568,7 @@ namespace OutfitStudio
                 }
             }
 
-            // Handle Escape to close with revert
-            // Only Escape closes the menu - other menu buttons (like E) are used for typing
+            // Only Escape closes — other menu buttons (like E) are used for typing
             if (key == Keys.Escape)
             {
                 onRevertAndClose();

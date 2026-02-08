@@ -6,24 +6,17 @@ using static OutfitStudio.OutfitLayoutConstants;
 
 namespace OutfitStudio
 {
-    /// <summary>
-    /// Builds and manages UI components for the OutfitMenu.
-    /// Uses a section-based layout system for maintainability.
-    /// </summary>
     public class OutfitUIBuilder
     {
-        // Configuration values (from ModConfig)
         private readonly int configuredRows;
         private readonly int configuredColumns;
         private readonly int configuredSlotSize;
 
-        // Computed layout values
         public int SLOT_SIZE { get; private set; }
         public int VISIBLE_ITEMS { get; private set; }
         public int VISIBLE_ROWS { get; private set; }
         public int COLUMNS { get; private set; }
 
-        // UI Components
         public ClickableComponent AllTab { get; private set; } = null!;
         public ClickableComponent ShirtsTab { get; private set; } = null!;
         public ClickableComponent PantsTab { get; private set; } = null!;
@@ -39,49 +32,38 @@ namespace OutfitStudio
         public ClickableComponent? SearchClearButton { get; private set; } = null;
         public ClickableComponent? LookupButton { get; private set; } = null;
 
-        // Left panel buttons
         public ClickableComponent SaveButton { get; private set; } = null!;
         public ClickableComponent WardrobeButton { get; private set; } = null!;
 
-        // Dye color button (Prismatic Shard icon, left of Apply)
         public ClickableTextureComponent DyeColorButton { get; private set; } = null!;
 
-        // Gear/settings button (top-right, near close)
         public ClickableTextureComponent GearButton { get; private set; } = null!;
 
-        // Direction preview arrows
         public ClickableTextureComponent LeftArrowButton { get; private set; } = null!;
         public ClickableTextureComponent RightArrowButton { get; private set; } = null!;
-        private int previewDirection = 2; // 0=Up, 1=Right, 2=Down, 3=Left (default: Down)
+        private int previewDirection = 2;
 
-        // Grid scroll arrows
         public ClickableTextureComponent GridScrollUpButton { get; private set; } = null!;
         public ClickableTextureComponent GridScrollDownButton { get; private set; } = null!;
 
-        // Equipped items text area
         public Rectangle EquippedTextArea { get; private set; }
 
-        // Menu position and dimensions
         public int X { get; private set; }
         public int Y { get; private set; }
         public int Width { get; private set; }
         public int Height { get; private set; }
 
-        // Saved message display
         private float savedMessageTimer = 0f;
         private bool showingSavedMessage = false;
 
-        // Farmer preview rendering resources
         private RenderTarget2D? farmerRenderTarget = null;
         private SpriteBatch? farmerSpriteBatch = null;
         private bool previewDirty = true;
 
-        // Farmer preview constants (cached for performance)
         private static readonly Rectangle FarmerSourceRect = new Rectangle(0, 0, 16, 32);
         private static readonly Rectangle FarmerBathingSourceRect = new Rectangle(0, 576, 16, 32);
         private static readonly Vector2 FarmerRenderPosition = new Vector2(32, 32);
 
-        // Standing animation frames for each direction
         private static readonly FarmerSprite.AnimationFrame[] DirectionFrames = new[]
         {
             new FarmerSprite.AnimationFrame(12, 0, secondaryArm: false, flip: false), // 0 = Up
@@ -92,9 +74,6 @@ namespace OutfitStudio
         private const int FarmerRenderWidth = BackgroundSourceWidth * 2;  // 128
         private const int FarmerRenderHeight = BackgroundSourceHeight * 2; // 192
 
-        /// <summary>
-        /// Creates a new UI builder with configuration values.
-        /// </summary>
         public OutfitUIBuilder(ModConfig config)
         {
             configuredRows = Math.Clamp(config.VisibleRows, MinVisibleRows, MaxVisibleRows);
@@ -103,9 +82,6 @@ namespace OutfitStudio
             Recalculate();
         }
 
-        /// <summary>
-        /// Calculates the height of the left panel (preview + arrows + buttons).
-        /// </summary>
         private int CalculateLeftPanelHeight()
         {
             int arrowHeight = (int)(ArrowNativeHeight * ArrowScale);
@@ -134,9 +110,6 @@ namespace OutfitStudio
                    + BorderPaddingVBottom;
         }
 
-        /// <summary>
-        /// Calculates total menu width from content.
-        /// </summary>
         public int CalculateRequiredWidth()
         {
             int gridWidth = COLUMNS * SLOT_SIZE + (COLUMNS - 1) * ItemSlotGap;
@@ -145,53 +118,41 @@ namespace OutfitStudio
             return BorderPaddingH + contentWidth + BorderPaddingH + BorderPaddingRightExtra;
         }
 
-        /// <summary>
-        /// Recalculates all UI component positions based on current viewport.
-        /// Uses section-based layout with uniform spacing.
-        /// </summary>
         public void Recalculate()
         {
-            // Apply config with bounds
             SLOT_SIZE = configuredSlotSize;
             COLUMNS = configuredColumns;
             VISIBLE_ROWS = configuredRows;
             VISIBLE_ITEMS = VISIBLE_ROWS * COLUMNS;
 
-            // Calculate total dimensions
             Width = CalculateRequiredWidth();
             Height = CalculateRequiredHeight();
 
-            // Center menu on screen
             X = (Game1.uiViewport.Width - Width) / 2;
             Y = (Game1.uiViewport.Height - Height) / 2;
 
-            // === SECTION 1: Tabs (horizontally centered, vertically centered in section) ===
             int tabSectionY = Y + BorderPaddingV;
             int tabCenterY = tabSectionY + (TabSectionHeight - TabAndButtonHeight) / 2;
             PositionTabs(tabCenterY);
 
-            // === SECTION 2: Content (left panel + right panel, centered as group) ===
             int contentSectionY = tabSectionY + TabSectionHeight + SectionGapV;
             int contentSectionHeight = CalculateContentSectionHeight();
             PositionContentSection(contentSectionY, contentSectionHeight);
 
-            // Close button (top-right corner)
             PositionCloseButton();
 
-            // Floating buttons (gear + dye color, outside menu right side)
             PositionFloatingButtons();
         }
 
         private void PositionTabs(int tabY)
         {
-            // Calculate dynamic widths for tabs based on text
             int allTabWidth = UIHelpers.CalculateButtonWidth(TranslationCache.TabAll);
             int shirtTabWidth = UIHelpers.CalculateButtonWidth(TranslationCache.TabShirts);
             int pantsTabWidth = UIHelpers.CalculateButtonWidth(TranslationCache.TabPants);
             int hatsTabWidth = UIHelpers.CalculateButtonWidth(TranslationCache.TabHats);
 
             int totalTabsWidth = allTabWidth + shirtTabWidth + pantsTabWidth + hatsTabWidth + TabAndButtonGap * 3;
-            int tabsStartX = X + (Width - totalTabsWidth) / 2;  // Horizontally centered
+            int tabsStartX = X + (Width - totalTabsWidth) / 2;
 
             AllTab = new ClickableComponent(
                 new Rectangle(tabsStartX, tabY, allTabWidth, TabAndButtonHeight),
@@ -232,7 +193,6 @@ namespace OutfitStudio
 
         private void PositionLeftPanel(int centerX, int startY)
         {
-            // Portrait box
             PortraitBox = new Rectangle(
                 centerX - CharacterPreviewWidth / 2,
                 startY,
@@ -240,7 +200,6 @@ namespace OutfitStudio
                 CharacterPreviewHeight
             );
 
-            // Direction arrows below portrait (centered horizontally)
             int arrowWidth = (int)(ArrowNativeWidth * ArrowScale);
             int arrowHeight = (int)(ArrowNativeHeight * ArrowScale);
             int arrowY = PortraitBox.Bottom + ElementGap;
@@ -260,7 +219,6 @@ namespace OutfitStudio
                 ArrowScale
             );
 
-            // Lookup button (top-right of portrait)
             LookupButton = new ClickableComponent(
                 new Rectangle(
                     PortraitBox.Right - LookupIconSize - LookupIconMargin,
@@ -271,7 +229,6 @@ namespace OutfitStudio
                 "Lookup"
             );
 
-            // Save/Wardrobe buttons below arrows (centered in left panel)
             int newOutfitButtonWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ButtonNewOutfit);
             int outfitsButtonWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ButtonOutfits);
             int leftButtonWidth = Math.Max(newOutfitButtonWidth, outfitsButtonWidth);
@@ -360,7 +317,6 @@ namespace OutfitStudio
                 TranslationCache.CommonReset
             );
 
-            // Grid scroll arrows (right side of grid box)
             int scrollArrowW = (int)(11 * GridScrollArrowScale);
             int scrollArrowH = (int)(12 * GridScrollArrowScale);
             int gridBoxRight = panelX + gridWidth + ContentBoxPadding;
@@ -415,9 +371,6 @@ namespace OutfitStudio
             );
         }
 
-        /// <summary>
-        /// Draws a category tab with text and bold effect on hover.
-        /// </summary>
         public void DrawTabWithText(SpriteBatch b, ClickableComponent tab, string label, bool isActive)
         {
             Color textColor = isActive ? Game1.textColor : Game1.textColor * TabOpacity;
@@ -448,9 +401,6 @@ namespace OutfitStudio
             previewDirty = true;
         }
 
-        /// <summary>
-        /// Draws the player preview (background and farmer).
-        /// </summary>
         public void DrawPlayerPreview(SpriteBatch b)
         {
             b.Draw(Game1.daybg, PortraitBox, Color.White);
@@ -535,9 +485,6 @@ namespace OutfitStudio
             );
         }
 
-        /// <summary>
-        /// Draws the item list background and scroll arrows.
-        /// </summary>
         public void DrawItemList(SpriteBatch b, int scrollOffset, int totalItems)
         {
             if (ItemSlots.Count == 0)
@@ -567,9 +514,6 @@ namespace OutfitStudio
 
         #region Button Drawing
 
-        /// <summary>
-        /// Draws all left panel buttons: direction arrows, new outfit, and outfits.
-        /// </summary>
         public void DrawLeftPanelButtons(SpriteBatch b)
         {
             UIHelpers.DrawTextureButton(b, LeftArrowButton);
@@ -579,9 +523,6 @@ namespace OutfitStudio
             UIHelpers.DrawTextButton(b, WardrobeButton, TranslationCache.ButtonOutfits);
         }
 
-        /// <summary>
-        /// Draws the bottom panel buttons: apply and reset.
-        /// </summary>
         public void DrawBottomButtons(SpriteBatch b)
         {
             UIHelpers.DrawTextButton(b, ApplyButton, TranslationCache.ButtonApply);
@@ -630,9 +571,6 @@ namespace OutfitStudio
             previewDirty = true;
         }
 
-        /// <summary>
-        /// Draws the close button with hover effect.
-        /// </summary>
         public void DrawCloseButton(SpriteBatch b)
         {
             UIHelpers.DrawTextureButton(b, CloseButton);
@@ -660,9 +598,6 @@ namespace OutfitStudio
                 origin, iconScale, SpriteEffects.None, 1f);
         }
 
-        /// <summary>
-        /// Draws the menu title.
-        /// </summary>
         public void DrawTitle(SpriteBatch b)
         {
             string title = TranslationCache.MenuTitle;
@@ -672,27 +607,18 @@ namespace OutfitStudio
                 Game1.textColor);
         }
 
-        /// <summary>
-        /// Triggers the "Applied!" message to display.
-        /// </summary>
         public void ShowAppliedMessage()
         {
             savedMessageTimer = SavedMessageDurationMs;
             showingSavedMessage = false;
         }
 
-        /// <summary>
-        /// Triggers the "Saved!" message to display.
-        /// </summary>
         public void ShowSavedMessage()
         {
             savedMessageTimer = SavedMessageDurationMs;
             showingSavedMessage = true;
         }
 
-        /// <summary>
-        /// Updates the saved message timer.
-        /// </summary>
         public void Update(float elapsedMilliseconds)
         {
             if (savedMessageTimer > 0)
@@ -701,9 +627,6 @@ namespace OutfitStudio
             }
         }
 
-        /// <summary>
-        /// Draws the "Applied!" or "Saved!" message above the character preview if active.
-        /// </summary>
         public void DrawSavedMessage(SpriteBatch b)
         {
             if (savedMessageTimer > 0)

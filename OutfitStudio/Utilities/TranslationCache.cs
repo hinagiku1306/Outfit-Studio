@@ -4,20 +4,14 @@ using StardewModdingAPI;
 
 namespace OutfitStudio
 {
-    /// <summary>
-    /// Centralized cache for all UI translations.
-    /// Initialized once at mod startup to avoid repeated I/O calls.
-    /// </summary>
     public static class TranslationCache
     {
-        // Common (shared across menus)
         public static string CommonSave { get; private set; } = "";
         public static string CommonCancel { get; private set; } = "";
         public static string CommonReset { get; private set; } = "";
         public static string CommonFavorite { get; private set; } = "";
         public static string CommonNone { get; private set; } = "";
 
-        // Menu UI
         public static string MenuTitle { get; private set; } = "";
         public static string TabAll { get; private set; } = "";
         public static string TabShirts { get; private set; } = "";
@@ -29,34 +23,28 @@ namespace OutfitStudio
         public static string MessageApplied { get; private set; } = "";
         public static string MessageSaved { get; private set; } = "";
 
-        // Filter options
         public static string FilterAll { get; private set; } = "";
         public static string FilterVanilla { get; private set; } = "";
         public static string FilterUnknown { get; private set; } = "";
 
-        // Item info
         public static string ItemNoHat { get; private set; } = "";
         public static string ItemModInfoTemplate { get; private set; } = ""; // "Mod: {{modName}}"
 
-        // Lookup tooltip labels
         public static string LookupShirt { get; private set; } = "";
         public static string LookupPants { get; private set; } = "";
         public static string LookupHat { get; private set; } = "";
 
-        // Wardrobe overlay
         public static string WardrobeSearch { get; private set; } = "";
         public static string WardrobeTags { get; private set; } = "";
         public static string WardrobeButtonApplyClose { get; private set; } = "";
         public static string WardrobeButtonEdit { get; private set; } = "";
         public static string WardrobeButtonDelete { get; private set; } = "";
 
-        // Save Set overlay
         public static string SaveSetNameLabel { get; private set; } = "";
         public static string SaveSetNamePlaceholder { get; private set; } = "";
         public static string SaveSetLocalOnly { get; private set; } = "";
         public static string SaveSetTagsLabel { get; private set; } = "";
 
-        // Tag picker popup
         public static string TagsPopupTitle { get; private set; } = "";
         public static string TagsPopupTitleEdit { get; private set; } = "";
         public static string TagsPopupCustom { get; private set; } = "";
@@ -66,17 +54,14 @@ namespace OutfitStudio
         public static readonly StringComparer TagComparer = StringComparer.OrdinalIgnoreCase;
         public static readonly StringComparison TagComparison = StringComparison.OrdinalIgnoreCase;
 
-        // Predefined tag translations
         private static Dictionary<string, string> predefinedTagTranslations = new();
 
-        // Wardrobe overlay - additional
         public static string WardrobeNoSets { get; private set; } = "";
         public static string WardrobeSelectToView { get; private set; } = "";
         public static string WardrobeScopeGlobal { get; private set; } = "";
         public static string WardrobeScopeLocal { get; private set; } = "";
         public static string WardrobeItemNone { get; private set; } = "";
 
-        // Wardrobe filter bar
         public static string WardrobeFilterSearchSet { get; private set; } = "";
         public static string WardrobeFilterSearchItem { get; private set; } = "";
         public static string WardrobeFilterSearchAll { get; private set; } = "";
@@ -89,12 +74,10 @@ namespace OutfitStudio
         public static string WardrobeFilterInvalid { get; private set; } = "";
         public static string WardrobeFilterNoResults { get; private set; } = "";
 
-        // Delete confirmation
         public static string DeleteConfirmQuestion { get; private set; } = "";
         public static string DeleteConfirmYes { get; private set; } = "";
         public static string DeleteConfirmNo { get; private set; } = "";
 
-        // Config (GMCM)
         public static string ConfigToggleMenuKeyName { get; private set; } = "";
         public static string ConfigToggleMenuKeyTooltip { get; private set; } = "";
         public static string ConfigToggleItemInfoKeyName { get; private set; } = "";
@@ -131,17 +114,11 @@ namespace OutfitStudio
         public static string ConfigSlotSizeName { get; private set; } = "";
         public static string ConfigSlotSizeTooltip { get; private set; } = "";
 
-        // Dye color panel
         public static string DyeColorTitle { get; private set; } = "";
 
-        // Config overlay
         public static string ConfigSettingsTitle { get; private set; } = "";
         public static string ConfigKeybindListening { get; private set; } = "";
 
-        /// <summary>
-        /// Initialize all translations from the translation helper.
-        /// Call this once in ModEntry.Entry() after SMAPI is ready.
-        /// </summary>
         public static void Initialize(ITranslationHelper i18n)
         {
             CommonSave = i18n.Get("common.save");
