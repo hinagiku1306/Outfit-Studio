@@ -26,6 +26,7 @@ namespace OutfitStudio
         private bool autoOpenTagMenu;
         private bool autoFocusSearchBar;
         private bool arrowKeyScrolling;
+        private bool autoOpenDyeColorMenu;
         private bool resetFilterOnTabSwitch;
         private bool resetSearchOnTabSwitch;
         private int visibleRows;
@@ -57,6 +58,7 @@ namespace OutfitStudio
             autoOpenTagMenu = config.AutoOpenTagMenu;
             autoFocusSearchBar = config.AutoFocusSearchBar;
             arrowKeyScrolling = config.ArrowKeyScrolling;
+            autoOpenDyeColorMenu = config.AutoOpenDyeColorMenu;
             resetFilterOnTabSwitch = config.ResetFilterOnTabSwitch;
             resetSearchOnTabSwitch = config.ResetSearchOnTabSwitch;
             visibleRows = config.VisibleRows;
@@ -180,6 +182,7 @@ namespace OutfitStudio
             if (TryToggleCheckbox(uiBuilder.AutoOpenTagMenuCheckbox, x, y, ref autoOpenTagMenu, playSound)) return;
             if (TryToggleCheckbox(uiBuilder.AutoFocusSearchBarCheckbox, x, y, ref autoFocusSearchBar, playSound)) return;
             if (TryToggleCheckbox(uiBuilder.ArrowKeyScrollingCheckbox, x, y, ref arrowKeyScrolling, playSound)) return;
+            if (TryToggleCheckbox(uiBuilder.AutoOpenDyeColorMenuCheckbox, x, y, ref autoOpenDyeColorMenu, playSound)) return;
             if (TryToggleCheckbox(uiBuilder.ResetFilterCheckbox, x, y, ref resetFilterOnTabSwitch, playSound)) return;
             if (TryToggleCheckbox(uiBuilder.ResetSearchCheckbox, x, y, ref resetSearchOnTabSwitch, playSound)) return;
             if (TryToggleCheckbox(uiBuilder.ResetMatchAllCheckbox, x, y, ref resetMatchAllOnOpen, playSound)) return;
@@ -352,6 +355,7 @@ namespace OutfitStudio
             uiBuilder.DrawSectionHeader(b, uiBuilder.MainMenuHeaderY, TranslationCache.ConfigMainMenuSection);
             uiBuilder.DrawCheckboxRow(b, TranslationCache.ConfigResetFilterOnTabSwitchName, resetFilterOnTabSwitch, uiBuilder.ResetFilterCheckbox);
             uiBuilder.DrawCheckboxRow(b, TranslationCache.ConfigResetSearchOnTabSwitchName, resetSearchOnTabSwitch, uiBuilder.ResetSearchCheckbox);
+            uiBuilder.DrawCheckboxRow(b, TranslationCache.ConfigAutoOpenDyeColorMenuName, autoOpenDyeColorMenu, uiBuilder.AutoOpenDyeColorMenuCheckbox);
 
             uiBuilder.DrawSliderRow(b, TranslationCache.ConfigVisibleRowsName, uiBuilder.VisibleRowsSlider);
             uiBuilder.DrawSliderRow(b, TranslationCache.ConfigVisibleColumnsName, uiBuilder.VisibleColumnsSlider);
@@ -406,6 +410,7 @@ namespace OutfitStudio
             config.AutoOpenTagMenu = autoOpenTagMenu;
             config.AutoFocusSearchBar = autoFocusSearchBar;
             config.ArrowKeyScrolling = arrowKeyScrolling;
+            config.AutoOpenDyeColorMenu = autoOpenDyeColorMenu;
             config.ResetFilterOnTabSwitch = resetFilterOnTabSwitch;
             config.ResetSearchOnTabSwitch = resetSearchOnTabSwitch;
             visibleRows = uiBuilder.VisibleRowsSlider.Value;

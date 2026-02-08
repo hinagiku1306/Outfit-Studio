@@ -29,6 +29,7 @@ namespace OutfitStudio
         public ClickableComponent AutoOpenTagMenuCheckbox { get; private set; } = null!;
         public ClickableComponent AutoFocusSearchBarCheckbox { get; private set; } = null!;
         public ClickableComponent ArrowKeyScrollingCheckbox { get; private set; } = null!;
+        public ClickableComponent AutoOpenDyeColorMenuCheckbox { get; private set; } = null!;
         public ClickableComponent ResetFilterCheckbox { get; private set; } = null!;
         public ClickableComponent ResetSearchCheckbox { get; private set; } = null!;
         public ClickableComponent ResetMatchAllCheckbox { get; private set; } = null!;
@@ -79,7 +80,7 @@ namespace OutfitStudio
 
         public void Recalculate()
         {
-            int totalRows = 15;
+            int totalRows = 16;
             int totalSections = 3;
 
             int scrollableContentNatural = (ConfigSectionHeaderHeight * totalSections)
@@ -194,6 +195,12 @@ namespace OutfitStudio
             labelsList.Add(TranslationCache.ConfigResetSearchOnTabSwitchName);
             tooltipsList.Add(TranslationCache.ConfigResetSearchOnTabSwitchTooltip);
             ResetSearchCheckbox = CreateCheckbox(currentY, "ResetSearch");
+            currentY += ConfigRowHeight;
+
+            rowYList.Add(currentY);
+            labelsList.Add(TranslationCache.ConfigAutoOpenDyeColorMenuName);
+            tooltipsList.Add(TranslationCache.ConfigAutoOpenDyeColorMenuTooltip);
+            AutoOpenDyeColorMenuCheckbox = CreateCheckbox(currentY, "AutoOpenDyeColorMenu");
             currentY += ConfigRowHeight;
 
             rowYList.Add(currentY);

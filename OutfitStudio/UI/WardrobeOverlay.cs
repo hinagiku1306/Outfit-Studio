@@ -168,13 +168,26 @@ namespace OutfitStudio
             }
 
             if (!string.IsNullOrEmpty(set.ShirtId) && store.IsItemValid(set.ShirtId, "(S)"))
+            {
                 cachedShirt = ItemRegistry.Create<Clothing>("(S)" + set.ShirtId);
+                ApplySavedColor(cachedShirt, set.ShirtColor);
+            }
 
             if (!string.IsNullOrEmpty(set.PantsId) && store.IsItemValid(set.PantsId, "(P)"))
+            {
                 cachedPants = ItemRegistry.Create<Clothing>("(P)" + set.PantsId);
+                ApplySavedColor(cachedPants, set.PantsColor);
+            }
 
             if (!string.IsNullOrEmpty(set.HatId) && store.IsItemValid(set.HatId, "(H)"))
                 cachedHat = ItemRegistry.Create<Hat>("(H)" + set.HatId);
+        }
+
+        private static void ApplySavedColor(Clothing item, string? colorString)
+        {
+            var color = ColorHelper.ParseColor(colorString);
+            if (color.HasValue)
+                item.clothesColor.Set(color.Value);
         }
 
         private void CloseAllDropdowns()
@@ -863,12 +876,20 @@ namespace OutfitStudio
                 if (set != null)
                 {
                     if (!string.IsNullOrEmpty(set.ShirtId) && store.IsItemValid(set.ShirtId, "(S)"))
-                        Game1.player.shirtItem.Value = ItemRegistry.Create<Clothing>("(S)" + set.ShirtId);
+                    {
+                        var shirt = ItemRegistry.Create<Clothing>("(S)" + set.ShirtId);
+                        ApplySavedColor(shirt, set.ShirtColor);
+                        Game1.player.shirtItem.Value = shirt;
+                    }
                     else
                         Game1.player.shirtItem.Value = null;
 
                     if (!string.IsNullOrEmpty(set.PantsId) && store.IsItemValid(set.PantsId, "(P)"))
-                        Game1.player.pantsItem.Value = ItemRegistry.Create<Clothing>("(P)" + set.PantsId);
+                    {
+                        var pants = ItemRegistry.Create<Clothing>("(P)" + set.PantsId);
+                        ApplySavedColor(pants, set.PantsColor);
+                        Game1.player.pantsItem.Value = pants;
+                    }
                     else
                         Game1.player.pantsItem.Value = null;
 

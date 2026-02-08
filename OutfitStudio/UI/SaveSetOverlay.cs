@@ -37,6 +37,8 @@ namespace OutfitStudio
         private readonly string? capturedShirtId;
         private readonly string? capturedPantsId;
         private readonly string? capturedHatId;
+        private readonly string? capturedShirtColor;
+        private readonly string? capturedPantsColor;
 
         private RenderTarget2D? farmerRenderTarget;
         private SpriteBatch? farmerSpriteBatch;
@@ -80,6 +82,8 @@ namespace OutfitStudio
                 capturedShirtId = editingSet.ShirtId;
                 capturedPantsId = editingSet.PantsId;
                 capturedHatId = editingSet.HatId;
+                capturedShirtColor = editingSet.ShirtColor;
+                capturedPantsColor = editingSet.PantsColor;
 
                 includeShirt = !string.IsNullOrEmpty(capturedShirtId);
                 includePants = !string.IsNullOrEmpty(capturedPantsId);
@@ -94,6 +98,13 @@ namespace OutfitStudio
                 capturedShirtId = OutfitState.GetClothingId(Game1.player.shirtItem.Value);
                 capturedPantsId = OutfitState.GetClothingId(Game1.player.pantsItem.Value);
                 capturedHatId = OutfitState.GetHatIdFromItem(Game1.player.hat.Value);
+
+                capturedShirtColor = Game1.player.CanDyeShirt()
+                    ? ColorHelper.ToColorString(Game1.player.GetShirtColor())
+                    : null;
+                capturedPantsColor = Game1.player.CanDyePants()
+                    ? ColorHelper.ToColorString(Game1.player.GetPantsColor())
+                    : null;
 
                 includeShirt = !string.IsNullOrEmpty(capturedShirtId) && capturedShirtId != NoShirtId;
                 includePants = !string.IsNullOrEmpty(capturedPantsId) && capturedPantsId != NoPantsId;
@@ -145,12 +156,14 @@ namespace OutfitStudio
             {
                 string qualifiedId = "(S)" + capturedShirtId;
                 cachedShirt = ItemRegistry.Create<Clothing>(qualifiedId);
+                ApplyCapturedColor(cachedShirt, capturedShirtColor);
             }
 
             if (HasPants() && capturedPantsId != null)
             {
                 string qualifiedId = "(P)" + capturedPantsId;
                 cachedPants = ItemRegistry.Create<Clothing>(qualifiedId);
+                ApplyCapturedColor(cachedPants, capturedPantsColor);
             }
 
             if (HasHat() && capturedHatId != null)
@@ -374,6 +387,8 @@ namespace OutfitStudio
             string? shirtId = includeShirt ? capturedShirtId : null;
             string? pantsId = includePants ? capturedPantsId : null;
             string? hatId = includeHat ? capturedHatId : null;
+            string? shirtColor = includeShirt ? capturedShirtColor : null;
+            string? pantsColor = includePants ? capturedPantsColor : null;
 
             if (editingSet != null)
             {
@@ -384,6 +399,8 @@ namespace OutfitStudio
                 editingSet.ShirtId = shirtId;
                 editingSet.PantsId = pantsId;
                 editingSet.HatId = hatId;
+                editingSet.ShirtColor = shirtColor;
+                editingSet.PantsColor = pantsColor;
                 store.Update(editingSet);
             }
             else
@@ -396,6 +413,8 @@ namespace OutfitStudio
                     shirtId,
                     pantsId,
                     hatId,
+                    shirtColor,
+                    pantsColor,
                     useCurrentOutfit: false
                 );
             }
@@ -409,6 +428,13 @@ namespace OutfitStudio
         {
             onClose?.Invoke();
             Game1.activeClickableMenu = parentMenu;
+        }
+
+        private static void ApplyCapturedColor(Clothing item, string? colorString)
+        {
+            var color = ColorHelper.ParseColor(colorString);
+            if (color.HasValue)
+                item.clothesColor.Set(color.Value);
         }
 
         private bool HasShirt() => !string.IsNullOrEmpty(capturedShirtId) && capturedShirtId != NoShirtId;
@@ -530,12 +556,20 @@ namespace OutfitStudio
             try
             {
                 if (includeShirt && !string.IsNullOrEmpty(capturedShirtId) && store.IsItemValid(capturedShirtId, "(S)"))
-                    Game1.player.shirtItem.Value = ItemRegistry.Create<Clothing>("(S)" + capturedShirtId);
+                {
+                    var shirt = ItemRegistry.Create<Clothing>("(S)" + capturedShirtId);
+                    ApplyCapturedColor(shirt, capturedShirtColor);
+                    Game1.player.shirtItem.Value = shirt;
+                }
                 else
                     Game1.player.shirtItem.Value = null;
 
                 if (includePants && !string.IsNullOrEmpty(capturedPantsId) && store.IsItemValid(capturedPantsId, "(P)"))
-                    Game1.player.pantsItem.Value = ItemRegistry.Create<Clothing>("(P)" + capturedPantsId);
+                {
+                    var pants = ItemRegistry.Create<Clothing>("(P)" + capturedPantsId);
+                    ApplyCapturedColor(pants, capturedPantsColor);
+                    Game1.player.pantsItem.Value = pants;
+                }
                 else
                     Game1.player.pantsItem.Value = null;
 

@@ -147,6 +147,14 @@ namespace OutfitStudio
 
                 gmcmApi.AddBoolOption(
                     mod: ModManifest,
+                    name: () => TranslationCache.ConfigAutoOpenDyeColorMenuName,
+                    tooltip: () => TranslationCache.ConfigAutoOpenDyeColorMenuTooltip,
+                    getValue: () => config.AutoOpenDyeColorMenu,
+                    setValue: value => config.AutoOpenDyeColorMenu = value
+                );
+
+                gmcmApi.AddBoolOption(
+                    mod: ModManifest,
                     name: () => TranslationCache.ConfigResetSearchOnTabSwitchName,
                     tooltip: () => TranslationCache.ConfigResetSearchOnTabSwitchTooltip,
                     getValue: () => config.ResetSearchOnTabSwitch,

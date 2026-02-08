@@ -43,6 +43,9 @@ namespace OutfitStudio
         public ClickableComponent SaveButton { get; private set; } = null!;
         public ClickableComponent WardrobeButton { get; private set; } = null!;
 
+        // Dye color button (Prismatic Shard icon, left of Apply)
+        public ClickableTextureComponent DyeColorButton { get; private set; } = null!;
+
         // Gear/settings button (top-right, near close)
         public ClickableTextureComponent GearButton { get; private set; } = null!;
 
@@ -174,6 +177,9 @@ namespace OutfitStudio
 
             // Close button (top-right corner)
             PositionCloseButton();
+
+            // Floating buttons (gear + dye color, outside menu right side)
+            PositionFloatingButtons();
         }
 
         private void PositionTabs(int tabY)
@@ -382,14 +388,30 @@ namespace OutfitStudio
                 new Rectangle(337, 494, 12, 12),
                 4f
             );
+        }
 
-            int gearX = CloseButton.bounds.X;
-            int gearY = CloseButton.bounds.Bottom - 2;
+        private void PositionFloatingButtons()
+        {
+            int buttonSize = (int)(CloseButtonSize * 1.1f);
+            int dyePanelHeight = DyeColorManager.ComputePanelHeight();
+            int dyePanelTopY = Y + (Height - dyePanelHeight) / 2;
+
+            int buttonX = X + Width + 5;
+            int dyeColorBtnY = dyePanelTopY - 5 - buttonSize;
+            int gearBtnY = dyeColorBtnY - 5 - buttonSize;
+
             GearButton = new ClickableTextureComponent(
-                new Rectangle(gearX, gearY, CloseButtonSize, CloseButtonSize),
+                new Rectangle(buttonX, gearBtnY, buttonSize, buttonSize),
                 Game1.mouseCursors,
                 new Rectangle(30, 428, 10, 10),
-                CloseButtonSize / 10f
+                buttonSize / 10f
+            );
+
+            DyeColorButton = new ClickableTextureComponent(
+                new Rectangle(buttonX, dyeColorBtnY, buttonSize, buttonSize),
+                Game1.objectSpriteSheet,
+                new Rectangle(32, 48, 16, 16),
+                buttonSize / 16f
             );
         }
 
@@ -564,6 +586,34 @@ namespace OutfitStudio
         {
             UIHelpers.DrawTextButton(b, ApplyButton, TranslationCache.ButtonApply);
             UIHelpers.DrawTextButton(b, ResetButton, TranslationCache.ButtonReset);
+        }
+
+        public void DrawFloatingButtons(SpriteBatch b)
+        {
+            DrawGearButton(b);
+            DrawDyeColorButton(b);
+        }
+
+        private void DrawDyeColorButton(SpriteBatch b)
+        {
+            bool isHovered = DyeColorButton.containsPoint(Game1.getMouseX(), Game1.getMouseY());
+            float buttonScale = isHovered ? ButtonHoveringScale : 1f;
+
+            int bgSize = (int)(DyeColorButton.bounds.Width * buttonScale);
+            int bgX = DyeColorButton.bounds.X + (DyeColorButton.bounds.Width - bgSize) / 2;
+            int bgY = DyeColorButton.bounds.Y + (DyeColorButton.bounds.Height - bgSize) / 2;
+
+            UIHelpers.DrawTextureBox(b, bgX, bgY, bgSize, bgSize, Color.White, 1f, 4, 0.6f);
+
+            Vector2 iconCenter = new Vector2(
+                DyeColorButton.bounds.X + DyeColorButton.bounds.Width / 2,
+                DyeColorButton.bounds.Y + DyeColorButton.bounds.Height / 2
+            );
+            Rectangle sourceRect = new Rectangle(32, 48, 16, 16);
+            float iconScale = (bgSize / 16f) * 0.6f;
+            Vector2 origin = new Vector2(8, 8);
+            b.Draw(Game1.objectSpriteSheet, iconCenter, sourceRect, Color.White, 0f,
+                origin, iconScale, SpriteEffects.None, 1f);
         }
 
         #endregion
@@ -749,6 +799,7 @@ namespace OutfitStudio
                 HatsTab.containsPoint(mouseX, mouseY) ||
                 ApplyButton.containsPoint(mouseX, mouseY) ||
                 ResetButton.containsPoint(mouseX, mouseY) ||
+                DyeColorButton.containsPoint(mouseX, mouseY) ||
                 CloseButton.containsPoint(mouseX, mouseY) ||
                 GearButton.containsPoint(mouseX, mouseY) ||
                 LeftArrowButton.containsPoint(mouseX, mouseY) ||

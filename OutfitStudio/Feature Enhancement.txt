@@ -7,4 +7,3 @@
 8. Hovering color rectangle
 
 10. Ctrl+A to select all text in input box
-11. Pants color

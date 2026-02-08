@@ -419,5 +419,16 @@ namespace OutfitStudio
         public const int ConfigTitleSidePadding = 30;
         public const int ConfigButtonBoxHeight = 70;
         public const int ConfigBoxGap = 10;
+
+        // ============================================================
+        // DYE COLOR PANEL
+        // ============================================================
+
+        public const int DyeColorPanelWidth = 280;
+        public const int DyeColorPanelPadding = 30;
+        public const int DyeColorSliderTrackHeight = 4;
+        public const int DyeColorSliderRowHeight = 28;
+        public const int DyeColorSliderGap = 12;
+        public const int DyeColorGradientChunks = 24;
     }
 }
