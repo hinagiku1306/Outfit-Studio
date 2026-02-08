@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using OutfitStudio.Services;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using StardewValley;
 using StardewValley.Objects;
@@ -31,6 +32,9 @@ namespace OutfitStudio
         private readonly Func<WardrobeOverlay?> getWardrobeOverlay;
         private readonly Action<WardrobeOverlay?> setWardrobeOverlay;
         private readonly Func<OutfitMenu?> getParentMenu;
+        private readonly Func<DyeColorManager> getDyeColorManager;
+        private readonly Func<OutfitCategoryManager.Category> getLastColorCategory;
+        private readonly Action<OutfitCategoryManager.Category> setLastColorCategory;
 
         public OutfitInputHandler(
             OutfitCategoryManager categoryManager,
@@ -53,7 +57,10 @@ namespace OutfitStudio
             Action<WardrobeOverlay?> setWardrobeOverlay,
             Func<OutfitMenu?> getParentMenu,
             OutfitSetStore outfitSetStore,
-            Action showSavedMessage)
+            Action showSavedMessage,
+            Func<DyeColorManager> getDyeColorManager,
+            Func<OutfitCategoryManager.Category> getLastColorCategory,
+            Action<OutfitCategoryManager.Category> setLastColorCategory)
         {
             this.categoryManager = categoryManager;
             this.state = state;
@@ -76,6 +83,9 @@ namespace OutfitStudio
             this.setWardrobeOverlay = setWardrobeOverlay;
             this.getParentMenu = getParentMenu;
             this.outfitSetStore = outfitSetStore;
+            this.getDyeColorManager = getDyeColorManager;
+            this.getLastColorCategory = getLastColorCategory;
+            this.setLastColorCategory = setLastColorCategory;
         }
 
         public bool HandleLeftClick(int x, int y, bool playSound)
@@ -92,6 +102,14 @@ namespace OutfitStudio
                 }
 
                 return true;
+            }
+
+            // Handle dye color panel clicks (consumed = click inside panel bounds)
+            var dcm = getDyeColorManager();
+            if (dcm.IsOpen)
+            {
+                dcm.HandleClick(x, y, out bool consumed);
+                if (consumed) return true;
             }
 
             // Handle search bar focus (click-to-focus when auto-focus is disabled)
@@ -149,7 +167,8 @@ namespace OutfitStudio
                     uiBuilder.ResetButton.containsPoint(x, y) ||
                     uiBuilder.SaveButton.containsPoint(x, y) ||
                     uiBuilder.WardrobeButton.containsPoint(x, y) ||
-                    uiBuilder.GearButton.containsPoint(x, y))
+                    uiBuilder.GearButton.containsPoint(x, y) ||
+                    uiBuilder.DyeColorButton.containsPoint(x, y))
                 {
                     dropdownManager.Close();
                     continuousScrollHandler.Reset();
@@ -229,6 +248,17 @@ namespace OutfitStudio
             // Grid scroll arrows
             if (HandleGridScrollArrowClick(x, y, playSound))
                 return true;
+
+            // Dye color button - toggles panel
+            if (uiBuilder.DyeColorButton.containsPoint(x, y))
+            {
+                Color currentColor = GetActiveItemColor();
+                Rectangle menuBounds = new Rectangle(uiBuilder.X, uiBuilder.Y, uiBuilder.Width, uiBuilder.Height);
+                dcm.Toggle(menuBounds, currentColor);
+                UpdateDyeColorIsDyeable();
+                if (playSound) Game1.playSound("smallSelect");
+                return true;
+            }
 
             // Apply button
             if (uiBuilder.ApplyButton.containsPoint(x, y))
@@ -321,6 +351,13 @@ namespace OutfitStudio
                     state.SetSearchText(categoryManager.CurrentCategory, searchManager.CurrentSearchText);
                 }
 
+                // Sync dye color sliders to new tab's item color
+                var tabDcm = getDyeColorManager();
+                if (tabDcm.IsOpen)
+                    tabDcm.SetSlidersFromColor(GetActiveItemColor());
+
+                UpdateDyeColorIsDyeable();
+
                 if (playSound) Game1.playSound("smallSelect");
             }
             return true;
@@ -350,6 +387,18 @@ namespace OutfitStudio
                         {
                             state.SetCurrentIndex(categoryManager.CurrentCategory, listIndex);
                             ApplyCurrentSelection();
+
+                            // Track color category and auto-apply dye color
+                            var currentCat = categoryManager.CurrentCategory;
+                            if (currentCat == OutfitCategoryManager.Category.Shirts || currentCat == OutfitCategoryManager.Category.Pants)
+                            {
+                                setLastColorCategory(currentCat);
+                                var slotDcm = getDyeColorManager();
+                                if (slotDcm.IsOpen)
+                                    slotDcm.ApplyToActiveItem(currentCat);
+                            }
+
+                            UpdateDyeColorIsDyeable();
                         }
                         if (playSound) Game1.playSound("stoneStep");
                     }
@@ -414,7 +463,6 @@ namespace OutfitStudio
                 case OutfitCategoryManager.Category.Shirts:
                     Game1.player.shirtItem.Value = ItemRegistry.Create<Clothing>(qualifiedId);
                     Game1.player.FarmerRenderer.MarkSpriteDirty();
-                    // Update shirt index to match the selected item in the shirts list
                     int shirtIndex = getCurrentShirtIds().IndexOf(itemId);
                     if (shirtIndex >= 0)
                         state.SetCurrentIndex(OutfitCategoryManager.Category.Shirts, shirtIndex);
@@ -423,7 +471,6 @@ namespace OutfitStudio
                 case OutfitCategoryManager.Category.Pants:
                     Game1.player.pantsItem.Value = ItemRegistry.Create<Clothing>(qualifiedId);
                     Game1.player.FarmerRenderer.MarkSpriteDirty();
-                    // Update pants index to match the selected item in the pants list
                     int pantsIndex = getCurrentPantsIds().IndexOf(itemId);
                     if (pantsIndex >= 0)
                         state.SetCurrentIndex(OutfitCategoryManager.Category.Pants, pantsIndex);
@@ -431,12 +478,22 @@ namespace OutfitStudio
 
                 case OutfitCategoryManager.Category.Hats:
                     Game1.player.hat.Value = ItemRegistry.Create<Hat>(qualifiedId);
-                    // Update hat index to match the selected item in the hats list
                     int hatIdx = getCurrentHatIds().IndexOf(itemId);
                     if (hatIdx >= 0)
                         state.SetCurrentIndex(OutfitCategoryManager.Category.Hats, hatIdx);
                     break;
             }
+
+            // Track color category and auto-apply dye color for dyeable items
+            if (itemCategory == OutfitCategoryManager.Category.Shirts || itemCategory == OutfitCategoryManager.Category.Pants)
+            {
+                setLastColorCategory(itemCategory);
+                var allDcm = getDyeColorManager();
+                if (allDcm.IsOpen)
+                    allDcm.ApplyToActiveItem(itemCategory);
+            }
+
+            UpdateDyeColorIsDyeable();
             onOutfitChanged();
         }
 
@@ -554,6 +611,39 @@ namespace OutfitStudio
             }
 
             return false;
+        }
+
+        private Color GetActiveItemColor()
+        {
+            var category = GetActiveColorCategory();
+            return category switch
+            {
+                OutfitCategoryManager.Category.Shirts => Game1.player.GetShirtColor(),
+                OutfitCategoryManager.Category.Pants => Game1.player.GetPantsColor(),
+                _ => Color.White
+            };
+        }
+
+        private OutfitCategoryManager.Category GetActiveColorCategory()
+        {
+            var category = categoryManager.CurrentCategory;
+            if (category == OutfitCategoryManager.Category.All)
+                return getLastColorCategory();
+            return category;
+        }
+
+        private void UpdateDyeColorIsDyeable()
+        {
+            var dcm = getDyeColorManager();
+            if (!dcm.IsOpen) return;
+
+            var category = GetActiveColorCategory();
+            dcm.IsDyeable = category switch
+            {
+                OutfitCategoryManager.Category.Shirts => Game1.player.CanDyeShirt(),
+                OutfitCategoryManager.Category.Pants => Game1.player.CanDyePants(),
+                _ => false
+            };
         }
     }
 }

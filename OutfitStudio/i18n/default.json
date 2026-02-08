@@ -18,6 +18,8 @@
     "config.auto-focus-search-bar.tooltip": "If enabled, the search bar is automatically focused when the menu opens. Useful when your toggle key is a typeable character.",
     "config.arrow-key-scrolling.name": "Arrow Key Scrolling",
     "config.arrow-key-scrolling.tooltip": "If enabled, use arrow keys to scroll through items and outfit lists. Up/Down scrolls by one row, Left/Right scrolls by one page.",
+    "config.auto-open-dye-color-menu.name": "Auto-Open Dye Color Menu",
+    "config.auto-open-dye-color-menu.tooltip": "If enabled, the dye color menu automatically opens when the main menu opens.",
     "config.reset-match-all-on-open.name": "Reset Match All",
     "config.reset-match-all-on-open.tooltip": "Resets the \"Match All\" checkbox each time you open the Wardrobe. If disabled, it remembers your last choice.",
     "config.reset-show-invalid-on-open.name": "Reset Show Invalid",
@@ -38,6 +40,10 @@
     "config.settings.keybind-listening": "Press a key...",
     "config.settings.save": "Save",
     "config.settings.cancel": "Cancel",
+    // Dye Color Panel
+    "dyecolor.title": "Dye Color",
+    "dyecolor.reset": "Reset",
+    "dyecolor.tooltip": "Change dye color",
     // Main Menu
     "menu.title": "Outfit Studio",
     "menu.tabs.all": "All",

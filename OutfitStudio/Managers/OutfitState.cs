@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Microsoft.Xna.Framework;
 using StardewValley;
 using StardewValley.GameData.Pants;
 using StardewValley.GameData.Shirts;
@@ -25,6 +26,12 @@ namespace OutfitStudio
         private string appliedShirt;
         private string appliedPants;
         private string appliedHat;
+
+        // Color tracking - original (menu open) and applied (after Apply click)
+        private readonly Color originalPantsColor;
+        private readonly Color originalShirtColor;
+        private Color appliedPantsColor;
+        private Color appliedShirtColor;
 
         private int scrollOffset = 0;
 
@@ -98,6 +105,11 @@ namespace OutfitStudio
             appliedPants = originalPants;
             appliedHat = originalHat;
 
+            originalPantsColor = Game1.player.GetPantsColor();
+            originalShirtColor = Game1.player.GetShirtColor();
+            appliedPantsColor = originalPantsColor;
+            appliedShirtColor = originalShirtColor;
+
             shirtIndex = 0;
             pantsIndex = 0;
             hatIndex = 0;
@@ -141,11 +153,16 @@ namespace OutfitStudio
             }
         }
 
+        public Color AppliedPantsColor => appliedPantsColor;
+        public Color AppliedShirtColor => appliedShirtColor;
+
         public void SaveAppliedOutfit()
         {
             appliedShirt = GetClothingId(Game1.player.shirtItem.Value);
             appliedPants = GetClothingId(Game1.player.pantsItem.Value);
             appliedHat = GetHatIdFromItem(Game1.player.hat.Value);
+            appliedPantsColor = Game1.player.GetPantsColor();
+            appliedShirtColor = Game1.player.GetShirtColor();
         }
 
         public void ResetToApplied(System.Collections.Generic.List<string> shirtIds,
@@ -166,6 +183,11 @@ namespace OutfitStudio
                 Game1.player.hat.Value = null;
             else
                 Game1.player.hat.Value = ItemRegistry.Create<Hat>("(H)" + appliedHat);
+
+            // Restore applied colors
+            Game1.player.changePantsColor(appliedPantsColor);
+            if (Game1.player.shirtItem.Value != null)
+                Game1.player.shirtItem.Value.clothesColor.Set(appliedShirtColor);
 
             Game1.player.FarmerRenderer.MarkSpriteDirty();
 
@@ -190,6 +212,11 @@ namespace OutfitStudio
                 Game1.player.hat.Value = null;
             else
                 Game1.player.hat.Value = ItemRegistry.Create<Hat>("(H)" + appliedHat);
+
+            // Restore applied colors
+            Game1.player.changePantsColor(appliedPantsColor);
+            if (Game1.player.shirtItem.Value != null)
+                Game1.player.shirtItem.Value.clothesColor.Set(appliedShirtColor);
 
             Game1.player.FarmerRenderer.MarkSpriteDirty();
         }

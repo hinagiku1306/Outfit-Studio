@@ -350,7 +350,9 @@ namespace OutfitStudio.Services
         }
 
         public OutfitSet CreateFromCurrentOutfit(string name, List<string> tags, bool isFavorite, bool isGlobal,
-            string? shirtId = null, string? pantsId = null, string? hatId = null, bool useCurrentOutfit = true)
+            string? shirtId = null, string? pantsId = null, string? hatId = null,
+            string? shirtColor = null, string? pantsColor = null,
+            bool useCurrentOutfit = true)
         {
             var set = new OutfitSet
             {
@@ -360,7 +362,9 @@ namespace OutfitStudio.Services
                 IsGlobal = isGlobal,
                 ShirtId = useCurrentOutfit ? OutfitState.GetClothingId(Game1.player.shirtItem.Value) : shirtId,
                 PantsId = useCurrentOutfit ? OutfitState.GetClothingId(Game1.player.pantsItem.Value) : pantsId,
-                HatId = useCurrentOutfit ? OutfitState.GetHatIdFromItem(Game1.player.hat.Value) : hatId
+                HatId = useCurrentOutfit ? OutfitState.GetHatIdFromItem(Game1.player.hat.Value) : hatId,
+                ShirtColor = shirtColor,
+                PantsColor = pantsColor
             };
 
             Add(set);
@@ -377,6 +381,25 @@ namespace OutfitStudio.Services
 
             if (ItemIdHelper.IsNoHatId(set.HatId) || IsItemValid(set.HatId, "(H)"))
                 OutfitState.ApplyHat(set.HatId ?? "");
+
+            // Apply saved dye colors
+            if (set.ShirtColor != null && Game1.player.shirtItem.Value != null)
+            {
+                var color = ColorHelper.ParseColor(set.ShirtColor);
+                if (color.HasValue)
+                {
+                    Game1.player.shirtItem.Value.clothesColor.Set(color.Value);
+                    Game1.player.FarmerRenderer.MarkSpriteDirty();
+                }
+            }
+            if (set.PantsColor != null && Game1.player.pantsItem.Value != null)
+            {
+                var color = ColorHelper.ParseColor(set.PantsColor);
+                if (color.HasValue)
+                {
+                    Game1.player.changePantsColor(color.Value);
+                }
+            }
         }
 
         private OutfitSetGlobalData CreateDefaultGlobalData()

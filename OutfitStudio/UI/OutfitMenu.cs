@@ -27,6 +27,9 @@ namespace OutfitStudio
         private readonly ModEntry mod;
         private readonly OutfitSetStore outfitSetStore;
 
+        private readonly DyeColorManager dyeColorManager;
+        private OutfitCategoryManager.Category lastColorCategory = OutfitCategoryManager.Category.Pants;
+
         private bool showItemInfo = false;
         private WardrobeOverlay? wardrobeOverlay = null;
 
@@ -76,6 +79,10 @@ namespace OutfitStudio
             // Initialize helper classes
             itemListProvider = new OutfitItemListProvider(filterManager, categoryManager, state);
             drawingHelper = new OutfitDrawingHelper(uiBuilder, dropdownManager, state, mod);
+            dyeColorManager = new DyeColorManager(
+                onColorChanged: () => uiBuilder.MarkPreviewDirty(),
+                getActiveCategory: () => GetActiveColorCategory()
+            );
             inputHandler = new OutfitInputHandler(
                 categoryManager, state, uiBuilder, dropdownManager, searchManager, continuousScrollHandler, mod,
                 onRevertAndClose: RevertAndClose,
@@ -91,7 +98,10 @@ namespace OutfitStudio
                 setWardrobeOverlay: overlay => wardrobeOverlay = overlay,
                 getParentMenu: () => this,
                 outfitSetStore: outfitSetStore,
-                showSavedMessage: () => uiBuilder.ShowSavedMessage()
+                showSavedMessage: () => uiBuilder.ShowSavedMessage(),
+                getDyeColorManager: () => dyeColorManager,
+                getLastColorCategory: () => lastColorCategory,
+                setLastColorCategory: cat => lastColorCategory = cat
             );
 
             width = uiBuilder.Width;
@@ -102,6 +112,26 @@ namespace OutfitStudio
             state.ShirtIndex = Math.Max(0, categoryManager.ShirtIds.IndexOf(state.OriginalShirt));
             state.PantsIndex = Math.Max(0, categoryManager.PantsIds.IndexOf(state.OriginalPants));
             state.HatIndex = Math.Max(0, categoryManager.HatIds.IndexOf(state.OriginalHat));
+
+            if (mod.GetConfig().AutoOpenDyeColorMenu)
+            {
+                Color currentColor = GetActiveColorCategory() switch
+                {
+                    OutfitCategoryManager.Category.Shirts => Game1.player.GetShirtColor(),
+                    OutfitCategoryManager.Category.Pants => Game1.player.GetPantsColor(),
+                    _ => Color.White
+                };
+                Rectangle menuBounds = new Rectangle(uiBuilder.X, uiBuilder.Y, uiBuilder.Width, uiBuilder.Height);
+                dyeColorManager.Open(menuBounds, currentColor);
+
+                var autoOpenCategory = GetActiveColorCategory();
+                dyeColorManager.IsDyeable = autoOpenCategory switch
+                {
+                    OutfitCategoryManager.Category.Shirts => Game1.player.CanDyeShirt(),
+                    OutfitCategoryManager.Category.Pants => Game1.player.CanDyePants(),
+                    _ => false
+                };
+            }
         }
 
         // --- Resize handling ---
@@ -128,6 +158,12 @@ namespace OutfitStudio
             {
                 dropdownManager.BuildOptions();
             }
+
+            if (dyeColorManager.IsOpen)
+            {
+                Rectangle menuBoundsRect = new Rectangle(xPositionOnScreen, yPositionOnScreen, width, height);
+                dyeColorManager.UpdateParentBounds(menuBoundsRect);
+            }
         }
 
         // --- Helper methods ---
@@ -139,6 +175,20 @@ namespace OutfitStudio
                 itemListProvider.GetCurrentPantsIds(),
                 itemListProvider.GetCurrentHatIds()
             );
+
+            // Sync dye panel sliders to the restored color
+            if (dyeColorManager.IsOpen)
+            {
+                var category = GetActiveColorCategory();
+                Color restoredColor = category switch
+                {
+                    OutfitCategoryManager.Category.Shirts => Game1.player.GetShirtColor(),
+                    OutfitCategoryManager.Category.Pants => Game1.player.GetPantsColor(),
+                    _ => Color.White
+                };
+                dyeColorManager.SetSlidersFromColor(restoredColor);
+            }
+
             uiBuilder.MarkPreviewDirty();
         }
 
@@ -147,8 +197,17 @@ namespace OutfitStudio
             state.SaveAppliedOutfit();
         }
 
+        private OutfitCategoryManager.Category GetActiveColorCategory()
+        {
+            var category = categoryManager.CurrentCategory;
+            if (category == OutfitCategoryManager.Category.All)
+                return lastColorCategory;
+            return category;
+        }
+
         private void RevertAndClose()
         {
+            dyeColorManager.Close();
             state.RevertToApplied();
             exitThisMenu();
         }
@@ -159,13 +218,28 @@ namespace OutfitStudio
         {
             base.receiveLeftClick(x, y, playSound);
 
-            if (wardrobeOverlay == null && !isWithinBounds(x, y) && mod.GetConfig().CloseOnClickOutside)
+            bool clickInPanel = dyeColorManager.IsOpen && dyeColorManager.Bounds.Contains(x, y);
+            bool clickOnFloatingButton = uiBuilder.GearButton.containsPoint(x, y) || uiBuilder.DyeColorButton.containsPoint(x, y);
+            if (wardrobeOverlay == null && !isWithinBounds(x, y) && !clickInPanel && !clickOnFloatingButton && mod.GetConfig().CloseOnClickOutside)
             {
                 RevertAndClose();
                 return;
             }
 
             inputHandler.HandleLeftClick(x, y, playSound);
+        }
+
+        public override void leftClickHeld(int x, int y)
+        {
+            if (wardrobeOverlay != null) return;
+            if (dyeColorManager.IsOpen)
+                dyeColorManager.HandleClickHeld(x, y);
+        }
+
+        public override void releaseLeftClick(int x, int y)
+        {
+            dyeColorManager.HandleClickRelease();
+            base.releaseLeftClick(x, y);
         }
 
         public override void receiveScrollWheelAction(int direction)
@@ -364,7 +438,11 @@ namespace OutfitStudio
             // Draw bottom and close buttons
             uiBuilder.DrawBottomButtons(b);
             uiBuilder.DrawCloseButton(b);
-            uiBuilder.DrawGearButton(b);
+            uiBuilder.DrawFloatingButtons(b);
+
+            // Draw dye color panel (after menu, before dropdowns)
+            if (dyeColorManager.IsOpen)
+                dyeColorManager.Draw(b);
 
             // Skip dropdown and tooltips when overlay is open
             if (!hasOverlay)
@@ -402,6 +480,7 @@ namespace OutfitStudio
                 {
                     drawingHelper.DrawLookupTooltip(b);
                 }
+
             }
 
             // Draw wardrobe overlay if open
@@ -419,6 +498,7 @@ namespace OutfitStudio
 
         public override void emergencyShutDown()
         {
+            dyeColorManager.Close();
             filterManager.ClearSearchCaches();
             itemRenderer.ClearCache();
             tooltipRenderer.ClearCache();

@@ -113,6 +113,8 @@ namespace OutfitStudio
         public static string ConfigAutoFocusSearchBarTooltip { get; private set; } = "";
         public static string ConfigArrowKeyScrollingName { get; private set; } = "";
         public static string ConfigArrowKeyScrollingTooltip { get; private set; } = "";
+        public static string ConfigAutoOpenDyeColorMenuName { get; private set; } = "";
+        public static string ConfigAutoOpenDyeColorMenuTooltip { get; private set; } = "";
         public static string ConfigResetMatchAllOnOpenName { get; private set; } = "";
         public static string ConfigResetMatchAllOnOpenTooltip { get; private set; } = "";
         public static string ConfigResetShowInvalidOnOpenName { get; private set; } = "";
@@ -128,6 +130,11 @@ namespace OutfitStudio
         public static string ConfigVisibleColumnsTooltip { get; private set; } = "";
         public static string ConfigSlotSizeName { get; private set; } = "";
         public static string ConfigSlotSizeTooltip { get; private set; } = "";
+
+        // Dye color panel
+        public static string DyeColorTitle { get; private set; } = "";
+        public static string DyeColorReset { get; private set; } = "";
+        public static string DyeColorTooltip { get; private set; } = "";
 
         // Config overlay
         public static string ConfigSettingsTitle { get; private set; } = "";
@@ -229,6 +236,8 @@ namespace OutfitStudio
             ConfigAutoFocusSearchBarTooltip = i18n.Get("config.auto-focus-search-bar.tooltip");
             ConfigArrowKeyScrollingName = i18n.Get("config.arrow-key-scrolling.name");
             ConfigArrowKeyScrollingTooltip = i18n.Get("config.arrow-key-scrolling.tooltip");
+            ConfigAutoOpenDyeColorMenuName = i18n.Get("config.auto-open-dye-color-menu.name");
+            ConfigAutoOpenDyeColorMenuTooltip = i18n.Get("config.auto-open-dye-color-menu.tooltip");
             ConfigResetMatchAllOnOpenName = i18n.Get("config.reset-match-all-on-open.name");
             ConfigResetMatchAllOnOpenTooltip = i18n.Get("config.reset-match-all-on-open.tooltip");
             ConfigResetShowInvalidOnOpenName = i18n.Get("config.reset-show-invalid-on-open.name");
@@ -244,6 +253,10 @@ namespace OutfitStudio
             ConfigVisibleColumnsTooltip = i18n.Get("config.visible-columns.tooltip");
             ConfigSlotSizeName = i18n.Get("config.slot-size.name");
             ConfigSlotSizeTooltip = i18n.Get("config.slot-size.tooltip");
+
+            DyeColorTitle = i18n.Get("dyecolor.title");
+            DyeColorReset = i18n.Get("dyecolor.reset");
+            DyeColorTooltip = i18n.Get("dyecolor.tooltip");
 
             ConfigSettingsTitle = i18n.Get("config.settings.title");
             ConfigResetDefaults = i18n.Get("config.settings.reset-defaults");
