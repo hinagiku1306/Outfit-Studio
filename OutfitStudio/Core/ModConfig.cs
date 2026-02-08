@@ -13,6 +13,7 @@ namespace OutfitStudio
         public bool ResetSearchOnTabSwitch { get; set; } = false;
         public bool ShowTooltip { get; set; } = true;
         public bool AutoOpenTagMenu { get; set; } = true;
+        public bool AutoFocusSearchBar { get; set; } = true;
         public bool ResetMatchAllOnOpen { get; set; } = false;
         public bool ResetShowInvalidOnOpen { get; set; } = false;
         public string DefaultSearchScope { get; set; } = "Set";

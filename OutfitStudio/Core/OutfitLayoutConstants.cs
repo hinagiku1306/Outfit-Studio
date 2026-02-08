@@ -18,14 +18,20 @@ namespace OutfitStudio
         /// <summary>Extra right padding for menu balance.</summary>
         public const int BorderPaddingRightExtra = 20;
 
-        /// <summary>Vertical padding from menu edge to content area.</summary>
+        /// <summary>Vertical padding from menu top edge to content area.</summary>
         public const int BorderPaddingV = 40;
+
+        /// <summary>Vertical padding from content area to menu bottom edge.</summary>
+        public const int BorderPaddingVBottom = 30;
 
         /// <summary>Horizontal gap between major sections (e.g., left panel to right panel).</summary>
         public const int SectionGapH = 50;
 
         /// <summary>Vertical gap between major sections.</summary>
         public const int SectionGapV = 30;
+
+        /// <summary>Vertical gap between item grid and bottom buttons (Apply/Reset).</summary>
+        public const int GridToButtonGap = 35;
 
         /// <summary>Gap between elements within a section.</summary>
         public const int ElementGap = 8;
@@ -164,6 +170,12 @@ namespace OutfitStudio
 
         /// <summary>Size of scroll arrow buttons (width and height).</summary>
         public const int ScrollArrowButtonSize = 44;
+
+        /// <summary>Scale for grid scroll arrows.</summary>
+        public const float GridScrollArrowScale = 2.5f;
+
+        /// <summary>Gap between grid box right edge and scroll arrows.</summary>
+        public const int GridScrollArrowGap = 8;
 
         /// <summary>Size of the close button (width and height).</summary>
         public const int CloseButtonSize = 48;

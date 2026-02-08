@@ -27,6 +27,7 @@ namespace OutfitStudio
         public ClickableComponent ShowTooltipCheckbox { get; private set; } = null!;
         public ClickableComponent CloseOnClickOutsideCheckbox { get; private set; } = null!;
         public ClickableComponent AutoOpenTagMenuCheckbox { get; private set; } = null!;
+        public ClickableComponent AutoFocusSearchBarCheckbox { get; private set; } = null!;
         public ClickableComponent ResetFilterCheckbox { get; private set; } = null!;
         public ClickableComponent ResetSearchCheckbox { get; private set; } = null!;
         public ClickableComponent ResetMatchAllCheckbox { get; private set; } = null!;
@@ -77,7 +78,7 @@ namespace OutfitStudio
 
         public void Recalculate()
         {
-            int totalRows = 13;
+            int totalRows = 14;
             int totalSections = 3;
 
             int scrollableContentNatural = (ConfigSectionHeaderHeight * totalSections)
@@ -165,6 +166,12 @@ namespace OutfitStudio
             labelsList.Add(TranslationCache.ConfigAutoOpenTagMenuName);
             tooltipsList.Add(TranslationCache.ConfigAutoOpenTagMenuTooltip);
             AutoOpenTagMenuCheckbox = CreateCheckbox(currentY, "AutoOpenTagMenu");
+            currentY += ConfigRowHeight;
+
+            rowYList.Add(currentY);
+            labelsList.Add(TranslationCache.ConfigAutoFocusSearchBarName);
+            tooltipsList.Add(TranslationCache.ConfigAutoFocusSearchBarTooltip);
+            AutoFocusSearchBarCheckbox = CreateCheckbox(currentY, "AutoFocusSearchBar");
             currentY += ConfigRowHeight;
 
             MainMenuHeaderY = currentY;

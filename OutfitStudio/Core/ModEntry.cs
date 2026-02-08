@@ -115,6 +115,14 @@ namespace OutfitStudio
                     setValue: value => config.AutoOpenTagMenu = value
                 );
 
+                gmcmApi.AddBoolOption(
+                    mod: ModManifest,
+                    name: () => TranslationCache.ConfigAutoFocusSearchBarName,
+                    tooltip: () => TranslationCache.ConfigAutoFocusSearchBarTooltip,
+                    getValue: () => config.AutoFocusSearchBar,
+                    setValue: value => config.AutoFocusSearchBar = value
+                );
+
                 // Main Menu section
                 gmcmApi.AddSectionTitle(
                     mod: ModManifest,

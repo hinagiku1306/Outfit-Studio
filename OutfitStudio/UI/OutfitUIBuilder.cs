@@ -51,6 +51,10 @@ namespace OutfitStudio
         public ClickableTextureComponent RightArrowButton { get; private set; } = null!;
         private int previewDirection = 2; // 0=Up, 1=Right, 2=Down, 3=Left (default: Down)
 
+        // Grid scroll arrows
+        public ClickableTextureComponent GridScrollUpButton { get; private set; } = null!;
+        public ClickableTextureComponent GridScrollDownButton { get; private set; } = null!;
+
         // Equipped items text area
         public Rectangle EquippedTextArea { get; private set; }
 
@@ -110,7 +114,7 @@ namespace OutfitStudio
         private int CalculateRightPanelHeight()
         {
             int gridHeight = VISIBLE_ROWS * SLOT_SIZE + (VISIBLE_ROWS - 1) * ItemSlotGap;
-            return TabAndButtonHeight + ElementGap + gridHeight + SectionGapV + TabAndButtonHeight;
+            return TabAndButtonHeight + ElementGap + gridHeight + GridToButtonGap + TabAndButtonHeight;
         }
 
         private int CalculateContentSectionHeight()
@@ -124,7 +128,7 @@ namespace OutfitStudio
                    + TabSectionHeight
                    + SectionGapV
                    + CalculateContentSectionHeight()
-                   + BorderPaddingV;
+                   + BorderPaddingVBottom;
         }
 
         /// <summary>
@@ -332,7 +336,7 @@ namespace OutfitStudio
             }
 
             int gridHeight = VISIBLE_ROWS * SLOT_SIZE + (VISIBLE_ROWS - 1) * ItemSlotGap;
-            int bottomButtonsY = gridY + gridHeight + SectionGapV;
+            int bottomButtonsY = gridY + gridHeight + GridToButtonGap;
 
             int applyWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ButtonApply);
             int resetWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ButtonReset);
@@ -348,6 +352,25 @@ namespace OutfitStudio
             ResetButton = new ClickableComponent(
                 new Rectangle(resetX, bottomButtonsY, resetWidth, TabAndButtonHeight),
                 TranslationCache.ButtonReset
+            );
+
+            // Grid scroll arrows (right side of grid box)
+            int scrollArrowW = (int)(11 * GridScrollArrowScale);
+            int scrollArrowH = (int)(12 * GridScrollArrowScale);
+            int gridBoxRight = panelX + gridWidth + ContentBoxPadding;
+            int scrollArrowX = gridBoxRight + GridScrollArrowGap;
+
+            GridScrollUpButton = new ClickableTextureComponent(
+                new Rectangle(scrollArrowX, gridY, scrollArrowW, scrollArrowH),
+                Game1.mouseCursors,
+                new Rectangle(421, 459, 11, 12),
+                GridScrollArrowScale
+            );
+            GridScrollDownButton = new ClickableTextureComponent(
+                new Rectangle(scrollArrowX, gridY + gridHeight - scrollArrowH, scrollArrowW, scrollArrowH),
+                Game1.mouseCursors,
+                new Rectangle(421, 472, 11, 12),
+                GridScrollArrowScale
             );
         }
 
@@ -491,7 +514,7 @@ namespace OutfitStudio
         }
 
         /// <summary>
-        /// Draws the item list background.
+        /// Draws the item list background and scroll arrows.
         /// </summary>
         public void DrawItemList(SpriteBatch b, int scrollOffset, int totalItems)
         {
@@ -505,6 +528,19 @@ namespace OutfitStudio
 
             UIHelpers.DrawTextureBox(b, listX - ContentBoxPadding, listY - ContentBoxPadding,
                 listWidth + ContentBoxPadding * 2, listHeight + ContentBoxPadding * 2, Color.White);
+
+            int totalRows = Math.Max(1, (int)Math.Ceiling(totalItems / (float)COLUMNS));
+            int maxScroll = Math.Max(0, totalRows - VISIBLE_ROWS);
+
+            if (scrollOffset > 0)
+            {
+                UIHelpers.DrawTextureButton(b, GridScrollUpButton);
+            }
+
+            if (scrollOffset < maxScroll)
+            {
+                UIHelpers.DrawTextureButton(b, GridScrollDownButton);
+            }
         }
 
         #region Button Drawing
@@ -716,7 +752,9 @@ namespace OutfitStudio
                 CloseButton.containsPoint(mouseX, mouseY) ||
                 GearButton.containsPoint(mouseX, mouseY) ||
                 LeftArrowButton.containsPoint(mouseX, mouseY) ||
-                RightArrowButton.containsPoint(mouseX, mouseY))
+                RightArrowButton.containsPoint(mouseX, mouseY) ||
+                GridScrollUpButton.containsPoint(mouseX, mouseY) ||
+                GridScrollDownButton.containsPoint(mouseX, mouseY))
             {
                 return true;
             }
