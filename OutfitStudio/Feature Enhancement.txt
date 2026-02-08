@@ -6,5 +6,5 @@
 6. Add "Invalid" filter
 7. Total number of sets
 8. Hovering color rectangle
-9. Add an option to always focus on input bar in General section when opening menu and default to true. If disabled, user has to manually click on the input bar upon opening menu to bring focus. This will be helpful for when they set toggle key to a typeable key, which will also be fed into input bar.
+
 10. Ctrl+A to select all text in input box

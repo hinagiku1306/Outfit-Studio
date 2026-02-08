@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -23,6 +24,7 @@ namespace OutfitStudio
         private bool showTooltip;
         private bool closeOnClickOutside;
         private bool autoOpenTagMenu;
+        private bool autoFocusSearchBar;
         private bool resetFilterOnTabSwitch;
         private bool resetSearchOnTabSwitch;
         private int visibleRows;
@@ -52,6 +54,7 @@ namespace OutfitStudio
             showTooltip = config.ShowTooltip;
             closeOnClickOutside = config.CloseOnClickOutside;
             autoOpenTagMenu = config.AutoOpenTagMenu;
+            autoFocusSearchBar = config.AutoFocusSearchBar;
             resetFilterOnTabSwitch = config.ResetFilterOnTabSwitch;
             resetSearchOnTabSwitch = config.ResetSearchOnTabSwitch;
             visibleRows = config.VisibleRows;
@@ -104,11 +107,17 @@ namespace OutfitStudio
                 return;
             }
 
-            if (!isWithinBounds(x, y))
+            if (!isWithinBounds(x, y) && ModEntry.Config.CloseOnClickOutside)
             {
-                CloseOverlay();
-                if (playSound) Game1.playSound("bigDeSelect");
-                return;
+                bool clickedDropdownPanel = searchScopeDropdownOpen &&
+                    uiBuilder.SearchScopeOptions.Any(o => o.containsPoint(x, y));
+
+                if (!clickedDropdownPanel)
+                {
+                    CloseOverlay();
+                    if (playSound) Game1.playSound("bigDeSelect");
+                    return;
+                }
             }
 
             if (searchScopeDropdownOpen)
@@ -167,6 +176,7 @@ namespace OutfitStudio
             if (TryToggleCheckbox(uiBuilder.ShowTooltipCheckbox, x, y, ref showTooltip, playSound)) return;
             if (TryToggleCheckbox(uiBuilder.CloseOnClickOutsideCheckbox, x, y, ref closeOnClickOutside, playSound)) return;
             if (TryToggleCheckbox(uiBuilder.AutoOpenTagMenuCheckbox, x, y, ref autoOpenTagMenu, playSound)) return;
+            if (TryToggleCheckbox(uiBuilder.AutoFocusSearchBarCheckbox, x, y, ref autoFocusSearchBar, playSound)) return;
             if (TryToggleCheckbox(uiBuilder.ResetFilterCheckbox, x, y, ref resetFilterOnTabSwitch, playSound)) return;
             if (TryToggleCheckbox(uiBuilder.ResetSearchCheckbox, x, y, ref resetSearchOnTabSwitch, playSound)) return;
             if (TryToggleCheckbox(uiBuilder.ResetMatchAllCheckbox, x, y, ref resetMatchAllOnOpen, playSound)) return;
@@ -333,6 +343,7 @@ namespace OutfitStudio
             uiBuilder.DrawCheckboxRow(b, TranslationCache.ConfigShowTooltipName, showTooltip, uiBuilder.ShowTooltipCheckbox);
             uiBuilder.DrawCheckboxRow(b, TranslationCache.ConfigCloseOnClickOutsideName, closeOnClickOutside, uiBuilder.CloseOnClickOutsideCheckbox);
             uiBuilder.DrawCheckboxRow(b, TranslationCache.ConfigAutoOpenTagMenuName, autoOpenTagMenu, uiBuilder.AutoOpenTagMenuCheckbox);
+            uiBuilder.DrawCheckboxRow(b, TranslationCache.ConfigAutoFocusSearchBarName, autoFocusSearchBar, uiBuilder.AutoFocusSearchBarCheckbox);
 
             uiBuilder.DrawSectionHeader(b, uiBuilder.MainMenuHeaderY, TranslationCache.ConfigMainMenuSection);
             uiBuilder.DrawCheckboxRow(b, TranslationCache.ConfigResetFilterOnTabSwitchName, resetFilterOnTabSwitch, uiBuilder.ResetFilterCheckbox);
@@ -378,6 +389,7 @@ namespace OutfitStudio
             config.ShowTooltip = showTooltip;
             config.CloseOnClickOutside = closeOnClickOutside;
             config.AutoOpenTagMenu = autoOpenTagMenu;
+            config.AutoFocusSearchBar = autoFocusSearchBar;
             config.ResetFilterOnTabSwitch = resetFilterOnTabSwitch;
             config.ResetSearchOnTabSwitch = resetSearchOnTabSwitch;
             visibleRows = uiBuilder.VisibleRowsSlider.Value;

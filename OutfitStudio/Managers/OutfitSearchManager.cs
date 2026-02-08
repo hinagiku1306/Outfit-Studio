@@ -19,6 +19,7 @@ namespace OutfitStudio
 
         // State tracking
         private string lastSearchText = "";
+        private bool searchBarFocused;
 
         /// <summary>
         /// Gets the current search text.
@@ -38,6 +39,7 @@ namespace OutfitStudio
         public OutfitSearchManager(OutfitUIBuilder uiBuilder, OutfitState state)
         {
             this.uiBuilder = uiBuilder ?? throw new ArgumentNullException(nameof(uiBuilder));
+            this.searchBarFocused = ModEntry.Config.AutoFocusSearchBar;
 
             // Initialize TextBox with Stardew Valley's default textbox texture
             searchBox = new TextBox(
@@ -47,7 +49,7 @@ namespace OutfitStudio
                 Game1.textColor)
             {
                 Text = "",
-                Selected = true // Always keep selected so user can type anytime
+                Selected = ModEntry.Config.AutoFocusSearchBar
             };
 
             // Position will be set in UpdateBounds()
@@ -67,13 +69,19 @@ namespace OutfitStudio
             searchBox.Width = bounds.Width - 32;
         }
 
+        /// <summary>Focuses the search bar (for click-to-focus when auto-focus is disabled).</summary>
+        public void Focus()
+        {
+            searchBarFocused = true;
+        }
+
         /// <summary>Updates search state and detects text changes.</summary>
         public void Update(bool allowFocus = true)
         {
             if (allowFocus)
             {
                 searchBox.Update();
-                searchBox.Selected = true;
+                searchBox.Selected = ModEntry.Config.AutoFocusSearchBar || searchBarFocused;
             }
             else
             {
@@ -121,9 +129,10 @@ namespace OutfitStudio
             }
         }
 
-        /// <summary>Unfocuses the TextBox (no-op, search box stays focused).</summary>
+        /// <summary>Unfocuses the TextBox when not in auto-focus mode.</summary>
         public void Unfocus()
         {
+            searchBarFocused = false;
         }
 
         /// <summary>Sets search text programmatically without triggering filter rebuild.</summary>

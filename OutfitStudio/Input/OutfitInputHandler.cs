@@ -94,6 +94,12 @@ namespace OutfitStudio
                 return true;
             }
 
+            // Handle search bar focus (click-to-focus when auto-focus is disabled)
+            if (searchManager.IsPointInBounds(x, y))
+                searchManager.Focus();
+            else
+                searchManager.Unfocus();
+
             // Handle dropdown option clicks (but allow Close, Tab, and Clear buttons to work)
             if (dropdownManager.IsOpen)
             {
@@ -218,6 +224,10 @@ namespace OutfitStudio
 
             // Item slots
             if (HandleItemSlotClick(x, y, playSound))
+                return true;
+
+            // Grid scroll arrows
+            if (HandleGridScrollArrowClick(x, y, playSound))
                 return true;
 
             // Apply button
@@ -346,6 +356,28 @@ namespace OutfitStudio
                     return true;
                 }
             }
+            return false;
+        }
+
+        private bool HandleGridScrollArrowClick(int x, int y, bool playSound)
+        {
+            int totalRows = Math.Max(1, (int)Math.Ceiling(getCurrentListCount() / (float)uiBuilder.COLUMNS));
+            int maxScroll = Math.Max(0, totalRows - uiBuilder.VISIBLE_ROWS);
+
+            if (uiBuilder.GridScrollUpButton.containsPoint(x, y) && state.ScrollOffset > 0)
+            {
+                state.ScrollOffset--;
+                if (playSound) Game1.playSound("shiny4");
+                return true;
+            }
+
+            if (uiBuilder.GridScrollDownButton.containsPoint(x, y) && state.ScrollOffset < maxScroll)
+            {
+                state.ScrollOffset++;
+                if (playSound) Game1.playSound("shiny4");
+                return true;
+            }
+
             return false;
         }
 

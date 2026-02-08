@@ -14,6 +14,8 @@
     "config.close-on-click-outside.tooltip": "If enabled, clicking outside the menu will close it.",
     "config.auto-open-tag-menu.name": "Auto-Open Tag Menu",
     "config.auto-open-tag-menu.tooltip": "If enabled, the tag selection menu will automatically open when saving an outfit.",
+    "config.auto-focus-search-bar.name": "Auto-Focus Search Bar",
+    "config.auto-focus-search-bar.tooltip": "If enabled, the search bar is automatically focused when the menu opens. Useful when your toggle key is a typeable character.",
     "config.reset-match-all-on-open.name": "Reset Match All",
     "config.reset-match-all-on-open.tooltip": "Resets the \"Match All\" checkbox each time you open the Wardrobe. If disabled, it remembers your last choice.",
     "config.reset-show-invalid-on-open.name": "Reset Show Invalid",
