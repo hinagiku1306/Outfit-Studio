@@ -125,6 +125,13 @@ namespace OutfitStudio
         public static string ConfigSlotSizeName { get; private set; } = "";
         public static string ConfigSlotSizeTooltip { get; private set; } = "";
 
+        // Config overlay
+        public static string ConfigSettingsTitle { get; private set; } = "";
+        public static string ConfigResetDefaults { get; private set; } = "";
+        public static string ConfigKeybindListening { get; private set; } = "";
+        public static string ConfigSave { get; private set; } = "";
+        public static string ConfigCancel { get; private set; } = "";
+
         /// <summary>
         /// Initialize all translations from the translation helper.
         /// Call this once in ModEntry.Entry() after SMAPI is ready.
@@ -229,6 +236,12 @@ namespace OutfitStudio
             ConfigVisibleColumnsTooltip = i18n.Get("config.visible-columns.tooltip");
             ConfigSlotSizeName = i18n.Get("config.slot-size.name");
             ConfigSlotSizeTooltip = i18n.Get("config.slot-size.tooltip");
+
+            ConfigSettingsTitle = i18n.Get("config.settings.title");
+            ConfigResetDefaults = i18n.Get("config.settings.reset-defaults");
+            ConfigKeybindListening = i18n.Get("config.settings.keybind-listening");
+            ConfigSave = i18n.Get("config.settings.save");
+            ConfigCancel = i18n.Get("config.settings.cancel");
 
         }
 

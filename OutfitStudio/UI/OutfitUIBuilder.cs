@@ -43,6 +43,9 @@ namespace OutfitStudio
         public ClickableComponent SaveButton { get; private set; } = null!;
         public ClickableComponent WardrobeButton { get; private set; } = null!;
 
+        // Gear/settings button (top-right, near close)
+        public ClickableTextureComponent GearButton { get; private set; } = null!;
+
         // Direction preview arrows
         public ClickableTextureComponent LeftArrowButton { get; private set; } = null!;
         public ClickableTextureComponent RightArrowButton { get; private set; } = null!;
@@ -356,6 +359,15 @@ namespace OutfitStudio
                 new Rectangle(337, 494, 12, 12),
                 4f
             );
+
+            int gearX = CloseButton.bounds.X;
+            int gearY = CloseButton.bounds.Bottom - 2;
+            GearButton = new ClickableTextureComponent(
+                new Rectangle(gearX, gearY, CloseButtonSize, CloseButtonSize),
+                Game1.mouseCursors,
+                new Rectangle(30, 428, 10, 10),
+                CloseButtonSize / 10f
+            );
         }
 
         /// <summary>
@@ -540,6 +552,28 @@ namespace OutfitStudio
             UIHelpers.DrawTextureButton(b, CloseButton);
         }
 
+        public void DrawGearButton(SpriteBatch b)
+        {
+            bool isHovered = GearButton.containsPoint(Game1.getMouseX(), Game1.getMouseY());
+            float buttonScale = isHovered ? ButtonHoveringScale : 1f;
+
+            int bgSize = (int)(GearButton.bounds.Width * buttonScale);
+            int bgX = GearButton.bounds.X + (GearButton.bounds.Width - bgSize) / 2;
+            int bgY = GearButton.bounds.Y + (GearButton.bounds.Height - bgSize) / 2;
+
+            UIHelpers.DrawTextureBox(b, bgX, bgY, bgSize, bgSize, Color.White, 1f, 4, 0.6f);
+
+            Vector2 iconCenter = new Vector2(
+                GearButton.bounds.X + GearButton.bounds.Width / 2,
+                GearButton.bounds.Y + GearButton.bounds.Height / 2
+            );
+            Rectangle editSource = new Rectangle(30, 428, 10, 10);
+            float iconScale = (bgSize / 10f) * 0.6f;
+            Vector2 origin = new Vector2(5, 5);
+            b.Draw(Game1.mouseCursors, iconCenter, editSource, Color.White, 0f,
+                origin, iconScale, SpriteEffects.None, 1f);
+        }
+
         /// <summary>
         /// Draws the menu title.
         /// </summary>
@@ -680,6 +714,7 @@ namespace OutfitStudio
                 ApplyButton.containsPoint(mouseX, mouseY) ||
                 ResetButton.containsPoint(mouseX, mouseY) ||
                 CloseButton.containsPoint(mouseX, mouseY) ||
+                GearButton.containsPoint(mouseX, mouseY) ||
                 LeftArrowButton.containsPoint(mouseX, mouseY) ||
                 RightArrowButton.containsPoint(mouseX, mouseY))
             {

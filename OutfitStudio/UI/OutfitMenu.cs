@@ -364,6 +364,7 @@ namespace OutfitStudio
             // Draw bottom and close buttons
             uiBuilder.DrawBottomButtons(b);
             uiBuilder.DrawCloseButton(b);
+            uiBuilder.DrawGearButton(b);
 
             // Skip dropdown and tooltips when overlay is open
             if (!hasOverlay)

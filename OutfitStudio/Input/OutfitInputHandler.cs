@@ -142,7 +142,8 @@ namespace OutfitStudio
                     uiBuilder.ApplyButton.containsPoint(x, y) ||
                     uiBuilder.ResetButton.containsPoint(x, y) ||
                     uiBuilder.SaveButton.containsPoint(x, y) ||
-                    uiBuilder.WardrobeButton.containsPoint(x, y))
+                    uiBuilder.WardrobeButton.containsPoint(x, y) ||
+                    uiBuilder.GearButton.containsPoint(x, y))
                 {
                     dropdownManager.Close();
                     continuousScrollHandler.Reset();
@@ -262,6 +263,14 @@ namespace OutfitStudio
             if (uiBuilder.WardrobeButton.containsPoint(x, y))
             {
                 setWardrobeOverlay(new WardrobeOverlay(outfitSetStore, getParentMenu()));
+                if (playSound) Game1.playSound("bigSelect");
+                return true;
+            }
+
+            // Gear button - opens config overlay (Type B swap)
+            if (uiBuilder.GearButton.containsPoint(x, y))
+            {
+                Game1.activeClickableMenu = new ConfigOverlay(Game1.activeClickableMenu, mod);
                 if (playSound) Game1.playSound("bigSelect");
                 return true;
             }

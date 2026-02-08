@@ -366,5 +366,46 @@ namespace OutfitStudio
 
         /// <summary>Opacity for tags marked for deletion.</summary>
         public const float MarkedForDeletionOpacity = 0.2f;
+
+        // ============================================================
+        // CONFIG OVERLAY
+        // ============================================================
+
+        public const int ConfigOverlayWidth = 650;
+        public const int ConfigBorderPadding = 30;
+        public const int ConfigRowHeight = 44;
+        public const int ConfigSectionHeaderHeight = 44;
+        public const int ConfigSectionGap = 20;
+        public const int ConfigRowIndent = 20;
+        public const int ConfigLabelWidth = 350;
+        public const int ConfigControlRightPadding = 30;
+
+        public const float ConfigCheckboxScale = 3.2f;
+        public const int ConfigCheckboxSize = 29;
+
+        public const int ConfigSliderWidth = 200;
+        public const int ConfigSliderHeight = 24;
+        public const int ConfigSliderValueLabelGap = 15;
+
+        public const int ConfigKeybindBoxWidth = 140;
+
+        public const int ConfigDropdownWidth = 85;
+        public const int ConfigDropdownHeight = 40;
+        public const int ConfigDropdownMaxVisible = 3;
+
+        public const int ConfigGearButtonSize = 40;
+        public const int ConfigGearButtonGap = 5;
+
+        public const int ConfigBottomButtonGap = 16;
+
+        public const int ConfigViewportMargin = 40;
+        public const float ConfigScrollArrowScale = 2f;
+        public const int ConfigScrollArrowRightExtend = 5;
+
+        public const int ConfigTitleTopPadding = 15;
+        public const int ConfigTitleBottomPadding = 10;
+        public const int ConfigTitleSidePadding = 30;
+        public const int ConfigButtonBoxHeight = 70;
+        public const int ConfigBoxGap = 10;
     }
 }
