@@ -111,6 +111,8 @@ namespace OutfitStudio
         public static string ConfigAutoOpenTagMenuTooltip { get; private set; } = "";
         public static string ConfigAutoFocusSearchBarName { get; private set; } = "";
         public static string ConfigAutoFocusSearchBarTooltip { get; private set; } = "";
+        public static string ConfigArrowKeyScrollingName { get; private set; } = "";
+        public static string ConfigArrowKeyScrollingTooltip { get; private set; } = "";
         public static string ConfigResetMatchAllOnOpenName { get; private set; } = "";
         public static string ConfigResetMatchAllOnOpenTooltip { get; private set; } = "";
         public static string ConfigResetShowInvalidOnOpenName { get; private set; } = "";
@@ -225,6 +227,8 @@ namespace OutfitStudio
             ConfigAutoOpenTagMenuTooltip = i18n.Get("config.auto-open-tag-menu.tooltip");
             ConfigAutoFocusSearchBarName = i18n.Get("config.auto-focus-search-bar.name");
             ConfigAutoFocusSearchBarTooltip = i18n.Get("config.auto-focus-search-bar.tooltip");
+            ConfigArrowKeyScrollingName = i18n.Get("config.arrow-key-scrolling.name");
+            ConfigArrowKeyScrollingTooltip = i18n.Get("config.arrow-key-scrolling.tooltip");
             ConfigResetMatchAllOnOpenName = i18n.Get("config.reset-match-all-on-open.name");
             ConfigResetMatchAllOnOpenTooltip = i18n.Get("config.reset-match-all-on-open.tooltip");
             ConfigResetShowInvalidOnOpenName = i18n.Get("config.reset-show-invalid-on-open.name");

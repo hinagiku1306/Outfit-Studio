@@ -25,6 +25,7 @@ namespace OutfitStudio
         private bool closeOnClickOutside;
         private bool autoOpenTagMenu;
         private bool autoFocusSearchBar;
+        private bool arrowKeyScrolling;
         private bool resetFilterOnTabSwitch;
         private bool resetSearchOnTabSwitch;
         private int visibleRows;
@@ -55,6 +56,7 @@ namespace OutfitStudio
             closeOnClickOutside = config.CloseOnClickOutside;
             autoOpenTagMenu = config.AutoOpenTagMenu;
             autoFocusSearchBar = config.AutoFocusSearchBar;
+            arrowKeyScrolling = config.ArrowKeyScrolling;
             resetFilterOnTabSwitch = config.ResetFilterOnTabSwitch;
             resetSearchOnTabSwitch = config.ResetSearchOnTabSwitch;
             visibleRows = config.VisibleRows;
@@ -89,8 +91,8 @@ namespace OutfitStudio
             if (listeningForKeybind != null)
             {
                 bool clickedSameArea = clickInContentArea &&
-                    ((listeningForKeybind == "ToggleMenuKey" && uiBuilder.ToggleMenuKeyArea.containsPoint(x, y)) ||
-                     (listeningForKeybind == "ToggleItemInfoKey" && uiBuilder.ToggleItemInfoKeyArea.containsPoint(x, y)));
+                    ((listeningForKeybind == "ToggleMenuKey" && IsInRowOf(uiBuilder.ToggleMenuKeyArea, x, y)) ||
+                     (listeningForKeybind == "ToggleItemInfoKey" && IsInRowOf(uiBuilder.ToggleItemInfoKeyArea, x, y)));
 
                 if (!clickedSameArea)
                 {
@@ -133,7 +135,7 @@ namespace OutfitStudio
                     }
                 }
 
-                if (clickInContentArea && uiBuilder.SearchScopeDropdown.containsPoint(x, y))
+                if (clickInContentArea && IsInRowOf(uiBuilder.SearchScopeDropdown, x, y))
                 {
                     searchScopeDropdownOpen = false;
                     if (playSound) Game1.playSound("smallSelect");
@@ -160,13 +162,13 @@ namespace OutfitStudio
             if (!clickInContentArea)
                 return;
 
-            if (uiBuilder.ToggleMenuKeyArea.containsPoint(x, y))
+            if (IsInRowOf(uiBuilder.ToggleMenuKeyArea, x, y))
             {
                 listeningForKeybind = "ToggleMenuKey";
                 if (playSound) Game1.playSound("smallSelect");
                 return;
             }
-            if (uiBuilder.ToggleItemInfoKeyArea.containsPoint(x, y))
+            if (IsInRowOf(uiBuilder.ToggleItemInfoKeyArea, x, y))
             {
                 listeningForKeybind = "ToggleItemInfoKey";
                 if (playSound) Game1.playSound("smallSelect");
@@ -177,12 +179,13 @@ namespace OutfitStudio
             if (TryToggleCheckbox(uiBuilder.CloseOnClickOutsideCheckbox, x, y, ref closeOnClickOutside, playSound)) return;
             if (TryToggleCheckbox(uiBuilder.AutoOpenTagMenuCheckbox, x, y, ref autoOpenTagMenu, playSound)) return;
             if (TryToggleCheckbox(uiBuilder.AutoFocusSearchBarCheckbox, x, y, ref autoFocusSearchBar, playSound)) return;
+            if (TryToggleCheckbox(uiBuilder.ArrowKeyScrollingCheckbox, x, y, ref arrowKeyScrolling, playSound)) return;
             if (TryToggleCheckbox(uiBuilder.ResetFilterCheckbox, x, y, ref resetFilterOnTabSwitch, playSound)) return;
             if (TryToggleCheckbox(uiBuilder.ResetSearchCheckbox, x, y, ref resetSearchOnTabSwitch, playSound)) return;
             if (TryToggleCheckbox(uiBuilder.ResetMatchAllCheckbox, x, y, ref resetMatchAllOnOpen, playSound)) return;
             if (TryToggleCheckbox(uiBuilder.ResetShowInvalidCheckbox, x, y, ref resetShowInvalidOnOpen, playSound)) return;
 
-            if (uiBuilder.SearchScopeDropdown.containsPoint(x, y))
+            if (IsInRowOf(uiBuilder.SearchScopeDropdown, x, y))
             {
                 searchScopeDropdownOpen = !searchScopeDropdownOpen;
                 if (playSound) Game1.playSound("smallSelect");
@@ -344,6 +347,7 @@ namespace OutfitStudio
             uiBuilder.DrawCheckboxRow(b, TranslationCache.ConfigCloseOnClickOutsideName, closeOnClickOutside, uiBuilder.CloseOnClickOutsideCheckbox);
             uiBuilder.DrawCheckboxRow(b, TranslationCache.ConfigAutoOpenTagMenuName, autoOpenTagMenu, uiBuilder.AutoOpenTagMenuCheckbox);
             uiBuilder.DrawCheckboxRow(b, TranslationCache.ConfigAutoFocusSearchBarName, autoFocusSearchBar, uiBuilder.AutoFocusSearchBarCheckbox);
+            uiBuilder.DrawCheckboxRow(b, TranslationCache.ConfigArrowKeyScrollingName, arrowKeyScrolling, uiBuilder.ArrowKeyScrollingCheckbox);
 
             uiBuilder.DrawSectionHeader(b, uiBuilder.MainMenuHeaderY, TranslationCache.ConfigMainMenuSection);
             uiBuilder.DrawCheckboxRow(b, TranslationCache.ConfigResetFilterOnTabSwitchName, resetFilterOnTabSwitch, uiBuilder.ResetFilterCheckbox);
@@ -371,9 +375,20 @@ namespace OutfitStudio
             yPositionOnScreen = uiBuilder.Y;
         }
 
+        private bool IsInRowOf(ClickableComponent control, int x, int y)
+        {
+            int rowY = control.bounds.Height < ConfigRowHeight
+                ? control.bounds.Y - (ConfigRowHeight - control.bounds.Height) / 2
+                : control.bounds.Y;
+            return x >= uiBuilder.ContentClipRect.X
+                && x < uiBuilder.ContentClipRect.Right
+                && y >= rowY
+                && y < rowY + ConfigRowHeight;
+        }
+
         private bool TryToggleCheckbox(ClickableComponent checkbox, int x, int y, ref bool value, bool playSound)
         {
-            if (!checkbox.containsPoint(x, y))
+            if (!IsInRowOf(checkbox, x, y))
                 return false;
 
             value = !value;
@@ -390,6 +405,7 @@ namespace OutfitStudio
             config.CloseOnClickOutside = closeOnClickOutside;
             config.AutoOpenTagMenu = autoOpenTagMenu;
             config.AutoFocusSearchBar = autoFocusSearchBar;
+            config.ArrowKeyScrolling = arrowKeyScrolling;
             config.ResetFilterOnTabSwitch = resetFilterOnTabSwitch;
             config.ResetSearchOnTabSwitch = resetSearchOnTabSwitch;
             visibleRows = uiBuilder.VisibleRowsSlider.Value;

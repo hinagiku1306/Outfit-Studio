@@ -28,6 +28,7 @@ namespace OutfitStudio
         public ClickableComponent CloseOnClickOutsideCheckbox { get; private set; } = null!;
         public ClickableComponent AutoOpenTagMenuCheckbox { get; private set; } = null!;
         public ClickableComponent AutoFocusSearchBarCheckbox { get; private set; } = null!;
+        public ClickableComponent ArrowKeyScrollingCheckbox { get; private set; } = null!;
         public ClickableComponent ResetFilterCheckbox { get; private set; } = null!;
         public ClickableComponent ResetSearchCheckbox { get; private set; } = null!;
         public ClickableComponent ResetMatchAllCheckbox { get; private set; } = null!;
@@ -78,7 +79,7 @@ namespace OutfitStudio
 
         public void Recalculate()
         {
-            int totalRows = 14;
+            int totalRows = 15;
             int totalSections = 3;
 
             int scrollableContentNatural = (ConfigSectionHeaderHeight * totalSections)
@@ -172,6 +173,12 @@ namespace OutfitStudio
             labelsList.Add(TranslationCache.ConfigAutoFocusSearchBarName);
             tooltipsList.Add(TranslationCache.ConfigAutoFocusSearchBarTooltip);
             AutoFocusSearchBarCheckbox = CreateCheckbox(currentY, "AutoFocusSearchBar");
+            currentY += ConfigRowHeight;
+
+            rowYList.Add(currentY);
+            labelsList.Add(TranslationCache.ConfigArrowKeyScrollingName);
+            tooltipsList.Add(TranslationCache.ConfigArrowKeyScrollingTooltip);
+            ArrowKeyScrollingCheckbox = CreateCheckbox(currentY, "ArrowKeyScrolling");
             currentY += ConfigRowHeight;
 
             MainMenuHeaderY = currentY;
@@ -448,9 +455,6 @@ namespace OutfitStudio
 
         public string? GetHoveredTooltip(int mouseX, int mouseY)
         {
-            if (!ModEntry.Config.ShowTooltip)
-                return null;
-
             if (IsScrollable && !ContentClipRect.Contains(mouseX, mouseY))
                 return null;
 

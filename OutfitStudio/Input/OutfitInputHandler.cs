@@ -504,47 +504,33 @@ namespace OutfitStudio
                 return true;
             }
 
-            // Handle scrolling with arrow keys only (removed WASD)
-            int totalRows = Math.Max(1, (int)Math.Ceiling(getCurrentListCount() / (float)uiBuilder.COLUMNS));
-            int maxScroll = Math.Max(0, totalRows - uiBuilder.VISIBLE_ROWS);
-
-            // Scroll up (Up arrow only)
-            if (key == Keys.Up)
+            if (mod.GetConfig().ArrowKeyScrolling)
             {
-                if (state.ScrollOffset > 0)
+                int totalRows = Math.Max(1, (int)Math.Ceiling(getCurrentListCount() / (float)uiBuilder.COLUMNS));
+                int maxScroll = Math.Max(0, totalRows - uiBuilder.VISIBLE_ROWS);
+
+                if (key == Keys.Up && state.ScrollOffset > 0)
                 {
                     state.ScrollOffset--;
                     Game1.playSound("shiny4");
                     return true;
                 }
-            }
 
-            // Scroll down (Down arrow only)
-            if (key == Keys.Down)
-            {
-                if (state.ScrollOffset < maxScroll)
+                if (key == Keys.Down && state.ScrollOffset < maxScroll)
                 {
                     state.ScrollOffset++;
                     Game1.playSound("shiny4");
                     return true;
                 }
-            }
 
-            // Page up (Left arrow only)
-            if (key == Keys.Left)
-            {
-                if (state.ScrollOffset > 0)
+                if (key == Keys.Left && state.ScrollOffset > 0)
                 {
                     state.ScrollOffset = Math.Max(0, state.ScrollOffset - uiBuilder.VISIBLE_ROWS);
                     Game1.playSound("shiny4");
                     return true;
                 }
-            }
 
-            // Page down (Right arrow only)
-            if (key == Keys.Right)
-            {
-                if (state.ScrollOffset < maxScroll)
+                if (key == Keys.Right && state.ScrollOffset < maxScroll)
                 {
                     state.ScrollOffset = Math.Min(maxScroll, state.ScrollOffset + uiBuilder.VISIBLE_ROWS);
                     Game1.playSound("shiny4");

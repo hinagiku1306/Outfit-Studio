@@ -1,6 +1,5 @@
 1. Reminder for important days
 2. Auto-wear on important days
-3. Mod tutorial
 
 5. Edit a tag
 6. Add "Invalid" filter
@@ -8,3 +7,4 @@
 8. Hovering color rectangle
 
 10. Ctrl+A to select all text in input box
+11. Pants color

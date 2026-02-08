@@ -723,6 +723,40 @@ namespace OutfitStudio
                 return;
             }
 
+            if (ModEntry.Config.ArrowKeyScrolling)
+            {
+                int maxVisible = uiBuilder.OutfitListItems.Count;
+                int maxScroll = Math.Max(0, displayedSets.Count - maxVisible);
+
+                if (key == Keys.Up && listScrollOffset > 0)
+                {
+                    listScrollOffset--;
+                    Game1.playSound("shiny4");
+                    return;
+                }
+
+                if (key == Keys.Down && listScrollOffset < maxScroll)
+                {
+                    listScrollOffset++;
+                    Game1.playSound("shiny4");
+                    return;
+                }
+
+                if (key == Keys.Left && listScrollOffset > 0)
+                {
+                    listScrollOffset = Math.Max(0, listScrollOffset - maxVisible);
+                    Game1.playSound("shiny4");
+                    return;
+                }
+
+                if (key == Keys.Right && listScrollOffset < maxScroll)
+                {
+                    listScrollOffset = Math.Min(maxScroll, listScrollOffset + maxVisible);
+                    Game1.playSound("shiny4");
+                    return;
+                }
+            }
+
             if (key == Keys.Escape)
             {
                 shouldClose = true;
