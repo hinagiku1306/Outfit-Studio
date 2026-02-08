@@ -410,7 +410,7 @@ namespace OutfitStudio
 
         public const int ConfigBottomButtonGap = 16;
 
-        public const int ConfigViewportMargin = 40;
+        public const int ConfigMaxHeight = 700;
         public const float ConfigScrollArrowScale = 2f;
         public const int ConfigScrollArrowRightExtend = 5;
 

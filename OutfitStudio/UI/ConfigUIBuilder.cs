@@ -91,11 +91,14 @@ namespace OutfitStudio
 
             int buttonBoxFullHeight = ConfigButtonBoxHeight + ConfigBoxGap;
             int naturalHeight = FixedTopHeight + titleBoxHeight + scrollableContentNatural + buttonBoxFullHeight + FixedBottomHeight;
-            int maxHeight = Game1.uiViewport.Height - ConfigViewportMargin * 2;
+            int maxHeight = ConfigMaxHeight;
             Height = Math.Min(naturalHeight, maxHeight);
 
             int availableForContent = Height - FixedTopHeight - titleBoxHeight - buttonBoxFullHeight - FixedBottomHeight;
             int visibleContentHeight = availableForContent - ConfigBorderPadding * 2;
+            visibleContentHeight = (visibleContentHeight / ConfigRowHeight) * ConfigRowHeight;
+            availableForContent = visibleContentHeight + ConfigBorderPadding * 2;
+            Height = FixedTopHeight + titleBoxHeight + availableForContent + buttonBoxFullHeight + FixedBottomHeight;
             MaxScrollOffset = Math.Max(0, scrollableContentNatural - visibleContentHeight);
             ClampScrollOffset();
 

@@ -95,6 +95,7 @@ namespace OutfitStudio.Services
             result = ApplyScopeFilter(result, filter.ShowGlobal, filter.ShowLocal);
             result = ApplyFavoriteFilter(result, filter.FavoritesOnly);
             result = ApplyValidityFilter(result, filter.ShowInvalid);
+            result = ApplyInvalidOnlyFilter(result, filter.InvalidOnly);
             result = ApplySearchFilter(result, filter.SearchText, filter.SearchScope);
 
             cachedFilteredSets = result
@@ -134,7 +135,7 @@ namespace OutfitStudio.Services
                 return sets;
 
             if (!showGlobal && !showLocal)
-                return sets;
+                return Enumerable.Empty<OutfitSet>();
 
             if (showGlobal)
                 return sets.Where(s => globalIds.Contains(s.Id));
@@ -156,6 +157,14 @@ namespace OutfitStudio.Services
                 return sets;
 
             return sets.Where(s => validIds.Contains(s.Id));
+        }
+
+        private IEnumerable<OutfitSet> ApplyInvalidOnlyFilter(IEnumerable<OutfitSet> sets, bool invalidOnly)
+        {
+            if (!invalidOnly)
+                return sets;
+
+            return sets.Where(s => !validIds.Contains(s.Id));
         }
 
         private IEnumerable<OutfitSet> ApplySearchFilter(IEnumerable<OutfitSet> sets, string searchText, SearchScope scope)

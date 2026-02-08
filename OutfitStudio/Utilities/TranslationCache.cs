@@ -87,6 +87,7 @@ namespace OutfitStudio
         public static string WardrobeFilterFavorites { get; private set; } = "";
         public static string WardrobeFilterGlobal { get; private set; } = "";
         public static string WardrobeFilterLocal { get; private set; } = "";
+        public static string WardrobeFilterInvalid { get; private set; } = "";
         public static string WardrobeFilterNoResults { get; private set; } = "";
 
         // Delete confirmation
@@ -212,6 +213,7 @@ namespace OutfitStudio
             WardrobeFilterFavorites = i18n.Get("wardrobe.filter.favorites");
             WardrobeFilterGlobal = i18n.Get("wardrobe.filter.global");
             WardrobeFilterLocal = i18n.Get("wardrobe.filter.local");
+            WardrobeFilterInvalid = i18n.Get("wardrobe.filter.invalid");
             WardrobeFilterNoResults = i18n.Get("wardrobe.filter.noResults");
 
             DeleteConfirmQuestion = i18n.Get("wardrobe.delete.confirm-question");

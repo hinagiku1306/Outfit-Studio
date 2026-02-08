@@ -20,6 +20,7 @@ namespace OutfitStudio.Managers
         public bool ShowGlobal { get; set; } = true;
         public bool ShowLocal { get; set; } = true;
         public bool ShowInvalid { get; set; } = true;
+        public bool InvalidOnly { get; set; }
 
         public bool HasActiveFilters =>
             !string.IsNullOrEmpty(SearchText) ||
@@ -27,7 +28,8 @@ namespace OutfitStudio.Managers
             FavoritesOnly ||
             !ShowGlobal ||
             !ShowLocal ||
-            !ShowInvalid;
+            !ShowInvalid ||
+            InvalidOnly;
 
         public void ToggleTag(string tag)
         {
@@ -47,7 +49,7 @@ namespace OutfitStudio.Managers
             string tags = SelectedTags.Count > 0
                 ? string.Join(",", SelectedTags.OrderBy(t => t, TranslationCache.TagComparer))
                 : "";
-            return $"{(int)SearchScope}|{SearchText}|{tags}|{MatchAllTags}|{FavoritesOnly}|{ShowGlobal}|{ShowLocal}|{ShowInvalid}";
+            return $"{(int)SearchScope}|{SearchText}|{tags}|{MatchAllTags}|{FavoritesOnly}|{ShowGlobal}|{ShowLocal}|{ShowInvalid}|{InvalidOnly}";
         }
 
         public void Reset()
@@ -60,6 +62,7 @@ namespace OutfitStudio.Managers
             ShowGlobal = true;
             ShowLocal = true;
             ShowInvalid = true;
+            InvalidOnly = false;
         }
     }
 }

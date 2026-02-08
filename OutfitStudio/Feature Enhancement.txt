@@ -2,8 +2,10 @@
 2. Auto-wear on important days
 
 5. Edit a tag
-6. Add "Invalid" filter
+
 7. Total number of sets
 8. Hovering color rectangle
 
 10. Ctrl+A to select all text in input box
+
+12. Random name generator

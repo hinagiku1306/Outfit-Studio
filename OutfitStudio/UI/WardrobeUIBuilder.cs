@@ -448,7 +448,7 @@ namespace OutfitStudio
             float textHeight = Game1.smallFont.MeasureString("A").Y;
             int optionHeight = (int)Math.Ceiling(textHeight) + 16;
 
-            string[] labels = { TranslationCache.WardrobeFilterFavorites, TranslationCache.WardrobeFilterGlobal, TranslationCache.WardrobeFilterLocal };
+            string[] labels = { TranslationCache.WardrobeFilterFavorites, TranslationCache.WardrobeFilterInvalid, TranslationCache.WardrobeFilterGlobal, TranslationCache.WardrobeFilterLocal };
 
             for (int i = 0; i < labels.Length; i++)
             {
@@ -643,7 +643,7 @@ namespace OutfitStudio
             UIHelpers.DrawDropdownButton(b, TagsDropdown.bounds, tagsLabel, tagsOpen,
                 clearButton: TagsClearButton, hasValue: hasTags, drawClearButton: UIHelpers.DrawClearButton);
 
-            bool hasFilters = filter.FavoritesOnly || !filter.ShowGlobal || !filter.ShowLocal;
+            bool hasFilters = filter.FavoritesOnly || !filter.ShowGlobal || !filter.ShowLocal || filter.InvalidOnly;
             string filterLabel = TranslationCache.WardrobeFilterFilter;
             UIHelpers.DrawDropdownButton(b, FilterDropdown.bounds, filterLabel, filterOpen,
                 clearButton: FilterClearButton, hasValue: hasFilters, drawClearButton: UIHelpers.DrawClearButton);
@@ -861,7 +861,7 @@ namespace OutfitStudio
             int mouseX = Game1.getMouseX();
             int mouseY = Game1.getMouseY();
 
-            bool[] checked_ = { filter.FavoritesOnly, filter.ShowGlobal, filter.ShowLocal };
+            bool[] checked_ = { filter.FavoritesOnly, filter.InvalidOnly, filter.ShowGlobal, filter.ShowLocal };
 
             for (int i = 0; i < FilterOptions.Count; i++)
             {

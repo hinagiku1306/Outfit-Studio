@@ -256,10 +256,11 @@ namespace OutfitStudio
                     if (playSound) Game1.playSound("smallSelect");
                     return;
                 }
-                if (uiBuilder.FilterClearButton.containsPoint(x, y) && (filterState.FavoritesOnly || !filterState.ShowGlobal || !filterState.ShowLocal))
+                if (uiBuilder.FilterClearButton.containsPoint(x, y) && (filterState.FavoritesOnly || !filterState.ShowGlobal || !filterState.ShowLocal || filterState.InvalidOnly))
                 {
                     CloseAllDropdowns();
                     filterState.FavoritesOnly = false;
+                    filterState.InvalidOnly = false;
                     filterState.ShowGlobal = true;
                     filterState.ShowLocal = true;
                     RefreshDisplayedSets();
@@ -429,9 +430,12 @@ namespace OutfitStudio
                                 filterState.FavoritesOnly = !filterState.FavoritesOnly;
                                 break;
                             case 1:
-                                filterState.ShowGlobal = !filterState.ShowGlobal;
+                                filterState.InvalidOnly = !filterState.InvalidOnly;
                                 break;
                             case 2:
+                                filterState.ShowGlobal = !filterState.ShowGlobal;
+                                break;
+                            case 3:
                                 filterState.ShowLocal = !filterState.ShowLocal;
                                 break;
                         }
@@ -537,11 +541,12 @@ namespace OutfitStudio
                 return true;
             }
 
-            if (uiBuilder.FilterClearButton.containsPoint(x, y) && (filterState.FavoritesOnly || !filterState.ShowGlobal || !filterState.ShowLocal))
+            if (uiBuilder.FilterClearButton.containsPoint(x, y) && (filterState.FavoritesOnly || !filterState.ShowGlobal || !filterState.ShowLocal || filterState.InvalidOnly))
             {
                 filterState.FavoritesOnly = false;
                 filterState.ShowGlobal = true;
                 filterState.ShowLocal = true;
+                filterState.InvalidOnly = false;
                 RefreshDisplayedSets();
                 if (playSound) Game1.playSound("smallSelect");
                 return true;

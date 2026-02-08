@@ -270,6 +270,16 @@ namespace OutfitStudio
                 return;
             }
 
+            if (uiBuilder.NameClearButton.containsPoint(x, y) && !string.IsNullOrEmpty(nameTextBox.Text))
+            {
+                nameTextBox.Text = "";
+                nameBoxFocused = true;
+                tagPickerManager.DeselectCustomInput();
+                nameTextBox.Selected = true;
+                if (playSound) Game1.playSound("smallSelect");
+                return;
+            }
+
             if (uiBuilder.NameInputArea.containsPoint(x, y))
             {
                 nameBoxFocused = true;
