@@ -30,6 +30,13 @@ namespace OutfitStudio
             helper.Events.GameLoop.GameLaunched += OnGameLaunched;
             helper.Events.GameLoop.SaveLoaded += OnSaveLoaded;
             helper.Events.GameLoop.ReturnedToTitle += OnReturnedToTitle;
+<<<<<<< Updated upstream
+=======
+            helper.Events.GameLoop.DayStarted += OnDayStarted;
+            helper.Events.GameLoop.DayEnding += OnDayEnding;
+            helper.Events.Player.Warped += OnWarped;
+            helper.Events.Content.LocaleChanged += OnLocaleChanged;
+>>>>>>> Stashed changes
         }
 
         private void OnSaveLoaded(object? sender, SaveLoadedEventArgs e)
@@ -46,8 +53,14 @@ namespace OutfitStudio
             outfitSetStore?.ClearLocalData();
         }
 
+        private void OnLocaleChanged(object? sender, LocaleChangedEventArgs e)
+        {
+            TranslationCache.Initialize(Helper.Translation);
+        }
+
         private void OnGameLaunched(object? sender, GameLaunchedEventArgs e)
         {
+
             outfitSetStore = new OutfitSetStore(Helper, Monitor);
             outfitSetStore.LoadGlobalData();
 
