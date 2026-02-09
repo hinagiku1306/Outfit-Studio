@@ -190,5 +190,28 @@ namespace OutfitStudio.Tests.UI
             string drawBody = SourceScanner.ExtractMethodBody(source, "override void draw");
             Assert.DoesNotContain("ShowTooltip", drawBody);
         }
+
+        // ----------------------------------------------------------------
+        //  S8: ModEntry subscribes to LocaleChanged for translation refresh
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: ModEntry subscribes to Content.LocaleChanged so TranslationCache updates when player changes language
+        public void ModEntry_SubscribesTo_LocaleChanged()
+        {
+            string source = SourceScanner.ReadSourceFile("Core/ModEntry.cs");
+            Assert.Contains("LocaleChanged", source);
+        }
+
+        [Fact]
+        // Expected: ModEntry's LocaleChanged handler re-initializes TranslationCache so cached strings update to the new language
+        public void ModEntry_LocaleChangedHandler_ReInitializesTranslationCache()
+        {
+            string source = SourceScanner.ReadSourceFile("Core/ModEntry.cs");
+            bool found = SourceScanner.MethodContains(source,
+                "void OnLocaleChanged", "TranslationCache.Initialize");
+            Assert.True(found,
+                "OnLocaleChanged must call TranslationCache.Initialize to refresh cached translations");
+        }
     }
 }
