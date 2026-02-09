@@ -107,91 +107,22 @@ namespace OutfitStudio.Services
         }
 
         private IEnumerable<OutfitSet> ApplyTagFilter(IEnumerable<OutfitSet> sets, HashSet<string> selectedTags, bool matchAll)
-        {
-            if (selectedTags.Count == 0)
-                return sets;
-
-            if (matchAll)
-            {
-                return sets.Where(s => selectedTags.All(tag =>
-                    s.Tags.Any(t => t.Equals(tag, TranslationCache.TagComparison))));
-            }
-
-            HashSet<string> matchingIds = new();
-            foreach (var tag in selectedTags)
-            {
-                if (byTag.TryGetValue(tag, out var ids))
-                {
-                    matchingIds.UnionWith(ids);
-                }
-            }
-
-            return sets.Where(s => matchingIds.Contains(s.Id));
-        }
+            => OutfitSetFiltering.ApplyTagFilter(sets, selectedTags, matchAll, byTag, TranslationCache.TagComparison);
 
         private IEnumerable<OutfitSet> ApplyScopeFilter(IEnumerable<OutfitSet> sets, bool showGlobal, bool showLocal)
-        {
-            if (showGlobal && showLocal)
-                return sets;
-
-            if (!showGlobal && !showLocal)
-                return Enumerable.Empty<OutfitSet>();
-
-            if (showGlobal)
-                return sets.Where(s => globalIds.Contains(s.Id));
-
-            return sets.Where(s => localIds.Contains(s.Id));
-        }
+            => OutfitSetFiltering.ApplyScopeFilter(sets, showGlobal, showLocal, globalIds, localIds);
 
         private IEnumerable<OutfitSet> ApplyFavoriteFilter(IEnumerable<OutfitSet> sets, bool favoritesOnly)
-        {
-            if (!favoritesOnly)
-                return sets;
-
-            return sets.Where(s => favoriteIds.Contains(s.Id));
-        }
+            => OutfitSetFiltering.ApplyFavoriteFilter(sets, favoritesOnly, favoriteIds);
 
         private IEnumerable<OutfitSet> ApplyValidityFilter(IEnumerable<OutfitSet> sets, bool showInvalid)
-        {
-            if (showInvalid)
-                return sets;
-
-            return sets.Where(s => validIds.Contains(s.Id));
-        }
+            => OutfitSetFiltering.ApplyValidityFilter(sets, showInvalid, validIds);
 
         private IEnumerable<OutfitSet> ApplyInvalidOnlyFilter(IEnumerable<OutfitSet> sets, bool invalidOnly)
-        {
-            if (!invalidOnly)
-                return sets;
-
-            return sets.Where(s => !validIds.Contains(s.Id));
-        }
+            => OutfitSetFiltering.ApplyInvalidOnlyFilter(sets, invalidOnly, validIds);
 
         private IEnumerable<OutfitSet> ApplySearchFilter(IEnumerable<OutfitSet> sets, string searchText, SearchScope scope)
-        {
-            if (string.IsNullOrWhiteSpace(searchText))
-                return sets;
-
-            string search = searchText.Trim();
-
-            return sets.Where(s => MatchesSearch(s, search, scope));
-        }
-
-        private bool MatchesSearch(OutfitSet set, string search, SearchScope scope)
-        {
-            if (scope == SearchScope.Set)
-                return setSearchText.TryGetValue(set.Id, out var name) &&
-                       name.Contains(search, StringComparison.OrdinalIgnoreCase);
-
-            if (scope == SearchScope.Item)
-                return setItemSearchText.TryGetValue(set.Id, out var items) &&
-                       items.Contains(search, StringComparison.OrdinalIgnoreCase);
-
-            return (setSearchText.TryGetValue(set.Id, out var n) &&
-                    n.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
-                   (setItemSearchText.TryGetValue(set.Id, out var it) &&
-                    it.Contains(search, StringComparison.OrdinalIgnoreCase));
-        }
+            => OutfitSetFiltering.ApplySearchFilter(sets, searchText, scope, setSearchText, setItemSearchText);
 
         public OutfitSet? GetById(string id)
         {

@@ -6,3 +6,5 @@ obj/
 /NUL
 images/
 releases/
+coveragereport/
+TestResults/

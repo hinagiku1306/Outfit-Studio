@@ -882,29 +882,10 @@ namespace OutfitStudio
 
         private string FormatTagsWithCount(List<string> tags, string prefix, int maxWidth)
         {
-            if (tags.Count == 0)
-                return prefix + TranslationCache.WardrobeItemNone;
-
-            string fullText = prefix + string.Join(", ", tags);
-            if (Game1.smallFont.MeasureString(fullText).X <= maxWidth)
-                return fullText;
-
-            for (int shown = tags.Count - 1; shown >= 1; shown--)
-            {
-                int remaining = tags.Count - shown;
-                string partial = prefix;
-                for (int i = 0; i < shown; i++)
-                {
-                    if (i > 0) partial += ", ";
-                    partial += tags[i];
-                }
-                partial += $" (+{remaining})";
-
-                if (Game1.smallFont.MeasureString(partial).X <= maxWidth)
-                    return partial;
-            }
-
-            return prefix + $"(+{tags.Count})";
+            return UIHelpers.FormatTagsWithCount(
+                tags, prefix, maxWidth,
+                s => Game1.smallFont.MeasureString(s).X,
+                TranslationCache.WardrobeItemNone);
         }
 
         public void DrawPreviewPanel(SpriteBatch b, OutfitSet? set, OutfitSetStore store, Texture2D? previewTexture, int displayedCount)

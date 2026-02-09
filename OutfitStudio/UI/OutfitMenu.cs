@@ -143,9 +143,7 @@ namespace OutfitStudio
             yPositionOnScreen = uiBuilder.Y;
 
             int totalRows = Math.Max(1, (int)Math.Ceiling(itemListProvider.GetCurrentListCount() / (float)uiBuilder.COLUMNS));
-            int maxScroll = Math.Max(0, totalRows - uiBuilder.VISIBLE_ROWS);
-            if (state.ScrollOffset > maxScroll)
-                state.ScrollOffset = maxScroll;
+            state.ScrollOffset = UIHelpers.ClampScrollOffset(state.ScrollOffset, totalRows, uiBuilder.VISIBLE_ROWS);
 
             if (dropdownManager.IsOpen)
             {
@@ -282,10 +280,7 @@ namespace OutfitStudio
                 else
                 {
                     int totalRows = Math.Max(1, (int)Math.Ceiling(itemListProvider.GetCurrentListCount() / (float)uiBuilder.COLUMNS));
-                    int maxScroll = Math.Max(0, totalRows - uiBuilder.VISIBLE_ROWS);
-
-                    int newOffset = state.ScrollOffset + scrollAmount;
-                    newOffset = Math.Clamp(newOffset, 0, maxScroll);
+                    int newOffset = UIHelpers.ClampScrollOffset(state.ScrollOffset + scrollAmount, totalRows, uiBuilder.VISIBLE_ROWS);
 
                     if (newOffset != state.ScrollOffset)
                     {

@@ -32,12 +32,18 @@ namespace OutfitStudio
             if (!Bounds.Contains(x, y))
                 return;
 
-            int trackWidth = Bounds.Width - HandleWidth;
-            float fraction = (float)(x - Bounds.X - HandleWidth / 2) / trackWidth;
+            Value = CalculateValueFromClick(x, Bounds.X, Bounds.Width, HandleWidth, Min, Max);
+        }
+
+        internal static int CalculateValueFromClick(
+            int clickX, int boundsX, int boundsWidth, int handleWidth, int min, int max)
+        {
+            int trackWidth = boundsWidth - handleWidth;
+            float fraction = (float)(clickX - boundsX - handleWidth / 2) / trackWidth;
             fraction = Math.Clamp(fraction, 0f, 1f);
 
-            Value = Min + (int)Math.Round(fraction * (Max - Min), MidpointRounding.AwayFromZero);
-            Value = Math.Clamp(Value, Min, Max);
+            int value = min + (int)Math.Round(fraction * (max - min), MidpointRounding.AwayFromZero);
+            return Math.Clamp(value, min, max);
         }
 
         public void Draw(SpriteBatch b)

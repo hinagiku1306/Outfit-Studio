@@ -67,14 +67,7 @@ namespace OutfitStudio
         {
             try
             {
-                // Vanilla numeric IDs (pre-1.6)
-                if (int.TryParse(unqualifiedId, out _))
-                {
-                    return TranslationCache.FilterVanilla;
-                }
-
-                // Vanilla string IDs (1.6+) — no dots or underscores
-                if (!unqualifiedId.Contains('.') && !unqualifiedId.Contains('_'))
+                if (IsVanillaId(unqualifiedId))
                 {
                     return TranslationCache.FilterVanilla;
                 }
@@ -249,12 +242,19 @@ namespace OutfitStudio
             return NormalizeAndLog(modId, $"{context} Normalized", unqualifiedId, $"ModID: '{modId}'");
         }
 
-        private static string StripVersionSuffix(string name)
+        internal static bool IsVanillaId(string unqualifiedId)
+        {
+            if (int.TryParse(unqualifiedId, out _))
+                return true;
+            return !unqualifiedId.Contains('.') && !unqualifiedId.Contains('_');
+        }
+
+        internal static string StripVersionSuffix(string name)
         {
             return Regex.Replace(name, @"[._]v(?:er)?[._]?\d+(?:[._]\d+)*$", "", RegexOptions.IgnoreCase);
         }
 
-        private static string HumanizeName(string technicalName)
+        internal static string HumanizeName(string technicalName)
         {
             if (string.IsNullOrWhiteSpace(technicalName) || technicalName.Length <= 2)
                 return technicalName;
@@ -262,13 +262,13 @@ namespace OutfitStudio
             return char.ToUpper(technicalName[0]) + technicalName.Substring(1).ToLower();
         }
 
-        private static string NormalizeName(string rawName)
+        internal static string NormalizeName(string rawName)
         {
             string cleaned = StripVersionSuffix(rawName);
             return HumanizeName(cleaned);
         }
 
-        private static string NormalizeForComparison(string text)
+        internal static string NormalizeForComparison(string text)
         {
             if (string.IsNullOrWhiteSpace(text))
                 return string.Empty;
@@ -277,7 +277,7 @@ namespace OutfitStudio
             return cleaned.Replace("_", "").ToUpperInvariant();
         }
 
-        private static string CleanModName(string modName)
+        internal static string CleanModName(string modName)
         {
             if (string.IsNullOrWhiteSpace(modName))
                 return modName;
