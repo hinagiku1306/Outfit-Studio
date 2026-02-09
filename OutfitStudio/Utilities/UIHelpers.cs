@@ -13,16 +13,58 @@ namespace OutfitStudio
         public static string TruncateText(string text, int maxWidth, SpriteFont? font = null)
         {
             font ??= Game1.smallFont;
+            return TruncateText(text, maxWidth, s => font.MeasureString(s).X);
+        }
 
-            if (font.MeasureString(text).X <= maxWidth)
+        internal static string TruncateText(string text, int maxWidth, Func<string, float> measureWidth)
+        {
+            if (measureWidth(text) <= maxWidth)
                 return text;
 
-            while (text.Length > 0 && font.MeasureString(text + "...").X > maxWidth)
+            while (text.Length > 0 && measureWidth(text + "...") > maxWidth)
             {
                 text = text.Substring(0, text.Length - 1);
             }
 
             return text + "...";
+        }
+
+        public static int ClampScrollOffset(int current, int totalItems, int visibleItems)
+        {
+            int maxOffset = Math.Max(0, totalItems - visibleItems);
+            return Math.Clamp(current, 0, maxOffset);
+        }
+
+        internal static string FormatTagsWithCount(
+            IReadOnlyList<string> tags,
+            string prefix,
+            int maxWidth,
+            Func<string, float> measureWidth,
+            string noneText)
+        {
+            if (tags.Count == 0)
+                return prefix + noneText;
+
+            string fullText = prefix + string.Join(", ", tags);
+            if (measureWidth(fullText) <= maxWidth)
+                return fullText;
+
+            for (int shown = tags.Count - 1; shown >= 1; shown--)
+            {
+                int remaining = tags.Count - shown;
+                string partial = prefix;
+                for (int i = 0; i < shown; i++)
+                {
+                    if (i > 0) partial += ", ";
+                    partial += tags[i];
+                }
+                partial += $" (+{remaining})";
+
+                if (measureWidth(partial) <= maxWidth)
+                    return partial;
+            }
+
+            return prefix + $"(+{tags.Count})";
         }
 
         // Compensates for the asymmetric border of the standard menu texture (bottom is 4px thicker)

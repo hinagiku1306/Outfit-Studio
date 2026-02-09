@@ -133,8 +133,7 @@ namespace OutfitStudio
         private void ClampListScroll()
         {
             int maxVisible = uiBuilder.OutfitListItems.Count;
-            int maxScroll = Math.Max(0, displayedSets.Count - maxVisible);
-            listScrollOffset = Math.Clamp(listScrollOffset, 0, maxScroll);
+            listScrollOffset = UIHelpers.ClampScrollOffset(listScrollOffset, displayedSets.Count, maxVisible);
         }
 
         private void MarkPreviewDirty()
