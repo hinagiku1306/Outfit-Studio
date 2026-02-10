@@ -1,7 +1,7 @@
 {
     "Name": "Outfit Studio",
     "Author": "hinagiku1306",
-    "Version": "1.0.0",
+    "Version": "1.0.1",
     "Description": "In-game wardrobe menu to browse, customize, save, and organize outfits.",
     "UniqueID": "hinagiku1306.OutfitStudio",
     "EntryDll": "OutfitStudio.dll",
