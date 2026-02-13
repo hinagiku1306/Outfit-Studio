@@ -31,7 +31,7 @@ namespace OutfitStudio
             this.mod = mod;
         }
 
-        public void DrawDropdownOptions(SpriteBatch b)
+        public void DrawDropdownOptions(SpriteBatch b, string? currentModFilter)
         {
             HoveredTruncatedFilterText = null;
 
@@ -42,13 +42,16 @@ namespace OutfitStudio
             Rectangle panelAnchor = uiBuilder.ModFilterDropdown.bounds;
             panelAnchor.Y += DropdownPanelYOffset;
 
+            // "All" option is selected when currentModFilter is null
+            string selectedName = currentModFilter ?? TranslationCache.FilterAll;
+
             string? hoveredText = UIHelpers.DrawDropdownOptions(
                 b,
                 panelAnchor,
                 options,
                 dropdownManager.FirstVisibleIndex,
                 dropdownManager.MaxVisibleItems,
-                isSelected: null,
+                isSelected: option => option.name == selectedName,
                 enableTruncation: true
             );
 

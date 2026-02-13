@@ -54,6 +54,7 @@
     "menu.buttons.apply": "Apply",
     "menu.buttons.new-outfit": "Save Outfit",
     "menu.buttons.wardrobe": "Wardrobe",
+    "menu.buttons.schedules": "Schedules",  // v2.0.0
     "menu.messages.applied": "Applied!",
     "menu.messages.saved": "Saved!",
     "menu.filter.all": "All",
@@ -106,5 +107,53 @@
     // Delete confirmation
     "wardrobe.delete.confirm-question": "Delete set?",
     "wardrobe.delete.yes": "Yes",
-    "wardrobe.delete.no": "No"
+    "wardrobe.delete.no": "No",
+    // Schedule Menu - v2.0.0
+    "schedule.priority.placeholder": "Priority",  // v2.0.0
+    "schedule.title": "Wardrobe Scheduler",
+    "schedule.master-toggle": "Auto-swap Outfits",
+    "schedule.master-enabled": "Enabled",
+    "schedule.master-disabled": "Disabled",
+    "schedule.search.placeholder": "Search...",  // v2.0.0
+    "schedule.rules-header": "Schedules",
+    "schedule.no-rules": "No schedules",
+    "schedule.always": "Always",
+    "schedule.new": "New",
+    "schedule.close": "Close",
+    // Schedule Edit Overlay - v2.0.0
+    "schedule.edit.triggers": "Triggers",
+    "schedule.edit.season": "Season",
+    "schedule.edit.festival": "Festival",
+    "schedule.edit.tags": "Tags",
+    "schedule.edit.any": "Any",
+    "schedule.edit.preview": "Preview",
+    "schedule.edit.priority": "Priority",
+    "schedule.edit.priority.high": "High",
+    "schedule.edit.priority.medium": "Medium",
+    "schedule.edit.priority.low": "Low",
+    "schedule.edit.advance-queue": "Advance Queue",
+    "schedule.edit.advance-queue.once-a-day": "Once a day",
+    "schedule.edit.advance-queue.on-location-change": "Location change",
+    "schedule.edit.name-placeholder": "Enter schedule name...",
+    "schedule.edit.weather": "Weather",
+    "schedule.edit.location": "Location",
+    "schedule.edit.area": "Area",
+    "schedule.edit.wedding": "Wedding Day",
+    "schedule.edit.weather.sunny": "Sunny",
+    "schedule.edit.weather.rainy": "Rainy",
+    "schedule.edit.weather.stormy": "Stormy",
+    "schedule.edit.weather.snowy": "Snowy",
+    "schedule.edit.weather.windy": "Windy",
+    "schedule.edit.weather.green-rain": "Green Rain",
+    "schedule.edit.area.outdoor": "Outdoor",
+    "schedule.edit.area.indoor": "Indoor",
+    "schedule.edit.sets": "Sets",
+    "schedule.edit.total-outfits": "Total Outfits",
+    "schedule.info.outfits": "outfits",
+    "schedule.info.daily": "Daily",
+    "schedule.edit.remaining-before-reset": "remaining before reset",
+    "schedule.edit.delete-rule-confirm": "Delete schedule?",
+    // Set Preview Overlay - v2.0.0
+    "schedule.preview.active-sets": "Active sets:",
+    "schedule.preview.triggers-header": "This schedule applies to:"
 }

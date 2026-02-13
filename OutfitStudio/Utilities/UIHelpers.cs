@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using StardewValley;
@@ -65,6 +66,51 @@ namespace OutfitStudio
             }
 
             return prefix + $"(+{tags.Count})";
+        }
+
+        private const int TotalSeasons = 4;
+        private const int TotalWeatherTypes = 2;
+        private const int TotalAreaTypes = 2;
+
+        internal static string GenerateRuleName(
+            IEnumerable<string> seasons,
+            IEnumerable<string> weatherDisplayNames,
+            IEnumerable<string> areaDisplayNames,
+            IEnumerable<string> locations,
+            IEnumerable<string> festivalDisplayNames,
+            bool isWeddingDay,
+            string weddingLabel)
+        {
+            var parts = new List<string>();
+
+            var seasonList = seasons.ToList();
+            if (seasonList.Count > 0 && seasonList.Count < TotalSeasons)
+                parts.Add(string.Join(", ", seasonList));
+
+            var weatherList = weatherDisplayNames.ToList();
+            if (weatherList.Count > 0 && weatherList.Count < TotalWeatherTypes)
+                parts.Add(string.Join(", ", weatherList));
+
+            var areaList = areaDisplayNames.ToList();
+            if (areaList.Count > 0 && areaList.Count < TotalAreaTypes)
+                parts.Add(string.Join(", ", areaList));
+
+            var locationList = locations.ToList();
+            if (locationList.Count > 0)
+                parts.Add(string.Join(", ", locationList));
+
+            var festivalList = festivalDisplayNames.ToList();
+            if (festivalList.Count > 0)
+                parts.Add(string.Join(", ", festivalList));
+
+            if (isWeddingDay)
+                parts.Add(weddingLabel);
+
+            if (parts.Count > 0)
+                return string.Join(" | ", parts);
+
+            string always = TranslationCache.ScheduleAlways;
+            return string.IsNullOrEmpty(always) ? "Always" : always;
         }
 
         // Compensates for the asymmetric border of the standard menu texture (bottom is 4px thicker)
@@ -152,22 +198,23 @@ namespace OutfitStudio
             int labelX = 0,
             ClickableComponent? clearButton = null,
             bool hasValue = false,
-            Action<SpriteBatch, ClickableComponent>? drawClearButton = null)
+            Action<SpriteBatch, ClickableComponent>? drawClearButton = null,
+            float opacity = 1f)
         {
             int mouseX = Game1.getMouseX();
             int mouseY = Game1.getMouseY();
-            bool isHovered = bounds.Contains(mouseX, mouseY) && !isOpen;
+            bool isHovered = opacity >= 1f && bounds.Contains(mouseX, mouseY) && !isOpen;
 
             if (!string.IsNullOrEmpty(label))
             {
                 float textHeight = Game1.smallFont.MeasureString("A").Y;
                 int labelY = bounds.Y + (int)((bounds.Height - textHeight) / 2);
                 Utility.drawTextWithShadow(b, label, Game1.smallFont,
-                    new Vector2(labelX, labelY), Game1.textColor);
+                    new Vector2(labelX, labelY), Game1.textColor * opacity);
             }
 
             DrawTextureBox(b, bounds.X, bounds.Y, bounds.Width, bounds.Height,
-                isOpen ? Color.Wheat : Color.White);
+                isOpen ? Color.Wheat : Color.White * opacity);
 
             int reservedRight = 20; // Base right padding
             if (hasValue && clearButton != null) reservedRight = ClearButtonSize + ClearButtonRightMargin;
@@ -188,7 +235,7 @@ namespace OutfitStudio
             }
             else
             {
-                Utility.drawTextWithShadow(b, truncatedText, Game1.smallFont, textPos, Game1.textColor);
+                Utility.drawTextWithShadow(b, truncatedText, Game1.smallFont, textPos, Game1.textColor * opacity);
             }
 
             if (hasValue && clearButton != null && drawClearButton != null)
@@ -224,6 +271,33 @@ namespace OutfitStudio
             );
         }
 
+        public static void DrawTabWithText(SpriteBatch b, ClickableComponent tab, string label, bool isActive, float opacity = 1f)
+        {
+            Color boxColor = isActive ? Color.White : Color.White * 0.8f;
+            Color textColor = isActive ? Game1.textColor : Game1.textColor * TabOpacity;
+            boxColor *= opacity;
+            textColor *= opacity;
+            bool isHovered = opacity >= 1f && tab.containsPoint(Game1.getMouseX(), Game1.getMouseY());
+
+            DrawTextureBox(b, tab.bounds.X, tab.bounds.Y,
+                tab.bounds.Width, tab.bounds.Height, boxColor);
+
+            Vector2 labelSize = Game1.smallFont.MeasureString(label);
+            Vector2 textPos = new Vector2(
+                tab.bounds.X + (tab.bounds.Width - labelSize.X) / 2,
+                tab.bounds.Y + (tab.bounds.Height - labelSize.Y) / 2);
+
+            if (isHovered)
+            {
+                Utility.drawTextWithShadow(b, label, Game1.smallFont, textPos + new Vector2(-1, 0), textColor * 0.8f);
+                Utility.drawTextWithShadow(b, label, Game1.smallFont, textPos, textColor);
+            }
+            else
+            {
+                Utility.drawTextWithShadow(b, label, Game1.smallFont, textPos, textColor);
+            }
+        }
+
         public static string? DrawDropdownOptions(
             SpriteBatch b,
             Rectangle anchorBounds,
@@ -231,7 +305,8 @@ namespace OutfitStudio
             int firstVisibleIndex,
             int maxVisibleItems,
             Func<ClickableComponent, bool>? isSelected = null,
-            bool enableTruncation = true)
+            bool enableTruncation = true,
+            int panelPaddingV = 0)
         {
             if (options.Count == 0)
                 return null;
@@ -256,7 +331,7 @@ namespace OutfitStudio
                 anchorBounds.X - 4,
                 anchorBounds.Bottom - 4,
                 anchorBounds.Width + 8,
-                dropdownHeight + 8,
+                dropdownHeight + 8 + panelPaddingV * 2,
                 Color.White);
 
             int maxTextWidth = anchorBounds.Width - FilterTextPadding * 2;
@@ -277,7 +352,7 @@ namespace OutfitStudio
 
                 if (optionSelected)
                 {
-                    b.Draw(Game1.staminaRect, option.bounds, Color.LightBlue * 0.3f);
+                    b.Draw(Game1.staminaRect, option.bounds, Color.Wheat * 0.6f);
                 }
                 else if (optionHovered)
                 {

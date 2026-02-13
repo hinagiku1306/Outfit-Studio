@@ -28,6 +28,10 @@ namespace OutfitStudio
         private const int ScrollArrowRightMargin = 48;
 
         private readonly OutfitSetStore store;
+        private readonly bool selectOnly;
+        private bool showAllOption;
+        private bool allSelected;
+        private const string AllOptionKey = "__ALL__";
 
         private bool isOpen;
         private Rectangle popupBounds;
@@ -67,22 +71,36 @@ namespace OutfitStudio
                 customTagTextBox.Selected = false;
         }
 
-        public TagPickerManager(OutfitSetStore store)
+        private Action<bool>? onAllChanged;
+        private bool openToLeft;
+
+        public TagPickerManager(OutfitSetStore store, bool selectOnly = false)
         {
             this.store = store;
+            this.selectOnly = selectOnly;
         }
 
         public void Open(Rectangle parentBounds, HashSet<string> currentTags, Action<HashSet<string>> onComplete)
         {
+            Open(parentBounds, currentTags, false, onComplete, null);
+        }
+
+        public void Open(Rectangle parentBounds, HashSet<string> currentTags, bool currentAllSelected, Action<HashSet<string>> onComplete, Action<bool>? onAllChanged, bool openToLeft = false)
+        {
             this.parentBounds = parentBounds;
             this.onComplete = onComplete;
+            this.onAllChanged = onAllChanged;
+            this.openToLeft = openToLeft;
             selectedTags = new HashSet<string>(currentTags, TranslationCache.TagComparer);
+            showAllOption = selectOnly;
+            allSelected = currentAllSelected;
             firstVisibleIndex = 0;
             isOpen = true;
 
             CalculateLayout();
             BuildOptions();
-            InitializeCustomTagInput();
+            if (!selectOnly)
+                InitializeCustomTagInput();
         }
 
         public void Close()
@@ -99,7 +117,18 @@ namespace OutfitStudio
             int titleHeight = (int)Game1.smallFont.MeasureString("A").Y;
             int tagListHeight = MaxVisibleOptions * OptionHeight;
 
-            int totalHeight = PopupPadding
+            int totalHeight;
+            if (selectOnly)
+            {
+                totalHeight = PopupPadding
+                              + titleHeight + DividerPadding
+                              + DividerPadding
+                              + tagListHeight
+                              + BottomPadding;
+            }
+            else
+            {
+                totalHeight = PopupPadding
                               + titleHeight + DividerPadding
                               + DividerPadding
                               + tagListHeight
@@ -107,19 +136,27 @@ namespace OutfitStudio
                               + CustomLabelHeight
                               + CustomInputHeight
                               + BottomPadding;
+            }
 
-            int popupX = parentBounds.Right;
+            int popupX = openToLeft ? parentBounds.X - PopupWidth : parentBounds.Right;
             int popupY = parentBounds.Y + (parentBounds.Height - totalHeight) / 2;
 
             popupBounds = new Rectangle(popupX, popupY, PopupWidth, totalHeight);
 
-            int editBtnSize = (int)(CloseButtonSize * 1.1f);
-            int editBtnX = popupBounds.Right - editBtnSize / 2 - 12;
-            int editBtnY = popupBounds.Y - editBtnSize / 2 + 12;
-            editModeButton = new ClickableComponent(
-                new Rectangle(editBtnX, editBtnY, editBtnSize, editBtnSize),
-                "editMode"
-            );
+            if (!selectOnly)
+            {
+                int editBtnSize = (int)(CloseButtonSize * 1.1f);
+                int editBtnX = popupBounds.Right - editBtnSize / 2 - 12;
+                int editBtnY = popupBounds.Y - editBtnSize / 2 + 12;
+                editModeButton = new ClickableComponent(
+                    new Rectangle(editBtnX, editBtnY, editBtnSize, editBtnSize),
+                    "editMode"
+                );
+            }
+            else
+            {
+                editModeButton = null;
+            }
         }
 
         private void BuildOptions()
@@ -129,7 +166,12 @@ namespace OutfitStudio
             truncatedTagTexts.Clear();
             fullTagTexts.Clear();
 
-            var allTags = store.GetAllTags();
+            var storeTags = store.GetAllTags();
+            var allTags = new List<string>();
+            if (showAllOption)
+                allTags.Add(AllOptionKey);
+            allTags.AddRange(storeTags);
+
             int titleHeight = (int)Game1.smallFont.MeasureString("A").Y;
             int optionsY = popupBounds.Y + PopupPadding + titleHeight + DividerPadding * 2;
             tagListStartY = optionsY;
@@ -145,7 +187,8 @@ namespace OutfitStudio
 
             for (int i = 0; i < allTags.Count; i++)
             {
-                string displayTag = TranslationCache.GetTagDisplayName(allTags[i]);
+                string tag = allTags[i];
+                string displayTag = tag == AllOptionKey ? TranslationCache.FilterAll : TranslationCache.GetTagDisplayName(tag);
                 fullTagTexts.Add(displayTag);
                 truncatedTagTexts.Add(TruncateText(displayTag, Game1.smallFont, textMaxWidth));
             }
@@ -256,7 +299,7 @@ namespace OutfitStudio
             if (!isOpen)
                 return false;
 
-            if (editModeButton != null && editModeButton.containsPoint(x, y))
+            if (!selectOnly && editModeButton != null && editModeButton.containsPoint(x, y))
             {
                 consumed = true;
                 if (isEditMode)
@@ -304,11 +347,16 @@ namespace OutfitStudio
                 {
                     string tag = option.name;
 
-                    if (selectedTags.Contains(tag))
+                    if (tag == AllOptionKey)
+                    {
+                        allSelected = !allSelected;
+                        onAllChanged?.Invoke(allSelected);
+                    }
+                    else if (selectedTags.Contains(tag))
                     {
                         selectedTags.Remove(tag);
                     }
-                    else if (selectedTags.Count < MaxTagsPerSet)
+                    else if (selectOnly || selectedTags.Count < MaxTagsPerSet)
                     {
                         selectedTags.Add(tag);
                     }
@@ -319,13 +367,13 @@ namespace OutfitStudio
                 }
             }
 
-            if (addCustomButton != null && addCustomButton.containsPoint(x, y) && !isEditMode)
+            if (!selectOnly && addCustomButton != null && addCustomButton.containsPoint(x, y) && !isEditMode)
             {
                 TryAddCustomTag();
                 return true;
             }
 
-            if (customTagTextBox != null && !isEditMode)
+            if (!selectOnly && customTagTextBox != null && !isEditMode)
             {
                 Rectangle textBoxBounds = new Rectangle(
                     customTagTextBox.X,
@@ -455,6 +503,8 @@ namespace OutfitStudio
             BuildOptions();
         }
 
+        private int TotalOptionCount => store.GetAllTags().Count + (showAllOption ? 1 : 0);
+
         public bool HandleScrollWheel(int direction)
         {
             if (!isOpen)
@@ -466,7 +516,7 @@ namespace OutfitStudio
                 BuildOptions();
                 return true;
             }
-            else if (direction < 0 && firstVisibleIndex < Math.Max(0, store.GetAllTags().Count - MaxVisibleOptions))
+            else if (direction < 0 && firstVisibleIndex < Math.Max(0, TotalOptionCount - MaxVisibleOptions))
             {
                 firstVisibleIndex++;
                 BuildOptions();
@@ -496,7 +546,7 @@ namespace OutfitStudio
                 return false;
             }
 
-            if (key == Keys.Enter && customTagTextBox != null && customTagTextBox.Selected && !isEditMode)
+            if (!selectOnly && key == Keys.Enter && customTagTextBox != null && customTagTextBox.Selected && !isEditMode)
             {
                 TryAddCustomTag();
                 return true;
@@ -507,7 +557,7 @@ namespace OutfitStudio
 
         public void Update()
         {
-            if (!isEditMode && customTagTextBox != null)
+            if (!selectOnly && !isEditMode && customTagTextBox != null)
             {
                 customTagTextBox.Update();
                 customTagTextBox.Selected = customInputFocused;
@@ -524,7 +574,8 @@ namespace OutfitStudio
         {
             CalculateLayout();
             BuildOptions();
-            InitializeCustomTagInput();
+            if (!selectOnly)
+                InitializeCustomTagInput();
         }
 
         public void Draw(SpriteBatch b)
@@ -550,7 +601,8 @@ namespace OutfitStudio
             int mouseX = Game1.getMouseX();
             int mouseY = Game1.getMouseY();
 
-            DrawEditModeButton(b, mouseX, mouseY);
+            if (!selectOnly)
+                DrawEditModeButton(b, mouseX, mouseY);
 
             DrawTagOptions(b, mouseX, mouseY);
 
@@ -564,7 +616,7 @@ namespace OutfitStudio
                     Vector2.Zero, ScrollArrowScale, SpriteEffects.None, 1f);
             }
 
-            if (firstVisibleIndex < Math.Max(0, store.GetAllTags().Count - MaxVisibleOptions) && downArrowButton != null)
+            if (firstVisibleIndex < Math.Max(0, TotalOptionCount - MaxVisibleOptions) && downArrowButton != null)
             {
                 Rectangle downArrowSource = new Rectangle(421, 472, 11, 12);
                 Vector2 downArrowPos = new Vector2(
@@ -575,18 +627,21 @@ namespace OutfitStudio
                     Vector2.Zero, ScrollArrowScale, SpriteEffects.None, 1f);
             }
 
-            DrawCustomSection(b, mouseX, mouseY, MaxVisibleOptions * OptionHeight);
-
-            if (!isEditMode)
+            if (!selectOnly)
             {
-                string countText = $"{selectedTags.Count}/{MaxTagsPerSet}";
-                Vector2 countSize = Game1.smallFont.MeasureString(countText);
-                Vector2 countPos = new Vector2(
-                    popupBounds.Right - PopupPadding - EditModeButtonSize - 8 - countSize.X,
-                    popupBounds.Y + PopupPadding
-                );
-                Color countColor = selectedTags.Count >= MaxTagsPerSet ? Color.Orange : Color.Gray;
-                Utility.drawTextWithShadow(b, countText, Game1.smallFont, countPos, countColor);
+                DrawCustomSection(b, mouseX, mouseY, MaxVisibleOptions * OptionHeight);
+
+                if (!isEditMode)
+                {
+                    string countText = $"{selectedTags.Count}/{MaxTagsPerSet}";
+                    Vector2 countSize = Game1.smallFont.MeasureString(countText);
+                    Vector2 countPos = new Vector2(
+                        popupBounds.Right - PopupPadding - EditModeButtonSize - 8 - countSize.X,
+                        popupBounds.Y + PopupPadding
+                    );
+                    Color countColor = selectedTags.Count >= MaxTagsPerSet ? Color.Orange : Color.Gray;
+                    Utility.drawTextWithShadow(b, countText, Game1.smallFont, countPos, countColor);
+                }
             }
 
             if (hoverTooltip != null && ModEntry.Config.ShowTooltip)
@@ -673,12 +728,15 @@ namespace OutfitStudio
                 }
                 else
                 {
+                    bool isAllOption = tag == AllOptionKey;
+                    bool isChecked = isAllOption ? allSelected : isSelected;
+
                     if (isHovered && !atLimit)
                     {
                         b.Draw(Game1.staminaRect, option.bounds, Color.Wheat * 0.3f);
                     }
 
-                    Rectangle checkboxSource = isSelected
+                    Rectangle checkboxSource = isChecked
                         ? new Rectangle(236, 425, 9, 9)
                         : new Rectangle(227, 425, 9, 9);
 

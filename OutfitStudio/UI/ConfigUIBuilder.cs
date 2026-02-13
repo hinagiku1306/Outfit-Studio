@@ -50,6 +50,7 @@ namespace OutfitStudio
         public int MainMenuHeaderY { get; private set; }
         public int WardrobeHeaderY { get; private set; }
 
+
         private int[] rowYPositions = Array.Empty<int>();
         private string[] rowLabels = Array.Empty<string>();
         private string[] rowTooltips = Array.Empty<string>();
@@ -264,6 +265,7 @@ namespace OutfitStudio
             SearchScopePanelAnchor = new Rectangle(panelX, currentY, ConfigDropdownWidth, ConfigRowHeight);
 
             BuildSearchScopeOptions();
+            currentY += ConfigRowHeight;
 
             rowYPositions = rowYList.ToArray();
             rowLabels = labelsList.ToArray();
@@ -422,7 +424,7 @@ namespace OutfitStudio
                 SearchScopeOptions,
                 firstVisibleIndex: 0,
                 maxVisibleItems: ConfigDropdownMaxVisible,
-                isSelected: null,
+                isSelected: option => option.name == currentValue,
                 enableTruncation: false
             );
         }

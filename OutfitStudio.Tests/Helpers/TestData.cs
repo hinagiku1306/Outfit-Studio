@@ -4,6 +4,53 @@ namespace OutfitStudio.Tests.Helpers
 {
     internal static class TestData
     {
+        internal static ScheduleRule CreateRule(
+            string? id = null,
+            string? name = null,
+            bool isEnabled = true,
+            bool seasonsSelectAll = false,
+            List<string>? selectedSeasons = null,
+            bool festivalsSelectAll = false,
+            List<string>? selectedFestivals = null,
+            bool weatherSelectAll = false,
+            List<string>? selectedWeather = null,
+            bool locationsSelectAll = false,
+            List<string>? selectedLocations = null,
+            bool areasSelectAll = false,
+            List<string>? selectedAreas = null,
+            bool tagsSelectAll = false,
+            List<string>? selectedTags = null,
+            List<string>? excludedSetIds = null,
+            List<string>? includedSetIds = null,
+            int priority = 2,
+            bool isWeddingDay = false,
+            bool advanceOnWarp = false)
+        {
+            return new ScheduleRule
+            {
+                Id = id ?? Guid.NewGuid().ToString(),
+                Name = name ?? "Test Rule",
+                IsEnabled = isEnabled,
+                SeasonsSelectAll = seasonsSelectAll,
+                SelectedSeasons = selectedSeasons ?? new List<string>(),
+                FestivalsSelectAll = festivalsSelectAll,
+                SelectedFestivals = selectedFestivals ?? new List<string>(),
+                WeatherSelectAll = weatherSelectAll,
+                SelectedWeather = selectedWeather ?? new List<string>(),
+                LocationsSelectAll = locationsSelectAll,
+                SelectedLocations = selectedLocations ?? new List<string>(),
+                AreasSelectAll = areasSelectAll,
+                SelectedAreas = selectedAreas ?? new List<string>(),
+                TagsSelectAll = tagsSelectAll,
+                SelectedTags = selectedTags ?? new List<string>(),
+                ExcludedSetIds = excludedSetIds ?? new List<string>(),
+                IncludedSetIds = includedSetIds ?? new List<string>(),
+                Priority = priority,
+                IsWeddingDay = isWeddingDay,
+                AdvanceOnWarp = advanceOnWarp
+            };
+        }
+
         /// <summary>
         /// Creates an OutfitSet with sensible defaults. All parameters are optional overrides.
         /// </summary>
