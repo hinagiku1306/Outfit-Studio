@@ -1,8 +1,3 @@
-1. Reminder for important days
-2. Auto-wear on important days
-
-5. Edit a tag
-
 7. Total number of sets
 8. Hovering color rectangle
 
@@ -14,5 +9,4 @@
 18. Config option for concise item info (only name)
 
 20. Tutorial
-
-C:\Users\nguye\.claude\plans\atomic-wishing-puffin.md
+21. Exclude a filter

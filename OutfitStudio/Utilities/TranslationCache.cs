@@ -20,6 +20,7 @@ namespace OutfitStudio
         public static string ButtonApply { get; private set; } = "";
         public static string ButtonNewOutfit { get; private set; } = "";
         public static string ButtonOutfits { get; private set; } = "";
+        public static string ButtonSchedules { get; private set; } = "";
         public static string MessageApplied { get; private set; } = "";
         public static string MessageSaved { get; private set; } = "";
 
@@ -114,6 +115,54 @@ namespace OutfitStudio
         public static string ConfigSlotSizeName { get; private set; } = "";
         public static string ConfigSlotSizeTooltip { get; private set; } = "";
 
+        public static string ScheduleSearchPlaceholder { get; private set; } = "";
+        public static string SchedulePriorityPlaceholder { get; private set; } = "";
+
+        public static string ScheduleTitle { get; private set; } = "";
+        public static string ScheduleMasterToggle { get; private set; } = "";
+        public static string ScheduleMasterEnabled { get; private set; } = "";
+        public static string ScheduleMasterDisabled { get; private set; } = "";
+        public static string ScheduleNoRules { get; private set; } = "";
+        public static string ScheduleAlways { get; private set; } = "";
+        public static string ScheduleNew { get; private set; } = "";
+        public static string ScheduleClose { get; private set; } = "";
+
+        public static string ScheduleEditTriggers { get; private set; } = "";
+        public static string ScheduleEditSeason { get; private set; } = "";
+        public static string ScheduleEditFestival { get; private set; } = "";
+        public static string ScheduleEditTags { get; private set; } = "";
+        public static string ScheduleEditAny { get; private set; } = "";
+        public static string ScheduleEditPreview { get; private set; } = "";
+        public static string ScheduleEditPriority { get; private set; } = "";
+        public static string ScheduleEditPriorityHigh { get; private set; } = "";
+        public static string ScheduleEditPriorityMedium { get; private set; } = "";
+        public static string ScheduleEditPriorityLow { get; private set; } = "";
+        public static string ScheduleEditAdvanceQueue { get; private set; } = "";
+        public static string ScheduleEditAdvanceQueueOnceADay { get; private set; } = "";
+        public static string ScheduleEditAdvanceQueueOnLocationChange { get; private set; } = "";
+        public static string ScheduleEditNamePlaceholder { get; private set; } = "";
+        public static string ScheduleEditWeather { get; private set; } = "";
+        public static string ScheduleEditLocation { get; private set; } = "";
+        public static string ScheduleEditArea { get; private set; } = "";
+        public static string ScheduleEditWedding { get; private set; } = "";
+        public static string ScheduleEditWeatherSunny { get; private set; } = "";
+        public static string ScheduleEditWeatherRainy { get; private set; } = "";
+        public static string ScheduleEditWeatherStormy { get; private set; } = "";
+        public static string ScheduleEditWeatherSnowy { get; private set; } = "";
+        public static string ScheduleEditWeatherWindy { get; private set; } = "";
+        public static string ScheduleEditWeatherGreenRain { get; private set; } = "";
+        public static string ScheduleEditAreaOutdoor { get; private set; } = "";
+        public static string ScheduleEditAreaIndoor { get; private set; } = "";
+        public static string ScheduleEditSets { get; private set; } = "";
+        public static string ScheduleEditTotalOutfits { get; private set; } = "";
+        public static string ScheduleInfoOutfits { get; private set; } = "";
+        public static string ScheduleInfoDaily { get; private set; } = "";
+        public static string ScheduleEditRemainingBeforeReset { get; private set; } = "";
+        public static string ScheduleEditDeleteRuleConfirm { get; private set; } = "";
+
+        public static string SetPreviewActiveSets { get; private set; } = "";
+        public static string SetPreviewTriggersHeader { get; private set; } = "";
+
         public static string DyeColorTitle { get; private set; } = "";
 
         public static string ConfigSettingsTitle { get; private set; } = "";
@@ -135,6 +184,7 @@ namespace OutfitStudio
             ButtonApply = i18n.Get("menu.buttons.apply");
             ButtonNewOutfit = i18n.Get("menu.buttons.new-outfit");
             ButtonOutfits = i18n.Get("menu.buttons.wardrobe");
+            ButtonSchedules = i18n.Get("menu.buttons.schedules");
             MessageApplied = i18n.Get("menu.messages.applied");
             MessageSaved = i18n.Get("menu.messages.saved");
 
@@ -224,6 +274,54 @@ namespace OutfitStudio
             ConfigVisibleColumnsTooltip = i18n.Get("config.visible-columns.tooltip");
             ConfigSlotSizeName = i18n.Get("config.slot-size.name");
             ConfigSlotSizeTooltip = i18n.Get("config.slot-size.tooltip");
+
+            ScheduleSearchPlaceholder = i18n.Get("schedule.search.placeholder");
+            SchedulePriorityPlaceholder = i18n.Get("schedule.priority.placeholder");
+
+            ScheduleTitle = i18n.Get("schedule.title");
+            ScheduleMasterToggle = i18n.Get("schedule.master-toggle");
+            ScheduleMasterEnabled = i18n.Get("schedule.master-enabled");
+            ScheduleMasterDisabled = i18n.Get("schedule.master-disabled");
+            ScheduleNoRules = i18n.Get("schedule.no-rules");
+            ScheduleAlways = i18n.Get("schedule.always");
+            ScheduleNew = i18n.Get("schedule.new");
+            ScheduleClose = i18n.Get("schedule.close");
+
+            ScheduleEditTriggers = i18n.Get("schedule.edit.triggers");
+            ScheduleEditSeason = i18n.Get("schedule.edit.season");
+            ScheduleEditFestival = i18n.Get("schedule.edit.festival");
+            ScheduleEditTags = i18n.Get("schedule.edit.tags");
+            ScheduleEditAny = i18n.Get("schedule.edit.any");
+            ScheduleEditPreview = i18n.Get("schedule.edit.preview");
+            ScheduleEditPriority = i18n.Get("schedule.edit.priority");
+            ScheduleEditPriorityHigh = i18n.Get("schedule.edit.priority.high");
+            ScheduleEditPriorityMedium = i18n.Get("schedule.edit.priority.medium");
+            ScheduleEditPriorityLow = i18n.Get("schedule.edit.priority.low");
+            ScheduleEditAdvanceQueue = i18n.Get("schedule.edit.advance-queue");
+            ScheduleEditAdvanceQueueOnceADay = i18n.Get("schedule.edit.advance-queue.once-a-day");
+            ScheduleEditAdvanceQueueOnLocationChange = i18n.Get("schedule.edit.advance-queue.on-location-change");
+            ScheduleEditNamePlaceholder = i18n.Get("schedule.edit.name-placeholder");
+            ScheduleEditWeather = i18n.Get("schedule.edit.weather");
+            ScheduleEditLocation = i18n.Get("schedule.edit.location");
+            ScheduleEditArea = i18n.Get("schedule.edit.area");
+            ScheduleEditWedding = i18n.Get("schedule.edit.wedding");
+            ScheduleEditWeatherSunny = i18n.Get("schedule.edit.weather.sunny");
+            ScheduleEditWeatherRainy = i18n.Get("schedule.edit.weather.rainy");
+            ScheduleEditWeatherStormy = i18n.Get("schedule.edit.weather.stormy");
+            ScheduleEditWeatherSnowy = i18n.Get("schedule.edit.weather.snowy");
+            ScheduleEditWeatherWindy = i18n.Get("schedule.edit.weather.windy");
+            ScheduleEditWeatherGreenRain = i18n.Get("schedule.edit.weather.green-rain");
+            ScheduleEditAreaOutdoor = i18n.Get("schedule.edit.area.outdoor");
+            ScheduleEditAreaIndoor = i18n.Get("schedule.edit.area.indoor");
+            ScheduleEditSets = i18n.Get("schedule.edit.sets");
+            ScheduleEditTotalOutfits = i18n.Get("schedule.edit.total-outfits");
+            ScheduleInfoOutfits = i18n.Get("schedule.info.outfits");
+            ScheduleInfoDaily = i18n.Get("schedule.info.daily");
+            ScheduleEditRemainingBeforeReset = i18n.Get("schedule.edit.remaining-before-reset");
+            ScheduleEditDeleteRuleConfirm = i18n.Get("schedule.edit.delete-rule-confirm");
+
+            SetPreviewActiveSets = i18n.Get("schedule.preview.active-sets");
+            SetPreviewTriggersHeader = i18n.Get("schedule.preview.triggers-header");
 
             DyeColorTitle = i18n.Get("dyecolor.title");
 

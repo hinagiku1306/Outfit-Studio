@@ -1,0 +1,281 @@
+Outfit Schedule — Design Document
+===================================
+
+Core feature: at the start of each day, auto-swap the player's outfit based on enabled schedule rules.
+
+All schedule data is LOCAL (per-save) to avoid tag mismatch across saves.
+Schedules are evaluated once at DayStarted, before the player gains control (seamless swap).
+
+
+================================================================================
+1. SCHEDULE MAIN MENU
+================================================================================
+
+┌───────────────────────────────┐
+│ [] Enable Outfit Schedules    │
+│                               │
+│ Schedules                     │
+│ [] Winter Base Outfit [i]     │
+│ [] Daily Random Outfit [i]    │
+│ [] Rainy Hat [i]              │
+│ [+]                           │
+│                               │
+│      [ Apply ] [ Close ]      │
+└───────────────────────────────┘
+
+- Scrollable list with multi-select checkboxes (enable/disable individual rules)
+- [i] button: opens the creation/edit menu with populated fields (read/edit mode)
+- [+] button: opens the creation menu with empty fields (create mode)
+- Apply: saves the enabled/disabled state of all rules
+- Close: closes the menu
+
+
+================================================================================
+2. SCHEDULE CREATION / EDIT MENU
+================================================================================
+
+┌───────────────────────────────┐
+│ Name: [                   ]   │
+│                               │
+│ Triggers:                     │
+│ Seasons: [ Dropdown ]         │
+│ Festivals: [ Dropdown ]       │
+│                               │
+│ Tags: [ Tag Dropdown ]        │
+│ [ Preview ]                   │
+│ Priority: [ Slider 1-10 ]    │
+│                               │
+│ [ ] Rotate                    │
+│                               │
+│      [ Save ] [ Cancel ]      │
+└───────────────────────────────┘
+
+SEASONS DROPDOWN (multi-select)
+- Options: All, Spring, Summer, Fall, Winter
+- "All" is mutually exclusive with individual seasons:
+  - Selecting "All" dims other selections at reduced opacity but PRESERVES them
+  - Engine ignores individual selections when "All" is active
+  - Unchecking "All" reactivates the preserved selections
+  - Selecting any individual season unchecks "All"
+- Selecting a season auto-adds the matching seasonal tag (if it exists) to the
+  Tags field. This is ADDITIVE — it adds to existing tag selections, not replace.
+
+FESTIVALS DROPDOWN (multi-select)
+- Options: All, plus all in-game festivals (loaded from Data/Festivals/FestivalDates)
+- Includes mod-added festivals if patched in via Content Patcher
+- "All" is mutually exclusive with individual festivals (same behavior as Seasons):
+  - Selecting "All" dims other selections at reduced opacity but PRESERVES them
+  - Engine ignores individual selections when "All" is active
+  - Unchecking "All" reactivates the preserved selections
+  - Selecting any individual festival unchecks "All"
+
+TRIGGER LOGIC
+- A rule matches if ANY of its enabled triggers match the current day (OR logic)
+- Seasons: matches if current season is in the selected seasons (or "All")
+- Festivals: matches if today is one of the selected festival days
+- A rule with no triggers selected never matches
+
+TAGS DROPDOWN (multi-select)
+- Lists all tags from the tag registry
+- Includes "All" option (same mutual exclusivity behavior as Seasons):
+  - "All" dims other selections at reduced opacity but preserves them
+  - When "All" is active, the rule matches every outfit set (ignoring tags)
+  - Unchecking "All" reactivates preserved tag selections
+  - Selecting any individual tag unchecks "All"
+
+PREVIEW BUTTON
+- Opens the Set Preview overlay (see section 3)
+
+PRIORITY
+- Slider: 1-10, default 5
+- Higher priority wins when multiple rules match the same day
+- Ties broken randomly
+
+ROTATE CHECKBOX
+- Checked: shuffle bag rotation (see section 4)
+- Unchecked: pure random pick from matching sets (can repeat)
+- Toggling off clears any existing rotation state for this rule
+- Toggling on starts a fresh shuffle
+
+
+================================================================================
+3. SET PREVIEW OVERLAY
+================================================================================
+
+┌──────────────────────────────────────────────┐
+│                                              │
+│  ┌──────────────┐   Active sets: 8 / 12      │
+│  │              │   ───────────────────────  │
+│  │  Character   │   ┌─────────────────────┐  │
+│  │  Preview     │   │ Outfit Name 1 ✕     │  │
+│  │              │   │ Outfit Name 2 ✕     │  │
+│  │              │   │ Outfit Name 3 +     │ ← excluded, dimmed  │
+│  └──────────────┘   │ Outfit Name 4 ✕     │  │
+│   Tags: Winter (+3) │ ...                 │  │
+│                      └─────────────────────┘  │
+│                                              │
+│                                  [ Close ]   │
+└──────────────────────────────────────────────┘
+
+LEFT PANEL
+- Character preview (Game1.daybg background, farmer sprite)
+- Below preview: tags line in same format as Wardrobe ("Tags: Winter (+3)")
+- No item slots, no direction arrows, no scope line
+
+RIGHT PANEL
+- Header: "Active sets: X / Y" (X = non-excluded, Y = total tag-matched)
+- Divider line below header
+- Scrollable list of ALL tag-matched sets (both active and excluded)
+
+SET ROWS
+- Set name with ✕/+ button positioned right next to the name text
+- Active sets: full opacity, ✕ button (click to exclude)
+- Excluded sets: dimmed opacity (same as tag delete mode excluded style), + button (click to re-include)
+- Clicking any set (active or excluded) previews it in the left panel
+- ✕ adds set ID to ExcludedSetIds
+- + removes set ID from ExcludedSetIds
+
+NO Delete or Edit buttons — this overlay is read-only for preview and exclusion toggling.
+
+
+================================================================================
+4. ROTATION (SHUFFLE BAG)
+================================================================================
+
+When Rotate is enabled for a rule:
+
+INITIAL STATE
+- Take all active (non-excluded) set IDs matching the rule's tags
+- Shuffle them into a queue
+- Pop the first one and apply it
+
+EACH SUBSEQUENT DAY THE RULE TRIGGERS
+- Filter the queue: remove any IDs that no longer match (set deleted, re-tagged, or excluded)
+- Pop the next set from the queue and apply it
+
+QUEUE EXHAUSTED
+- Repopulate from all currently-active matching sets
+- Shuffle the new queue
+- Ensure the last-used set is not first in the new queue (avoid back-to-back repeat)
+
+EXCLUDE MID-ROTATION (✕ in preview)
+- Set is filtered out of the queue before the next pop
+
+RE-INCLUDE MID-ROTATION (+ in preview)
+- Set is inserted into the remaining queue at a random position immediately
+
+DISABLE RULE THEN RE-ENABLE
+- Rotation state persists across enable/disable toggles
+- Queue is preserved; stale entries filtered on next evaluation
+
+TOGGLE ROTATE OFF
+- Clears rotation state for this rule entirely
+- Switches to pure random (can repeat)
+
+TOGGLE ROTATE ON
+- Starts a fresh shuffle from all currently-active matching sets
+
+
+================================================================================
+5. DATA MODEL
+================================================================================
+
+ScheduleRule
+  Id              string (GUID)
+  Name            string
+  IsEnabled       bool
+
+  SeasonsSelectAll    bool
+  SelectedSeasons     List<string>     // "Spring", "Summer", "Fall", "Winter"
+
+  FestivalsSelectAll  bool
+  SelectedFestivals   List<string>     // festival IDs
+
+  TagsSelectAll       bool
+  SelectedTags        List<string>
+
+  ExcludedSetIds      List<string>     // outfit set IDs to exclude
+
+  Priority            int              // 1-10, default 5
+  Rotate              bool
+
+RotationState (per rule)
+  RuleId          string
+  Queue           List<string>         // remaining outfit set IDs in shuffle order
+  LastUsedId      string               // last applied set ID (for anti-repeat on reshuffle)
+
+ScheduleData (top-level container, per-save)
+  Rules               List<ScheduleRule>
+  RotationStates      Dictionary<string, RotationState>   // keyed by rule ID
+
+
+================================================================================
+6. SCHEDULE ENGINE (DayStarted)
+================================================================================
+
+1. If schedule feature is disabled (master toggle off), exit early
+2. Collect all enabled rules
+3. For each rule, check if triggers match today:
+   - Season: SeasonsSelectAll OR current season in SelectedSeasons
+   - Festival: FestivalsSelectAll OR today's date matches any SelectedFestivals
+   - Match = any trigger hits (OR logic)
+4. From matching rules, resolve each rule's outfit pool:
+   - If TagsSelectAll: all outfit sets
+   - Else: filter by SelectedTags using existing byTag index
+   - Subtract ExcludedSetIds
+   - Skip rules with empty pools
+5. Pick the winning rule: highest Priority; ties broken randomly
+6. Pick an outfit from the winning rule's pool:
+   - If Rotate: pop from shuffle queue (with resilience filtering)
+   - If not Rotate: random pick
+7. Call OutfitSetStore.ApplySet(chosenSet)
+8. Persist rotation state
+
+
+================================================================================
+7. PERSISTENCE
+================================================================================
+
+All schedule data is per-save using SMAPI's save data API:
+
+  Key: "OutfitStudio.Schedules"     → ScheduleData (rules + rotation states)
+
+  Loaded at: SaveLoaded
+  Saved at:  DayEnding (after schedule was applied that morning)
+  Cleared at: ReturnedToTitle
+
+No changes to existing OutfitSet or OutfitSetGlobalData models.
+No migration needed — absence of save data key = no schedules = no behavior change.
+
+
+================================================================================
+8. FILE STRUCTURE
+================================================================================
+
+New files:
+  Models/ScheduleRule.cs            — ScheduleRule + RotationState data models
+  Models/ScheduleData.cs            — ScheduleData container
+  Services/ScheduleEngine.cs        — trigger evaluation + outfit resolution (pure logic)
+  Services/ScheduleStore.cs         — persistence (load/save via SMAPI save data)
+
+UI (later):
+  UI/ScheduleMenu.cs                — main schedule list menu
+  UI/ScheduleUIBuilder.cs           — draw helpers for main menu
+  UI/ScheduleEditOverlay.cs         — create/edit rule overlay
+  UI/ScheduleEditUIBuilder.cs       — draw helpers for edit overlay
+  UI/SetPreviewOverlay.cs           — set preview overlay
+  UI/SetPreviewUIBuilder.cs         — draw helpers for preview
+
+Integration:
+  ModEntry.cs                       — subscribe to DayStarted + DayEnding events
+
+
+================================================================================
+9. BACKWARDS COMPATIBILITY
+================================================================================
+
+- OutfitSet and OutfitSetGlobalData models are UNTOUCHED
+- Schedule system READS existing outfit sets by tag but never modifies them
+- New per-save data key; existing save data keys untouched
+- Users who never create schedules are completely unaffected
+- Master toggle defaults to OFF

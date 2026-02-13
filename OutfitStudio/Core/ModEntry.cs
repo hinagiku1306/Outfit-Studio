@@ -18,6 +18,8 @@ namespace OutfitStudio
         private OutfitFilterManager? filterManager;
         private OutfitCategoryManager? categoryManager;
         private OutfitSetStore? outfitSetStore;
+        private ScheduleStore? scheduleStore;
+        private ScheduleEngine? scheduleEngine;
 
         public override void Entry(IModHelper helper)
         {
@@ -30,6 +32,9 @@ namespace OutfitStudio
             helper.Events.GameLoop.GameLaunched += OnGameLaunched;
             helper.Events.GameLoop.SaveLoaded += OnSaveLoaded;
             helper.Events.GameLoop.ReturnedToTitle += OnReturnedToTitle;
+            helper.Events.GameLoop.DayStarted += OnDayStarted;
+            helper.Events.GameLoop.DayEnding += OnDayEnding;
+            helper.Events.Player.Warped += OnWarped;
             helper.Events.Content.LocaleChanged += OnLocaleChanged;
         }
 
@@ -40,11 +45,15 @@ namespace OutfitStudio
             filterManager.BuildModMapping(categoryManager.ShirtIds, categoryManager.PantsIds, categoryManager.HatIds);
 
             outfitSetStore?.LoadLocalData();
+            scheduleStore?.LoadLocalData();
+            scheduleEngine?.InvalidateFestivalCache();
         }
 
         private void OnReturnedToTitle(object? sender, ReturnedToTitleEventArgs e)
         {
             outfitSetStore?.ClearLocalData();
+            scheduleStore?.ClearLocalData();
+            scheduleEngine?.ResetForNewDay();
         }
 
         private void OnLocaleChanged(object? sender, LocaleChangedEventArgs e)
@@ -57,6 +66,11 @@ namespace OutfitStudio
 
             outfitSetStore = new OutfitSetStore(Helper, Monitor);
             outfitSetStore.LoadGlobalData();
+
+            scheduleStore = new ScheduleStore(Helper, outfitSetStore);
+            scheduleEngine = new ScheduleEngine(scheduleStore, outfitSetStore);
+            scheduleStore.OnRulesChanged = () => scheduleEngine.InvalidateContextCache();
+            outfitSetStore.OnSetsChanged = () => scheduleEngine.InvalidateContextCache();
 
             var gmcmApi = Helper.ModRegistry.GetApi<IGenericModConfigMenuApi>("spacechase0.GenericModConfigMenu");
             if (gmcmApi != null)
@@ -223,7 +237,25 @@ namespace OutfitStudio
                         _ => value
                     }
                 );
+
             }
+        }
+
+        private void OnDayStarted(object? sender, DayStartedEventArgs e)
+        {
+            scheduleEngine?.ResetForNewDay();
+            scheduleEngine?.Evaluate(EvaluationTrigger.DayStarted);
+        }
+
+        private void OnDayEnding(object? sender, DayEndingEventArgs e)
+        {
+            scheduleStore?.SaveLocalData();
+        }
+
+        private void OnWarped(object? sender, WarpedEventArgs e)
+        {
+            if (!e.IsLocalPlayer) return;
+            scheduleEngine?.Evaluate(EvaluationTrigger.Warped);
         }
 
         private void OnButtonsChanged(object? sender, ButtonsChangedEventArgs e)
@@ -250,6 +282,10 @@ namespace OutfitStudio
                 }
             }
         }
+
+        internal ScheduleStore? GetScheduleStore() => scheduleStore;
+
+        internal ScheduleEngine? GetScheduleEngine() => scheduleEngine;
 
         internal ModConfig GetConfig() => config;
 

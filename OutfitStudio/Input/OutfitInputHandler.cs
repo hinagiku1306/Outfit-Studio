@@ -160,6 +160,7 @@ namespace OutfitStudio
                     uiBuilder.SaveButton.containsPoint(x, y) ||
                     uiBuilder.WardrobeButton.containsPoint(x, y) ||
                     uiBuilder.GearButton.containsPoint(x, y) ||
+                    uiBuilder.ScheduleButton.containsPoint(x, y) ||
                     uiBuilder.DyeColorButton.containsPoint(x, y))
                 {
                     dropdownManager.Close();
@@ -290,6 +291,18 @@ namespace OutfitStudio
             {
                 Game1.activeClickableMenu = new ConfigOverlay(Game1.activeClickableMenu, mod);
                 if (playSound) Game1.playSound("bigSelect");
+                return true;
+            }
+
+            // Type B swap: opens schedule menu
+            if (uiBuilder.ScheduleButton.containsPoint(x, y))
+            {
+                var scheduleStore = mod.GetScheduleStore();
+                if (scheduleStore != null)
+                {
+                    Game1.activeClickableMenu = new ScheduleMenu(Game1.activeClickableMenu, mod, outfitSetStore, scheduleStore);
+                    if (playSound) Game1.playSound("bigSelect");
+                }
                 return true;
             }
 

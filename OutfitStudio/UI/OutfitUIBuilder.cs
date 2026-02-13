@@ -38,6 +38,7 @@ namespace OutfitStudio
         public ClickableTextureComponent DyeColorButton { get; private set; } = null!;
 
         public ClickableTextureComponent GearButton { get; private set; } = null!;
+        public ClickableComponent ScheduleButton { get; private set; } = null!;
 
         public ClickableTextureComponent LeftArrowButton { get; private set; } = null!;
         public ClickableTextureComponent RightArrowButton { get; private set; } = null!;
@@ -87,7 +88,7 @@ namespace OutfitStudio
             int arrowHeight = (int)(ArrowNativeHeight * ArrowScale);
             int arrowRowHeight = arrowHeight + ElementGap;
             return CharacterPreviewHeight + arrowRowHeight + GapBetweenPortraitAndButtons
-                   + (TabAndButtonHeight * 2) + ElementGap;
+                   + (TabAndButtonHeight * 3) + ElementGap * 2;
         }
 
         private int CalculateRightPanelHeight()
@@ -231,11 +232,13 @@ namespace OutfitStudio
 
             int newOutfitButtonWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ButtonNewOutfit);
             int outfitsButtonWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ButtonOutfits);
-            int leftButtonWidth = Math.Max(newOutfitButtonWidth, outfitsButtonWidth);
+            int schedulesButtonWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ButtonSchedules);
+            int leftButtonWidth = Math.Max(Math.Max(newOutfitButtonWidth, outfitsButtonWidth), schedulesButtonWidth);
 
             int leftButtonsStartX = centerX - leftButtonWidth / 2;
             int saveButtonY = arrowY + arrowHeight + GapBetweenPortraitAndButtons;
             int wardrobeButtonY = saveButtonY + TabAndButtonHeight + ElementGap;
+            int scheduleButtonY = wardrobeButtonY + TabAndButtonHeight + ElementGap;
 
             SaveButton = new ClickableComponent(
                 new Rectangle(leftButtonsStartX, saveButtonY, leftButtonWidth, TabAndButtonHeight),
@@ -244,6 +247,10 @@ namespace OutfitStudio
             WardrobeButton = new ClickableComponent(
                 new Rectangle(leftButtonsStartX, wardrobeButtonY, leftButtonWidth, TabAndButtonHeight),
                 TranslationCache.ButtonOutfits
+            );
+            ScheduleButton = new ClickableComponent(
+                new Rectangle(leftButtonsStartX, scheduleButtonY, leftButtonWidth, TabAndButtonHeight),
+                TranslationCache.ButtonSchedules
             );
         }
 
@@ -371,31 +378,6 @@ namespace OutfitStudio
             );
         }
 
-        public void DrawTabWithText(SpriteBatch b, ClickableComponent tab, string label, bool isActive)
-        {
-            Color textColor = isActive ? Game1.textColor : Game1.textColor * TabOpacity;
-            bool isHovered = tab.containsPoint(Game1.getMouseX(), Game1.getMouseY());
-
-            UIHelpers.DrawTextureBox(b, tab.bounds.X, tab.bounds.Y,
-                tab.bounds.Width, tab.bounds.Height, isActive ? Color.White : Color.White * 0.8f);
-
-            Vector2 labelSize = Game1.smallFont.MeasureString(label);
-            Vector2 textPos = new Vector2(
-                tab.bounds.X + (tab.bounds.Width - labelSize.X) / 2,
-                tab.bounds.Y + (tab.bounds.Height - labelSize.Y) / 2
-            );
-
-            if (isHovered)
-            {
-                Utility.drawTextWithShadow(b, label, Game1.smallFont, textPos + new Vector2(-1, 0), textColor * 0.8f);
-                Utility.drawTextWithShadow(b, label, Game1.smallFont, textPos, textColor);
-            }
-            else
-            {
-                Utility.drawTextWithShadow(b, label, Game1.smallFont, textPos, textColor);
-            }
-        }
-
         public void MarkPreviewDirty()
         {
             previewDirty = true;
@@ -521,6 +503,7 @@ namespace OutfitStudio
 
             UIHelpers.DrawTextButton(b, SaveButton, TranslationCache.ButtonNewOutfit);
             UIHelpers.DrawTextButton(b, WardrobeButton, TranslationCache.ButtonOutfits);
+            UIHelpers.DrawTextButton(b, ScheduleButton, TranslationCache.ButtonSchedules);
         }
 
         public void DrawBottomButtons(SpriteBatch b)
@@ -725,6 +708,7 @@ namespace OutfitStudio
                 DyeColorButton.containsPoint(mouseX, mouseY) ||
                 CloseButton.containsPoint(mouseX, mouseY) ||
                 GearButton.containsPoint(mouseX, mouseY) ||
+                ScheduleButton.containsPoint(mouseX, mouseY) ||
                 LeftArrowButton.containsPoint(mouseX, mouseY) ||
                 RightArrowButton.containsPoint(mouseX, mouseY) ||
                 GridScrollUpButton.containsPoint(mouseX, mouseY) ||

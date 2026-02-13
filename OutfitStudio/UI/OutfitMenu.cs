@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using OutfitStudio.Models;
 using OutfitStudio.Services;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -36,10 +37,12 @@ namespace OutfitStudio
         public bool IsOverlayBlocking { get; set; } = false;
         public bool ShowItemInfo => showItemInfo;
 
-        public void NotifyOutfitApplied()
+        public void NotifyOutfitApplied(OutfitSet? set = null)
         {
             state.SaveAppliedOutfit();
             uiBuilder.MarkPreviewDirty();
+            if (set != null)
+                mod.GetScheduleEngine()?.SetManualOutfit(set.Id);
         }
 
         public void HandleItemInfoToggle()
@@ -305,16 +308,16 @@ namespace OutfitStudio
             uiBuilder.DrawSavedMessage(b);
             uiBuilder.DrawLeftPanelButtons(b);
 
-            uiBuilder.DrawTabWithText(b, uiBuilder.AllTab, TranslationCache.TabAll,
+            UIHelpers.DrawTabWithText(b, uiBuilder.AllTab, TranslationCache.TabAll,
                 categoryManager.CurrentCategory == OutfitCategoryManager.Category.All);
 
-            uiBuilder.DrawTabWithText(b, uiBuilder.ShirtsTab, TranslationCache.TabShirts,
+            UIHelpers.DrawTabWithText(b, uiBuilder.ShirtsTab, TranslationCache.TabShirts,
                 categoryManager.CurrentCategory == OutfitCategoryManager.Category.Shirts);
 
-            uiBuilder.DrawTabWithText(b, uiBuilder.PantsTab, TranslationCache.TabPants,
+            UIHelpers.DrawTabWithText(b, uiBuilder.PantsTab, TranslationCache.TabPants,
                 categoryManager.CurrentCategory == OutfitCategoryManager.Category.Pants);
 
-            uiBuilder.DrawTabWithText(b, uiBuilder.HatsTab, TranslationCache.TabHats,
+            UIHelpers.DrawTabWithText(b, uiBuilder.HatsTab, TranslationCache.TabHats,
                 categoryManager.CurrentCategory == OutfitCategoryManager.Category.Hats);
 
             uiBuilder.DrawSearchBar(b, searchManager.IsFocused, !string.IsNullOrEmpty(searchManager.CurrentSearchText));
@@ -418,7 +421,7 @@ namespace OutfitStudio
             {
                 if (dropdownManager.IsOpen)
                 {
-                    drawingHelper.DrawDropdownOptions(b);
+                    drawingHelper.DrawDropdownOptions(b, state.GetModFilter(categoryManager.CurrentCategory));
 
                     if (!string.IsNullOrEmpty(drawingHelper.HoveredTruncatedFilterText))
                     {

@@ -356,7 +356,7 @@ namespace OutfitStudio
                 if (SelectedSet != null)
                 {
                     store.ApplySet(SelectedSet);
-                    parentMenu?.NotifyOutfitApplied();
+                    parentMenu?.NotifyOutfitApplied(SelectedSet);
                     if (playSound) Game1.playSound("coin");
                 }
                 shouldClose = true;
@@ -1100,7 +1100,7 @@ namespace OutfitStudio
             string? tagsDropdownTooltip = null;
             if (searchScopeOpen)
             {
-                uiBuilder.DrawSearchScopeDropdown(b);
+                uiBuilder.DrawSearchScopeDropdown(b, filterState.SearchScope);
             }
             else if (tagsDropdownOpen)
             {

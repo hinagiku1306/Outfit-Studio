@@ -715,10 +715,18 @@ namespace OutfitStudio
             }
         }
 
-        public void DrawSearchScopeDropdown(SpriteBatch b)
+        public void DrawSearchScopeDropdown(SpriteBatch b, SearchScope currentScope)
         {
             if (SearchScopeOptions.Count == 0)
                 return;
+
+            string selectedLabel = currentScope switch
+            {
+                SearchScope.Set => TranslationCache.WardrobeFilterSearchSet,
+                SearchScope.Item => TranslationCache.WardrobeFilterSearchItem,
+                SearchScope.All => TranslationCache.WardrobeFilterSearchAll,
+                _ => TranslationCache.WardrobeFilterSearchSet
+            };
 
             int optionHeight = SearchScopeOptions[0].bounds.Height;
             int dropdownHeight = SearchScopeOptions.Count * optionHeight;
@@ -736,9 +744,12 @@ namespace OutfitStudio
             for (int i = 0; i < SearchScopeOptions.Count; i++)
             {
                 var option = SearchScopeOptions[i];
+                bool isSelected = option.name == selectedLabel;
                 bool isHovered = option.containsPoint(mouseX, mouseY);
 
-                if (isHovered)
+                if (isSelected)
+                    b.Draw(Game1.staminaRect, option.bounds, Color.Wheat * 0.6f);
+                else if (isHovered)
                     b.Draw(Game1.staminaRect, option.bounds, Color.Wheat * 0.6f);
 
                 Vector2 textSize = Game1.smallFont.MeasureString(option.name);

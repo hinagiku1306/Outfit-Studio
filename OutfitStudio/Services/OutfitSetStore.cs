@@ -25,6 +25,8 @@ namespace OutfitStudio.Services
         private OutfitSetGlobalData globalData = new();
         private OutfitSetLocalData localData = new();
 
+        public Action? OnSetsChanged { get; set; }
+
         private readonly Dictionary<string, OutfitSet> byId = new();
         private readonly Dictionary<string, HashSet<string>> byTag;
         private readonly HashSet<string> favoriteIds = new();
@@ -73,6 +75,11 @@ namespace OutfitStudio.Services
         {
             localData = new OutfitSetLocalData();
             RebuildIndexes();
+        }
+
+        public List<OutfitSet> GetAllSets()
+        {
+            return byId.Values.ToList();
         }
 
         public List<OutfitSet> GetAllSetsSorted()
@@ -177,6 +184,8 @@ namespace OutfitStudio.Services
                     PersistLocalData();
                 }
             }
+
+            OnSetsChanged?.Invoke();
         }
 
         public void Delete(string id)
@@ -198,6 +207,8 @@ namespace OutfitStudio.Services
                 localData.Sets.RemoveAll(s => s.Id == id);
                 PersistLocalData();
             }
+
+            OnSetsChanged?.Invoke();
         }
 
         public List<string> GetAllTags()
@@ -221,6 +232,7 @@ namespace OutfitStudio.Services
             globalData.Tags.Add(trimmed);
             cachedAllTags = null;
             PersistGlobalData();
+            OnSetsChanged?.Invoke();
         }
 
         public bool RemoveTag(string tag)
@@ -247,6 +259,7 @@ namespace OutfitStudio.Services
             cachedAllTags = null;
             InvalidateFilterCache();
             PersistGlobalData();
+            OnSetsChanged?.Invoke();
             return true;
         }
 
