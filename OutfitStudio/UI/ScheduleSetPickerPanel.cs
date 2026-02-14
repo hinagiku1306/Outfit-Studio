@@ -5,6 +5,7 @@ using OutfitStudio.Models;
 using OutfitStudio.Services;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
 using StardewValley;
 using StardewValley.Menus;
 using static OutfitStudio.OutfitLayoutConstants;
@@ -25,6 +26,7 @@ namespace OutfitStudio
 
         private readonly OutfitSetStore store;
         private readonly Action onChanged;
+        private readonly ContinuousScrollHandler scrollHandler = new();
 
         private bool isOpen;
         private Rectangle panelBounds;
@@ -270,6 +272,47 @@ namespace OutfitStudio
             return false;
         }
 
+        public bool HandleKeyPress(Keys key)
+        {
+            if (!isOpen)
+                return false;
+
+            int amount = key switch
+            {
+                Keys.Up => -1,
+                Keys.Down => 1,
+                Keys.Left => -MaxVisibleOptions,
+                Keys.Right => MaxVisibleOptions,
+                _ => 0
+            };
+
+            return amount != 0 && ApplyScroll(amount);
+        }
+
+        public void Update(GameTime time, bool isScrollActive)
+        {
+            if (!isOpen || !isScrollActive || !ModEntry.Config.ArrowKeyScrolling)
+            {
+                scrollHandler.Reset();
+                return;
+            }
+
+            int scrollAmount = scrollHandler.Update(time, MaxVisibleOptions, out bool shouldPlaySound);
+            if (scrollAmount != 0 && ApplyScroll(scrollAmount) && shouldPlaySound)
+                Game1.playSound("shiny4");
+        }
+
+        private bool ApplyScroll(int amount)
+        {
+            int maxFirst = Math.Max(0, allSets.Count - MaxVisibleOptions);
+            int newIndex = Math.Clamp(firstVisibleIndex + amount, 0, maxFirst);
+            if (newIndex == firstVisibleIndex)
+                return false;
+            firstVisibleIndex = newIndex;
+            BuildOptions();
+            return true;
+        }
+
         public void Draw(SpriteBatch b)
         {
             if (!isOpen)
@@ -306,8 +349,8 @@ namespace OutfitStudio
 
                 // Checkbox
                 Rectangle checkboxSource = isIncluded
-                    ? new Rectangle(236, 425, 9, 9)
-                    : new Rectangle(227, 425, 9, 9);
+                    ? UIHelpers.CheckedSourceRect
+                    : UIHelpers.UncheckedSourceRect;
                 int checkboxY = option.bounds.Y + (option.bounds.Height - SaveSetLocalOnlyCheckboxSize) / 2;
                 b.Draw(Game1.mouseCursors,
                     new Vector2(option.bounds.X + 4, checkboxY),
@@ -354,10 +397,7 @@ namespace OutfitStudio
 
             if (hoverTooltip != null && ModEntry.Config.ShowTooltip)
             {
-                string text = hoverTooltip.Contains(' ')
-                    ? Game1.parseText(hoverTooltip, Game1.smallFont, 300)
-                    : hoverTooltip;
-                IClickableMenu.drawHoverText(b, text, Game1.smallFont);
+                UIHelpers.DrawWrappedTooltip(b, hoverTooltip);
             }
         }
     }

@@ -122,7 +122,7 @@ namespace OutfitStudio
             );
             NameClearButton = new ClickableComponent(
                 new Rectangle(
-                    NameInputArea.bounds.Right - ClearButtonRightMargin - ClearButtonSize - 4,
+                    NameInputArea.bounds.Right - ClearButtonRightMargin - ClearButtonSize,
                     NameInputArea.bounds.Y + (NameSectionHeight - ClearButtonSize) / 2,
                     ClearButtonSize,
                     ClearButtonSize
@@ -153,12 +153,10 @@ namespace OutfitStudio
             TagRowBounds = new Rectangle(contentX, currentY, contentWidth, TagSectionHeight);
             tagsRowStartX = contentX;
 
-            Vector2 addButtonTextSize = Game1.smallFont.MeasureString("+");
-            int addButtonWidth = (int)addButtonTextSize.X + TextPadding * 2;
-            int addButtonHeight = SmallButtonHeight;
-            int addButtonY = currentY + (SmallButtonHeight - addButtonHeight) / 2;
+            int addButtonWidth = UIHelpers.GetToggleButtonWidth();
+            int addButtonY = currentY;
             AddTagsButton = new ClickableComponent(
-                new Rectangle(tagsRowStartX, addButtonY, addButtonWidth, addButtonHeight),
+                new Rectangle(tagsRowStartX, addButtonY, addButtonWidth, SmallButtonHeight),
                 "addTags"
             );
 
@@ -188,8 +186,9 @@ namespace OutfitStudio
             currentY += LocalOnlySectionHeight;
             currentY += SaveSetSectionPadding * 2;
 
-            int saveButtonWidth = UIHelpers.CalculateButtonWidth(TranslationCache.CommonSave);
-            int cancelButtonWidth = UIHelpers.CalculateButtonWidth(TranslationCache.CommonCancel);
+            int maxButtonWidth = (contentWidth - SaveSetButtonGap) / 2;
+            int saveButtonWidth = UIHelpers.CalculateButtonWidth(TranslationCache.CommonSave, maxButtonWidth);
+            int cancelButtonWidth = UIHelpers.CalculateButtonWidth(TranslationCache.CommonCancel, maxButtonWidth);
             int totalButtonWidth = saveButtonWidth + cancelButtonWidth + SaveSetButtonGap;
             int buttonStartX = X + (Width / 2) - (totalButtonWidth / 2);
 
@@ -214,44 +213,21 @@ namespace OutfitStudio
         public void UpdateTagsRowLayout()
         {
             int labelWidth = (int)Game1.smallFont.MeasureString(TranslationCache.SaveSetTagsLabel).X + 8;
-            Vector2 addButtonTextSize = Game1.smallFont.MeasureString("+");
-            int addButtonWidth = (int)addButtonTextSize.X + TextPadding * 2;
-            int addButtonHeight = SmallButtonHeight;
+            int addButtonWidth = UIHelpers.GetToggleButtonWidth();
 
             int totalWidth = labelWidth + addButtonWidth;
             int startX = contentX + (contentWidth - totalWidth) / 2;
             tagsRowStartX = startX;
 
             int buttonX = startX + labelWidth;
-            int buttonY = TagRowBounds.Y + (SmallButtonHeight - addButtonHeight) / 2;
+            int buttonY = TagRowBounds.Y;
             AddTagsButton = new ClickableComponent(
-                new Rectangle(buttonX, buttonY, addButtonWidth, addButtonHeight),
+                new Rectangle(buttonX, buttonY, addButtonWidth, SmallButtonHeight),
                 "addTags"
             );
         }
 
-        public void DrawNameInput(SpriteBatch b, string currentText, bool showPlaceholder, int jiggleOffset = 0)
-        {
-            Rectangle bounds = NameInputArea.bounds;
-
-            DrawDiceButton(b);
-
-            float textHeight = Game1.smallFont.MeasureString("A").Y;
-
-            UIHelpers.DrawTextureBox(b, bounds.X + jiggleOffset, bounds.Y, bounds.Width, bounds.Height, Color.White);
-
-            string displayText = showPlaceholder ? TranslationCache.SaveSetNamePlaceholder : currentText;
-            int maxTextWidth = bounds.Width - 20 - (ClearButtonRightMargin + ClearButtonSize + 8);
-            displayText = UIHelpers.TruncateText(displayText, maxTextWidth);
-            Color textColor = showPlaceholder ? Color.Gray : Game1.textColor;
-            Vector2 textPosition = new Vector2(bounds.X + 20 + jiggleOffset, bounds.Y + (bounds.Height - textHeight) / 2);
-            Utility.drawTextWithShadow(b, displayText, Game1.smallFont, textPosition, textColor);
-
-            if (!string.IsNullOrEmpty(currentText))
-                UIHelpers.DrawClearButton(b, NameClearButton);
-        }
-
-        private void DrawDiceButton(SpriteBatch b)
+        public void DrawDiceButton(SpriteBatch b)
         {
             Rectangle diceBounds = NameRandomButton.bounds;
             int mouseX = Game1.getMouseX();
@@ -267,28 +243,6 @@ namespace OutfitStudio
             Vector2 origin = new Vector2(5, 5);
 
             b.Draw(Game1.mouseCursors, center, sourceRect, Color.White, 0f, origin, scale, SpriteEffects.None, 1f);
-        }
-
-        public void DrawNameCursor(SpriteBatch b, string currentText, bool isSelected, int jiggleOffset = 0)
-        {
-            if (!isSelected)
-                return;
-
-            Rectangle bounds = NameInputArea.bounds;
-            Vector2 textSize = string.IsNullOrEmpty(currentText)
-                ? Vector2.Zero
-                : Game1.smallFont.MeasureString(currentText);
-
-            Vector2 textPosition = new Vector2(bounds.X + 20 + jiggleOffset, bounds.Y + (bounds.Height - 32) / 2);
-            Vector2 cursorPosition = new Vector2(textPosition.X + textSize.X, textPosition.Y);
-
-            bool showCursor = Game1.currentGameTime != null
-                && (int)(Game1.currentGameTime.TotalGameTime.TotalMilliseconds / 500) % 2 == 0;
-
-            if (showCursor)
-            {
-                b.Draw(Game1.staminaRect, new Rectangle((int)cursorPosition.X, (int)cursorPosition.Y, 4, 32), Game1.textColor);
-            }
         }
 
         public void DrawPreviewBackground(SpriteBatch b)
@@ -313,7 +267,7 @@ namespace OutfitStudio
             }
         }
 
-        public void DrawTagsRow(SpriteBatch b, int mouseX, int mouseY, bool isTagMenuOpen)
+        public void DrawTagsRow(SpriteBatch b, bool isTagMenuOpen)
         {
             float textHeight = Game1.smallFont.MeasureString("A").Y;
             int labelY = TagRowBounds.Y + (int)((SmallButtonHeight - textHeight) / 2);
@@ -321,22 +275,7 @@ namespace OutfitStudio
                 new Vector2(tagsRowStartX, labelY), Game1.textColor);
 
             if (AddTagsButton != null)
-            {
-                bool isHovered = AddTagsButton.containsPoint(mouseX, mouseY);
-                UIHelpers.DrawTextureBox(b, AddTagsButton.bounds.X, AddTagsButton.bounds.Y,
-                    AddTagsButton.bounds.Width, AddTagsButton.bounds.Height,
-                    Color.White, shadowOffset: 2, shadowOpacity: 0.3f);
-
-                if (isHovered)
-                {
-                    b.Draw(Game1.staminaRect, AddTagsButton.bounds, HoverEffectColor);
-                }
-
-                string buttonText = isTagMenuOpen ? "-" : "+";
-                Vector2 addTextSize = Game1.smallFont.MeasureString(buttonText);
-                Vector2 addTextPos = UIHelpers.GetVisualCenter(AddTagsButton.bounds, addTextSize);
-                Utility.drawTextWithShadow(b, buttonText, Game1.smallFont, addTextPos, Game1.textColor);
-            }
+                UIHelpers.DrawToggleButton(b, AddTagsButton, isTagMenuOpen);
         }
 
         public void DrawFavoriteCheckbox(SpriteBatch b, bool isChecked, bool isHovered)
@@ -370,8 +309,8 @@ namespace OutfitStudio
             Rectangle bounds = LocalOnlyCheckbox.bounds;
 
             Rectangle sourceRect = isChecked && isEnabled
-                ? new Rectangle(236, 425, 9, 9)
-                : new Rectangle(227, 425, 9, 9);
+                ? UIHelpers.CheckedSourceRect
+                : UIHelpers.UncheckedSourceRect;
 
             Color checkboxColor = isEnabled ? Color.White : Color.White * 0.5f;
             int checkboxY = bounds.Y + (LocalOnlySectionHeight - SaveSetLocalOnlyCheckboxSize) / 2;

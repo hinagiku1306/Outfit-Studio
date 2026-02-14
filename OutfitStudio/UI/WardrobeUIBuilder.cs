@@ -55,6 +55,7 @@ namespace OutfitStudio
         public int Height { get; private set; }
 
         private int tagsFirstVisible;
+        public int TagsFirstVisible => tagsFirstVisible;
 
         // Cached calculated widths for components
         private int searchScopeWidth;
@@ -312,9 +313,7 @@ namespace OutfitStudio
 
             int previewGroupWidth = SaveSetPreviewWidth + SaveSetPreviewToSlotsGap + SaveSetItemSlotSize;
             int previewGroupX = LeftPanel.X + (LeftPanel.Width - previewGroupWidth) / 2;
-
-            // Vertically center the entire preview content in the left panel
-            int previewStartY = LeftPanel.Y + (LeftPanel.Height - totalPreviewContentHeight) / 2;
+            int previewStartY = LeftPanel.Y + (LeftPanel.Height - totalPreviewContentHeight) / 2 + 10;
 
             int previewColumnY = previewStartY + (previewSectionHeight - previewColumnHeight) / 2;
             PreviewBox = new Rectangle(previewGroupX, previewColumnY, SaveSetPreviewWidth, SaveSetPreviewHeight);
@@ -349,9 +348,11 @@ namespace OutfitStudio
             int panelRowBottom = Math.Max(LeftPanelBox.Bottom, RightPanelBox.Bottom);
             int buttonY = panelRowBottom + SectionGap;
 
-            int applyCloseWidth = UIHelpers.CalculateButtonWidth(TranslationCache.WardrobeButtonApplyClose);
-            int editWidth = UIHelpers.CalculateButtonWidth(TranslationCache.WardrobeButtonEdit);
-            int deleteWidth = UIHelpers.CalculateButtonWidth(TranslationCache.WardrobeButtonDelete);
+            int maxEditDeleteWidth = (LeftPanelBox.Width - BottomButtonGap) / 2;
+            int maxApplyCloseWidth = RightPanelBox.Width;
+            int applyCloseWidth = UIHelpers.CalculateButtonWidth(TranslationCache.WardrobeButtonApplyClose, maxApplyCloseWidth);
+            int editWidth = UIHelpers.CalculateButtonWidth(TranslationCache.WardrobeButtonEdit, maxEditDeleteWidth);
+            int deleteWidth = UIHelpers.CalculateButtonWidth(TranslationCache.WardrobeButtonDelete, maxEditDeleteWidth);
 
             // Edit/Delete centered horizontally under left panel (character preview)
             int editDeleteTotalWidth = editWidth + BottomButtonGap + deleteWidth;
@@ -523,7 +524,7 @@ namespace OutfitStudio
 
                 var item = OutfitListItems[i];
                 var set = sets[dataIndex];
-                bool isHovered = !anyDropdownOpen && item.bounds.Contains(mouseX, mouseY);
+                bool isHovered = !UIHelpers.SuppressHover && !anyDropdownOpen && item.bounds.Contains(mouseX, mouseY);
 
                 if (dataIndex == selectedIndex)
                     b.Draw(Game1.staminaRect, item.bounds, Color.Wheat);
@@ -600,16 +601,14 @@ namespace OutfitStudio
 
             if (canScrollUp)
             {
-                Rectangle upArrow = new Rectangle(421, 459, 11, 12);
                 Vector2 upPos = new Vector2(RightPanel.Right - arrowWidth - 4, listStartY + 4);
-                b.Draw(Game1.mouseCursors, upPos, upArrow, Color.White, 0f, Vector2.Zero, arrowScale, SpriteEffects.None, 1f);
+                b.Draw(Game1.mouseCursors, upPos, UIHelpers.UpScrollArrowSourceRect, Color.White, 0f, Vector2.Zero, arrowScale, SpriteEffects.None, 1f);
             }
 
             if (canScrollDown)
             {
-                Rectangle downArrow = new Rectangle(421, 472, 11, 12);
                 Vector2 downPos = new Vector2(RightPanel.Right - arrowWidth - 4, RightPanel.Bottom - arrowHeight - 4);
-                b.Draw(Game1.mouseCursors, downPos, downArrow, Color.White, 0f, Vector2.Zero, arrowScale, SpriteEffects.None, 1f);
+                b.Draw(Game1.mouseCursors, downPos, UIHelpers.DownScrollArrowSourceRect, Color.White, 0f, Vector2.Zero, arrowScale, SpriteEffects.None, 1f);
             }
         }
 
@@ -625,55 +624,24 @@ namespace OutfitStudio
             };
             UIHelpers.DrawDropdownButton(b, SearchScopeDropdown.bounds, scopeLabel, searchScopeOpen);
 
-            DrawSearchBar(b, SearchBar, searchText, searchFocused);
+            UIHelpers.DrawInputBar(b, SearchBar.bounds, searchText, searchFocused,
+                placeholder: TranslationCache.WardrobeSearch,
+                clearButton: !string.IsNullOrEmpty(searchText) ? SearchClearButton : null);
 
             bool hasTags = filter.SelectedTags.Count > 0;
             string tagsLabel = hasTags
                 ? $"{TranslationCache.WardrobeFilterTags} ({filter.SelectedTags.Count})"
                 : TranslationCache.WardrobeFilterTags;
             UIHelpers.DrawDropdownButton(b, TagsDropdown.bounds, tagsLabel, tagsOpen,
-                clearButton: TagsClearButton, hasValue: hasTags, drawClearButton: UIHelpers.DrawClearButton);
+                clearButton: TagsClearButton, hasValue: hasTags);
 
             bool hasFilters = filter.FavoritesOnly || !filter.ShowGlobal || !filter.ShowLocal || filter.InvalidOnly;
             string filterLabel = TranslationCache.WardrobeFilterFilter;
             UIHelpers.DrawDropdownButton(b, FilterDropdown.bounds, filterLabel, filterOpen,
-                clearButton: FilterClearButton, hasValue: hasFilters, drawClearButton: UIHelpers.DrawClearButton);
+                clearButton: FilterClearButton, hasValue: hasFilters);
 
             DrawCheckbox(b, MatchAllCheckbox, TranslationCache.WardrobeFilterMatchAll, filter.MatchAllTags);
             DrawCheckbox(b, ShowInvalidCheckbox, TranslationCache.WardrobeFilterShowInvalid, filter.ShowInvalid);
-        }
-
-        public void DrawSearchBar(SpriteBatch b, ClickableComponent bar, string text, bool isFocused)
-        {
-            UIHelpers.DrawTextureBox(b, bar.bounds.X, bar.bounds.Y,
-                bar.bounds.Width, bar.bounds.Height, Color.White);
-
-            bool showPlaceholder = string.IsNullOrEmpty(text);
-            string displayText = showPlaceholder ? TranslationCache.WardrobeSearch : text;
-            Color textColor = showPlaceholder ? Color.Gray : Game1.textColor;
-
-            float textHeight = Game1.smallFont.MeasureString("A").Y;
-            Vector2 textPos = new Vector2(
-                bar.bounds.X + 20,
-                bar.bounds.Y + (bar.bounds.Height - textHeight) / 2
-            );
-            Utility.drawTextWithShadow(b, displayText, Game1.smallFont, textPos, textColor);
-
-            if (!showPlaceholder)
-            {
-                UIHelpers.DrawClearButton(b, SearchClearButton);
-            }
-
-            if (isFocused)
-            {
-                float cursorX = showPlaceholder ? textPos.X : textPos.X + Game1.smallFont.MeasureString(text).X;
-                if ((int)(Game1.currentGameTime.TotalGameTime.TotalMilliseconds / 500) % 2 == 0)
-                {
-                    b.Draw(Game1.staminaRect,
-                        new Rectangle((int)cursorX, (int)textPos.Y, 4, (int)textHeight),
-                        Game1.textColor);
-                }
-            }
         }
 
         private void DrawCheckbox(SpriteBatch b, ClickableComponent checkbox, string label, bool isChecked)
@@ -688,11 +656,11 @@ namespace OutfitStudio
                 checkbox.bounds.Width + 10 + (int)labelWidth,
                 checkbox.bounds.Height
             );
-            bool isHovered = hitArea.Contains(mouseX, mouseY);
+            bool isHovered = !UIHelpers.SuppressHover && hitArea.Contains(mouseX, mouseY);
 
             Rectangle sourceRect = isChecked
-                ? new Rectangle(236, 425, 9, 9)
-                : new Rectangle(227, 425, 9, 9);
+                ? UIHelpers.CheckedSourceRect
+                : UIHelpers.UncheckedSourceRect;
 
             b.Draw(Game1.mouseCursors,
                 new Vector2(checkbox.bounds.X, checkbox.bounds.Y),
@@ -715,181 +683,7 @@ namespace OutfitStudio
             }
         }
 
-        public void DrawSearchScopeDropdown(SpriteBatch b, SearchScope currentScope)
-        {
-            if (SearchScopeOptions.Count == 0)
-                return;
 
-            string selectedLabel = currentScope switch
-            {
-                SearchScope.Set => TranslationCache.WardrobeFilterSearchSet,
-                SearchScope.Item => TranslationCache.WardrobeFilterSearchItem,
-                SearchScope.All => TranslationCache.WardrobeFilterSearchAll,
-                _ => TranslationCache.WardrobeFilterSearchSet
-            };
-
-            int optionHeight = SearchScopeOptions[0].bounds.Height;
-            int dropdownHeight = SearchScopeOptions.Count * optionHeight;
-
-            UIHelpers.DrawTextureBoxNoShadow(b,
-                SearchScopeDropdown.bounds.X - 4,
-                SearchScopeDropdown.bounds.Bottom - 4,
-                SearchScopeDropdown.bounds.Width + 8,
-                dropdownHeight + 8,
-                Color.White);
-
-            int mouseX = Game1.getMouseX();
-            int mouseY = Game1.getMouseY();
-
-            for (int i = 0; i < SearchScopeOptions.Count; i++)
-            {
-                var option = SearchScopeOptions[i];
-                bool isSelected = option.name == selectedLabel;
-                bool isHovered = option.containsPoint(mouseX, mouseY);
-
-                if (isSelected)
-                    b.Draw(Game1.staminaRect, option.bounds, Color.Wheat * 0.6f);
-                else if (isHovered)
-                    b.Draw(Game1.staminaRect, option.bounds, Color.Wheat * 0.6f);
-
-                Vector2 textSize = Game1.smallFont.MeasureString(option.name);
-                Vector2 textPos = new Vector2(
-                    option.bounds.X + 16,
-                    option.bounds.Y + (option.bounds.Height - textSize.Y) / 2
-                );
-                Utility.drawTextWithShadow(b, option.name, Game1.smallFont, textPos, Game1.textColor);
-            }
-        }
-
-        public string? DrawTagsDropdown(SpriteBatch b, HashSet<string> selectedTags)
-        {
-            if (TagsOptions.Count == 0)
-                return null;
-
-            string? hoveredTruncatedText = null;
-            int visibleCount = 0;
-            foreach (var opt in TagsOptions)
-            {
-                if (opt.visible) visibleCount++;
-            }
-            if (visibleCount == 0)
-                return null;
-
-            int optionHeight = TagsOptions[0].bounds.Height;
-            int dropdownHeight = visibleCount * optionHeight;
-
-            UIHelpers.DrawTextureBoxNoShadow(b,
-                TagsDropdown.bounds.X - 4,
-                TagsDropdown.bounds.Bottom - 4,
-                TagsDropdown.bounds.Width + 8,
-                dropdownHeight + 8,
-                Color.White);
-
-            int mouseX = Game1.getMouseX();
-            int mouseY = Game1.getMouseY();
-
-            foreach (var option in TagsOptions)
-            {
-                if (!option.visible)
-                    continue;
-
-                bool isSelected = selectedTags.Contains(option.name);
-                bool isHovered = option.containsPoint(mouseX, mouseY);
-
-                if (isHovered)
-                    b.Draw(Game1.staminaRect, option.bounds, Color.Wheat * 0.6f);
-
-                Rectangle checkboxSource = isSelected
-                    ? new Rectangle(236, 425, 9, 9)
-                    : new Rectangle(227, 425, 9, 9);
-
-                b.Draw(Game1.mouseCursors,
-                    new Vector2(option.bounds.X + 12, option.bounds.Y + (option.bounds.Height - SaveSetLocalOnlyCheckboxSize) / 2),
-                    checkboxSource, Color.White, 0f, Vector2.Zero, SaveSetLocalOnlyCheckboxScale, SpriteEffects.None, 1f);
-
-                string displayText = UIHelpers.TruncateText(option.name, option.bounds.Width - 57);
-                bool isTruncated = displayText != option.name;
-                Vector2 textSize = Game1.smallFont.MeasureString(displayText);
-                Vector2 textPos = new Vector2(
-                    option.bounds.X + 12 + SaveSetLocalOnlyCheckboxSize + 8,
-                    option.bounds.Y + (option.bounds.Height - textSize.Y) / 2
-                );
-                Utility.drawTextWithShadow(b, displayText, Game1.smallFont, textPos, Game1.textColor);
-
-                if (isHovered && isTruncated)
-                    hoveredTruncatedText = option.name;
-            }
-
-            int maxVisible = Math.Min(WardrobeDropdownMaxVisible, TagsOptions.Count);
-            bool canScrollUp = tagsFirstVisible > 0;
-            bool canScrollDown = tagsFirstVisible + maxVisible < TagsOptions.Count;
-
-            float tagsArrowScale = 1.5f;
-            int tagsArrowWidth = (int)(11 * tagsArrowScale);
-            int tagsArrowHeight = (int)(12 * tagsArrowScale);
-
-            if (canScrollUp)
-            {
-                Rectangle upArrow = new Rectangle(421, 459, 11, 12);
-                Vector2 upPos = new Vector2(TagsDropdown.bounds.Right - tagsArrowWidth - 8, TagsDropdown.bounds.Bottom + 8);
-                b.Draw(Game1.mouseCursors, upPos, upArrow, Color.White, 0f, Vector2.Zero, tagsArrowScale, SpriteEffects.None, 1f);
-            }
-
-            if (canScrollDown)
-            {
-                Rectangle downArrow = new Rectangle(421, 472, 11, 12);
-                Vector2 downPos = new Vector2(TagsDropdown.bounds.Right - tagsArrowWidth - 8, TagsDropdown.bounds.Bottom + dropdownHeight - tagsArrowHeight - 8);
-                b.Draw(Game1.mouseCursors, downPos, downArrow, Color.White, 0f, Vector2.Zero, tagsArrowScale, SpriteEffects.None, 1f);
-            }
-
-            return hoveredTruncatedText;
-        }
-
-        public void DrawFilterDropdown(SpriteBatch b, SetFilterState filter)
-        {
-            if (FilterOptions.Count == 0)
-                return;
-
-            int optionHeight = FilterOptions[0].bounds.Height;
-            int dropdownHeight = FilterOptions.Count * optionHeight;
-
-            UIHelpers.DrawTextureBoxNoShadow(b,
-                FilterDropdown.bounds.X - 4,
-                FilterDropdown.bounds.Bottom - 4,
-                FilterDropdown.bounds.Width + 8,
-                dropdownHeight + 8,
-                Color.White);
-
-            int mouseX = Game1.getMouseX();
-            int mouseY = Game1.getMouseY();
-
-            bool[] checked_ = { filter.FavoritesOnly, filter.InvalidOnly, filter.ShowGlobal, filter.ShowLocal };
-
-            for (int i = 0; i < FilterOptions.Count; i++)
-            {
-                var option = FilterOptions[i];
-                bool isChecked = checked_[i];
-                bool isHovered = option.containsPoint(mouseX, mouseY);
-
-                if (isHovered)
-                    b.Draw(Game1.staminaRect, option.bounds, Color.Wheat * 0.6f);
-
-                Rectangle checkboxSource = isChecked
-                    ? new Rectangle(236, 425, 9, 9)
-                    : new Rectangle(227, 425, 9, 9);
-
-                b.Draw(Game1.mouseCursors,
-                    new Vector2(option.bounds.X + 12, option.bounds.Y + (option.bounds.Height - SaveSetLocalOnlyCheckboxSize) / 2),
-                    checkboxSource, Color.White, 0f, Vector2.Zero, SaveSetLocalOnlyCheckboxScale, SpriteEffects.None, 1f);
-
-                Vector2 textSize = Game1.smallFont.MeasureString(option.name);
-                Vector2 textPos = new Vector2(
-                    option.bounds.X + 12 + SaveSetLocalOnlyCheckboxSize + 8,
-                    option.bounds.Y + (option.bounds.Height - textSize.Y) / 2
-                );
-                Utility.drawTextWithShadow(b, option.name, Game1.smallFont, textPos, Game1.textColor);
-            }
-        }
 
         private string FormatTagsWithCount(List<string> tags, string prefix, int maxWidth)
         {
@@ -901,6 +695,12 @@ namespace OutfitStudio
 
         public void DrawPreviewPanel(SpriteBatch b, OutfitSet? set, OutfitSetStore store, Texture2D? previewTexture, int displayedCount)
         {
+            string totalText = $"{TranslationCache.ScheduleEditTotalOutfits}: {displayedCount}";
+            Vector2 totalSize = Game1.smallFont.MeasureString(totalText);
+            float totalX = LeftPanel.X + (LeftPanel.Width - totalSize.X) / 2;
+            Utility.drawTextWithShadow(b, totalText, Game1.smallFont,
+                new Vector2(totalX, LeftPanel.Y + 10), Game1.textColor);
+
             b.Draw(Game1.daybg, PreviewBox, Color.White);
 
             if (previewTexture != null)
@@ -930,7 +730,7 @@ namespace OutfitStudio
                     int previewSectionHeight = Math.Max(SaveSetPreviewHeight + ElementGap + wardrobeArrowH, itemSlotsHeight);
                     int detailsHeight = 32 * 2;
                     int totalPreviewContentHeight = previewSectionHeight + ContentBoxPadding + detailsHeight;
-                    int previewStartY = LeftPanel.Y + (LeftPanel.Height - totalPreviewContentHeight) / 2;
+                    int previewStartY = LeftPanel.Y + (LeftPanel.Height - totalPreviewContentHeight) / 2 + 10;
                     int previewSectionBottom = previewStartY + previewSectionHeight;
 
                     int maxTextWidth = LeftPanel.Width - 16;
@@ -952,7 +752,7 @@ namespace OutfitStudio
             int previewSectionHeight2 = Math.Max(SaveSetPreviewHeight, itemSlotsHeight2);
             int detailsHeight2 = 32 * 2;
             int totalPreviewContentHeight2 = previewSectionHeight2 + ContentBoxPadding + detailsHeight2;
-            int previewStartY2 = LeftPanel.Y + (LeftPanel.Height - totalPreviewContentHeight2) / 2;
+            int previewStartY2 = LeftPanel.Y + (LeftPanel.Height - totalPreviewContentHeight2) / 2 + 10;
             int previewSectionBottom2 = previewStartY2 + previewSectionHeight2;
 
             int textLeftX = LeftPanelBox.X + 40;

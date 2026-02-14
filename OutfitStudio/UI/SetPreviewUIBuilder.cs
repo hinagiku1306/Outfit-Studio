@@ -10,8 +10,6 @@ namespace OutfitStudio
 {
     public class SetPreviewUIBuilder
     {
-        private static readonly Rectangle UpScrollArrowSourceRect = new Rectangle(421, 459, 11, 12);
-        private static readonly Rectangle DownScrollArrowSourceRect = new Rectangle(421, 472, 11, 12);
         private static readonly Rectangle LeftArrowSourceRect = new Rectangle(352, 495, 12, 11);
         private static readonly Rectangle RightArrowSourceRect = new Rectangle(365, 495, 12, 11);
 
@@ -118,8 +116,9 @@ namespace OutfitStudio
                 new Rectangle(337, 494, 12, 12),
                 4f);
 
-            int saveWidth = UIHelpers.CalculateButtonWidth(TranslationCache.CommonSave);
-            int cancelWidth = UIHelpers.CalculateButtonWidth(TranslationCache.CommonCancel);
+            int maxButtonWidth = (ButtonBoxBounds.Width - ScheduleBottomButtonGap) / 2;
+            int saveWidth = UIHelpers.CalculateButtonWidth(TranslationCache.CommonSave, maxButtonWidth);
+            int cancelWidth = UIHelpers.CalculateButtonWidth(TranslationCache.CommonCancel, maxButtonWidth);
             int totalBtnWidth = saveWidth + ScheduleBottomButtonGap + cancelWidth;
             int btnStartX = ButtonBoxBounds.X + (ButtonBoxBounds.Width - totalBtnWidth) / 2;
             int buttonY = ButtonBoxBounds.Y + (ScheduleButtonBoxHeight - TabAndButtonHeight) / 2;
@@ -180,8 +179,8 @@ namespace OutfitStudio
 
         public void DrawArrowButtons(SpriteBatch b)
         {
-            bool leftHovered = LeftArrowButton.containsPoint(Game1.getMouseX(), Game1.getMouseY());
-            bool rightHovered = RightArrowButton.containsPoint(Game1.getMouseX(), Game1.getMouseY());
+            bool leftHovered = !UIHelpers.SuppressHover && LeftArrowButton.containsPoint(Game1.getMouseX(), Game1.getMouseY());
+            bool rightHovered = !UIHelpers.SuppressHover && RightArrowButton.containsPoint(Game1.getMouseX(), Game1.getMouseY());
 
             b.Draw(Game1.mouseCursors,
                 new Vector2(LeftArrowButton.bounds.X, LeftArrowButton.bounds.Y),
@@ -277,14 +276,14 @@ namespace OutfitStudio
             if (scrollOffset > 0)
             {
                 Vector2 arrowPos = new Vector2(rightPanelX + rightPanelWidth - 24, listY - 18);
-                b.Draw(Game1.mouseCursors, arrowPos, UpScrollArrowSourceRect,
+                b.Draw(Game1.mouseCursors, arrowPos, UIHelpers.UpScrollArrowSourceRect,
                     Color.White, 0f, Vector2.Zero, ScheduleScrollArrowScale, SpriteEffects.None, 1f);
             }
             if (scrollOffset + SetPreviewMaxVisibleSets < totalCount)
             {
                 int listBottomY = listY + SetPreviewMaxVisibleSets * SetPreviewRowHeight;
                 Vector2 arrowPos = new Vector2(rightPanelX + rightPanelWidth - 24, listBottomY + 2);
-                b.Draw(Game1.mouseCursors, arrowPos, DownScrollArrowSourceRect,
+                b.Draw(Game1.mouseCursors, arrowPos, UIHelpers.DownScrollArrowSourceRect,
                     Color.White, 0f, Vector2.Zero, ScheduleScrollArrowScale, SpriteEffects.None, 1f);
             }
 

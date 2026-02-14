@@ -29,9 +29,6 @@ namespace OutfitStudio
         private readonly Func<List<string>> getCurrentPantsIds;
         private readonly Func<List<string>> getCurrentHatIds;
         private readonly Func<List<(OutfitCategoryManager.Category, string)>> getCurrentAllItems;
-        private readonly Func<WardrobeOverlay?> getWardrobeOverlay;
-        private readonly Action<WardrobeOverlay?> setWardrobeOverlay;
-        private readonly Func<OutfitMenu?> getParentMenu;
         private readonly Func<DyeColorManager> getDyeColorManager;
         private readonly Func<OutfitCategoryManager.Category> getLastColorCategory;
         private readonly Action<OutfitCategoryManager.Category> setLastColorCategory;
@@ -53,9 +50,6 @@ namespace OutfitStudio
             Func<List<string>> getCurrentPantsIds,
             Func<List<string>> getCurrentHatIds,
             Func<List<(OutfitCategoryManager.Category, string)>> getCurrentAllItems,
-            Func<WardrobeOverlay?> getWardrobeOverlay,
-            Action<WardrobeOverlay?> setWardrobeOverlay,
-            Func<OutfitMenu?> getParentMenu,
             OutfitSetStore outfitSetStore,
             Action showSavedMessage,
             Func<DyeColorManager> getDyeColorManager,
@@ -79,9 +73,6 @@ namespace OutfitStudio
             this.getCurrentPantsIds = getCurrentPantsIds;
             this.getCurrentHatIds = getCurrentHatIds;
             this.getCurrentAllItems = getCurrentAllItems;
-            this.getWardrobeOverlay = getWardrobeOverlay;
-            this.setWardrobeOverlay = setWardrobeOverlay;
-            this.getParentMenu = getParentMenu;
             this.outfitSetStore = outfitSetStore;
             this.getDyeColorManager = getDyeColorManager;
             this.getLastColorCategory = getLastColorCategory;
@@ -90,19 +81,6 @@ namespace OutfitStudio
 
         public bool HandleLeftClick(int x, int y, bool playSound)
         {
-            var wardrobeOverlay = getWardrobeOverlay();
-            if (wardrobeOverlay != null)
-            {
-                wardrobeOverlay.receiveLeftClick(x, y, playSound);
-
-                if (wardrobeOverlay.readyToClose())
-                {
-                    setWardrobeOverlay(null);
-                }
-
-                return true;
-            }
-
             var dcm = getDyeColorManager();
             if (dcm.IsOpen)
             {
@@ -281,7 +259,7 @@ namespace OutfitStudio
 
             if (uiBuilder.WardrobeButton.containsPoint(x, y))
             {
-                setWardrobeOverlay(new WardrobeOverlay(outfitSetStore, getParentMenu()));
+                Game1.activeClickableMenu = new WardrobeOverlay(outfitSetStore, Game1.activeClickableMenu);
                 if (playSound) Game1.playSound("bigSelect");
                 return true;
             }
@@ -487,13 +465,6 @@ namespace OutfitStudio
 
         public bool HandleScrollWheel(int direction)
         {
-            var wardrobeOverlay = getWardrobeOverlay();
-            if (wardrobeOverlay != null)
-            {
-                wardrobeOverlay.receiveScrollWheelAction(direction);
-                return true;
-            }
-
             if (dropdownManager.IsOpen)
             {
                 if (dropdownManager.HandleScrollWheel(direction))
@@ -522,19 +493,6 @@ namespace OutfitStudio
 
         public bool HandleKeyPress(Keys key)
         {
-            var wardrobeOverlay = getWardrobeOverlay();
-            if (wardrobeOverlay != null)
-            {
-                wardrobeOverlay.receiveKeyPress(key);
-
-                if (wardrobeOverlay.readyToClose())
-                {
-                    setWardrobeOverlay(null);
-                }
-
-                return true;
-            }
-
             bool wasDropdownOpen = dropdownManager.IsOpen;
             if (dropdownManager.HandleKeyPress(key))
             {

@@ -10,10 +10,6 @@ namespace OutfitStudio
 {
     public class ScheduleMenuUIBuilder
     {
-        private static readonly Rectangle CheckedSourceRect = new Rectangle(236, 425, 9, 9);
-        private static readonly Rectangle UncheckedSourceRect = new Rectangle(227, 425, 9, 9);
-        private static readonly Rectangle UpScrollArrowSourceRect = new Rectangle(421, 459, 11, 12);
-        private static readonly Rectangle DownScrollArrowSourceRect = new Rectangle(421, 472, 11, 12);
         private static readonly Rectangle GearIconSourceRect = new Rectangle(30, 428, 10, 10);
         private static readonly Rectangle ClearIconSourceRect = new Rectangle(337, 494, 12, 12);
         private static readonly Rectangle SpeedIconSourceRect = new Rectangle(130, 428, 10, 10);
@@ -168,8 +164,9 @@ namespace OutfitStudio
 
             // 5. Bottom buttons (inside content box)
             int buttonsY = ruleListY + ruleListHeight + ScheduleRuleListBottomPad + ListToButtonGap;
-            int newWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ScheduleNew);
-            int closeWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ScheduleClose);
+            int maxButtonWidth = (contentWidth - ScheduleBottomButtonGap) / 2;
+            int newWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ScheduleNew, maxButtonWidth);
+            int closeWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ScheduleClose, maxButtonWidth);
             int totalBtnWidth = newWidth + ScheduleBottomButtonGap + closeWidth;
             int btnStartX = X + (Width - totalBtnWidth) / 2;
 
@@ -234,7 +231,7 @@ namespace OutfitStudio
 
         private static ClickableComponent CreateClearButton(ClickableComponent bar)
         {
-            int clearX = bar.bounds.Right - ClearButtonSize - 12;
+            int clearX = bar.bounds.Right - ClearButtonRightMargin - ClearButtonSize;
             int clearY = bar.bounds.Y + (bar.bounds.Height - ClearButtonSize) / 2;
             return new ClickableComponent(
                 new Rectangle(clearX, clearY, ClearButtonSize, ClearButtonSize), bar.name + "Clear");
@@ -315,7 +312,7 @@ namespace OutfitStudio
             string statusText = isEnabled
                 ? TranslationCache.ScheduleMasterEnabled
                 : TranslationCache.ScheduleMasterDisabled;
-            bool isHovered = MasterStatusButton.containsPoint(Game1.getMouseX(), Game1.getMouseY());
+            bool isHovered = !UIHelpers.SuppressHover && MasterStatusButton.containsPoint(Game1.getMouseX(), Game1.getMouseY());
 
             float statusTextHeight = Game1.smallFont.MeasureString(statusText).Y;
             Vector2 statusPos = new Vector2(
@@ -346,7 +343,6 @@ namespace OutfitStudio
             UIHelpers.DrawDropdownButton(b, bounds, displayText, isOpen,
                 clearButton: showClear ? PriorityClearButton : null,
                 hasValue: showClear,
-                drawClearButton: showClear ? (sb, cb) => UIHelpers.DrawClearButton(sb, cb) : null,
                 opacity: opacity);
         }
 
@@ -356,48 +352,6 @@ namespace OutfitStudio
                 PriorityDropdownOptions, 0, 3,
                 isSelected: option => option.name == selectedPriorityLabel,
                 panelPaddingV: 4);
-        }
-
-        public void DrawSearchBarBackground(SpriteBatch b, float opacity)
-        {
-            UIHelpers.DrawTextureBox(b, SearchBar.bounds.X, SearchBar.bounds.Y,
-                SearchBar.bounds.Width, SearchBar.bounds.Height, Color.White * opacity);
-        }
-
-        public void DrawSearchPlaceholder(SpriteBatch b, float opacity)
-        {
-            Vector2 pos = new Vector2(SearchBar.bounds.X + ScheduleSearchPlaceholderStartX,
-                SearchBar.bounds.Y + (SearchBar.bounds.Height - Game1.smallFont.MeasureString("T").Y) / 2);
-            Utility.drawTextWithShadow(b, TranslationCache.ScheduleSearchPlaceholder,
-                Game1.smallFont, pos, Game1.textColor * opacity * 0.35f);
-        }
-
-        public void DrawSearchText(SpriteBatch b, string text, bool showCaret, float opacity)
-        {
-            var bar = SearchBar.bounds;
-            int textStartX = bar.X + ScheduleSearchTextStartX;
-            int maxTextWidth = bar.Width - ScheduleSearchTextStartX - ClearButtonSize - 16;
-
-            string toDraw = text;
-            Vector2 size = Game1.smallFont.MeasureString(toDraw);
-            while (size.X > maxTextWidth && toDraw.Length > 0)
-            {
-                toDraw = toDraw.Substring(1);
-                size = Game1.smallFont.MeasureString(toDraw);
-            }
-
-            float fontHeight = Game1.smallFont.MeasureString("T").Y;
-            float textY = bar.Y + (bar.Height - fontHeight) / 2;
-
-            Utility.drawTextWithShadow(b, toDraw, Game1.smallFont,
-                new Vector2(textStartX, textY), Game1.textColor * opacity);
-
-            if (showCaret)
-            {
-                b.Draw(Game1.staminaRect,
-                    new Rectangle(textStartX + (int)size.X + 2, (int)textY, 4, (int)fontHeight),
-                    Game1.textColor * opacity);
-            }
         }
 
         public void DrawDivider(SpriteBatch b)
@@ -441,7 +395,7 @@ namespace OutfitStudio
             int nameY = nameArea.bounds.Y + (int)((ScheduleRuleRowHeight - nameHeight) / 2);
 
             // Checkbox aligned with name
-            Rectangle sourceRect = isChecked ? CheckedSourceRect : UncheckedSourceRect;
+            Rectangle sourceRect = isChecked ? UIHelpers.CheckedSourceRect : UIHelpers.UncheckedSourceRect;
             int checkDrawY = nameY + (int)((nameHeight - ScheduleCheckboxSize) / 2);
             b.Draw(Game1.mouseCursors,
                 new Vector2(checkbox.bounds.X, checkDrawY),
@@ -472,7 +426,7 @@ namespace OutfitStudio
 
         private void DrawEditButton(SpriteBatch b, ClickableComponent btn, float opacity, bool allowHover)
         {
-            bool btnHovered = allowHover && btn.containsPoint(Game1.getMouseX(), Game1.getMouseY());
+            bool btnHovered = !UIHelpers.SuppressHover && allowHover && btn.containsPoint(Game1.getMouseX(), Game1.getMouseY());
 
             float baseScale = 2.0f;
             float gearScale = btnHovered ? baseScale * 1.1f : baseScale;
@@ -486,7 +440,7 @@ namespace OutfitStudio
 
         private void DrawDeleteButton(SpriteBatch b, ClickableComponent btn, float opacity, bool allowHover)
         {
-            bool btnHovered = allowHover && btn.containsPoint(Game1.getMouseX(), Game1.getMouseY());
+            bool btnHovered = !UIHelpers.SuppressHover && allowHover && btn.containsPoint(Game1.getMouseX(), Game1.getMouseY());
 
             float scale = btnHovered ? 2.2f : 2f;
             Vector2 center = new Vector2(
@@ -538,8 +492,8 @@ namespace OutfitStudio
         {
             if (!IsScrollable) return;
 
-            int arrowW = (int)(11 * ScheduleScrollArrowScale);
-            int arrowH = (int)(12 * ScheduleScrollArrowScale);
+            int arrowW = (int)(UIHelpers.UpScrollArrowSourceRect.Width * ScheduleScrollArrowScale);
+            int arrowH = (int)(UIHelpers.UpScrollArrowSourceRect.Height * ScheduleScrollArrowScale);
             int rightPaddingStart = contentX + contentWidth;
             int rightPaddingWidth = ScheduleBorderPadding + ScheduleScrollArrowRightPadding;
             int arrowX = rightPaddingStart + (rightPaddingWidth - arrowW) / 2 - 14;
@@ -548,7 +502,7 @@ namespace OutfitStudio
             {
                 int upY = ruleListY + (ScheduleRuleRowHeight - arrowH) / 2 - 4;
                 b.Draw(Game1.mouseCursors, new Vector2(arrowX, upY),
-                    UpScrollArrowSourceRect, Color.White, 0f, Vector2.Zero,
+                    UIHelpers.UpScrollArrowSourceRect, Color.White, 0f, Vector2.Zero,
                     ScheduleScrollArrowScale, SpriteEffects.None, 1f);
             }
 
@@ -556,7 +510,7 @@ namespace OutfitStudio
             {
                 int downY = ruleListY + ruleListHeight - ScheduleRuleRowHeight + (ScheduleRuleRowHeight - arrowH) / 2 - 4;
                 b.Draw(Game1.mouseCursors, new Vector2(arrowX, downY),
-                    DownScrollArrowSourceRect, Color.White, 0f, Vector2.Zero,
+                    UIHelpers.DownScrollArrowSourceRect, Color.White, 0f, Vector2.Zero,
                     ScheduleScrollArrowScale, SpriteEffects.None, 1f);
             }
         }

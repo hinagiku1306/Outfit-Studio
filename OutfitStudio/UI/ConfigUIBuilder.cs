@@ -11,11 +11,6 @@ namespace OutfitStudio
 {
     public class ConfigUIBuilder
     {
-        private static readonly Rectangle CheckedSourceRect = new Rectangle(236, 425, 9, 9);
-        private static readonly Rectangle UncheckedSourceRect = new Rectangle(227, 425, 9, 9);
-        private static readonly Rectangle UpScrollArrowSourceRect = new Rectangle(421, 459, 11, 12);
-        private static readonly Rectangle DownScrollArrowSourceRect = new Rectangle(421, 472, 11, 12);
-
         private const int FixedTopHeight = ConfigBorderPadding;
         private const int FixedBottomHeight = 0;
 
@@ -272,8 +267,9 @@ namespace OutfitStudio
             rowTooltips = tooltipsList.ToArray();
 
             int buttonY = ButtonBoxBounds.Y + (ConfigButtonBoxHeight - TabAndButtonHeight) / 2;
-            int saveWidth = UIHelpers.CalculateButtonWidth(TranslationCache.CommonSave);
-            int cancelWidth = UIHelpers.CalculateButtonWidth(TranslationCache.CommonCancel);
+            int maxButtonWidth = (Width - ConfigBottomButtonGap) / 2;
+            int saveWidth = UIHelpers.CalculateButtonWidth(TranslationCache.CommonSave, maxButtonWidth);
+            int cancelWidth = UIHelpers.CalculateButtonWidth(TranslationCache.CommonCancel, maxButtonWidth);
             int totalBtnWidth = saveWidth + cancelWidth + ConfigBottomButtonGap;
             int btnStartX = X + (Width - totalBtnWidth) / 2;
 
@@ -365,7 +361,7 @@ namespace OutfitStudio
             int rowY = checkbox.bounds.Y - (ConfigRowHeight - ConfigCheckboxSize) / 2;
             DrawRowLabel(b, label, rowY);
 
-            Rectangle sourceRect = isChecked ? CheckedSourceRect : UncheckedSourceRect;
+            Rectangle sourceRect = isChecked ? UIHelpers.CheckedSourceRect : UIHelpers.UncheckedSourceRect;
             b.Draw(Game1.mouseCursors,
                 new Vector2(checkbox.bounds.X, checkbox.bounds.Y),
                 sourceRect, Color.White, 0f, Vector2.Zero, ConfigCheckboxScale, SpriteEffects.None, 1f);
@@ -382,10 +378,20 @@ namespace OutfitStudio
             Vector2 textSize = Game1.smallFont.MeasureString(displayText);
             float textX = controlX - textSize.X;
             float textY = area.bounds.Y + (ConfigRowHeight - textSize.Y) / 2;
+            Vector2 textPos = new Vector2(textX, textY);
 
             Color textColor = isListening ? Color.Gray : Game1.textColor;
-            Utility.drawTextWithShadow(b, displayText, Game1.smallFont,
-                new Vector2(textX, textY), textColor);
+            bool isHovered = !isListening && area.containsPoint(Game1.getMouseX(), Game1.getMouseY());
+
+            if (isHovered)
+            {
+                Utility.drawTextWithShadow(b, displayText, Game1.smallFont, textPos + new Vector2(-1, 0), textColor * 0.8f);
+                Utility.drawTextWithShadow(b, displayText, Game1.smallFont, textPos, textColor);
+            }
+            else
+            {
+                Utility.drawTextWithShadow(b, displayText, Game1.smallFont, textPos, textColor);
+            }
         }
 
         public void DrawSliderRow(SpriteBatch b, string label, DiscreteSlider slider)
@@ -412,8 +418,19 @@ namespace OutfitStudio
             Vector2 textSize = Game1.smallFont.MeasureString(displayValue);
             float textX = controlX - textSize.X;
             float textY = rowY + (ConfigRowHeight - textSize.Y) / 2;
-            Utility.drawTextWithShadow(b, displayValue, Game1.smallFont,
-                new Vector2(textX, textY), Game1.textColor);
+            Vector2 textPos = new Vector2(textX, textY);
+
+            bool isHovered = !isOpen && SearchScopeDropdown.containsPoint(Game1.getMouseX(), Game1.getMouseY());
+
+            if (isHovered)
+            {
+                Utility.drawTextWithShadow(b, displayValue, Game1.smallFont, textPos + new Vector2(-1, 0), Game1.textColor * 0.8f);
+                Utility.drawTextWithShadow(b, displayValue, Game1.smallFont, textPos, Game1.textColor);
+            }
+            else
+            {
+                Utility.drawTextWithShadow(b, displayValue, Game1.smallFont, textPos, Game1.textColor);
+            }
         }
 
         public void DrawSearchScopeDropdownOptions(SpriteBatch b, string currentValue)
@@ -452,7 +469,7 @@ namespace OutfitStudio
             {
                 int arrowY = ContentClipRect.Top + 4;
                 b.Draw(Game1.mouseCursors, new Vector2(arrowX, arrowY),
-                    UpScrollArrowSourceRect, Color.White, 0f, Vector2.Zero,
+                    UIHelpers.UpScrollArrowSourceRect, Color.White, 0f, Vector2.Zero,
                     ConfigScrollArrowScale, SpriteEffects.None, 1f);
             }
 
@@ -460,7 +477,7 @@ namespace OutfitStudio
             {
                 int arrowY = ContentClipRect.Bottom - arrowH - 4;
                 b.Draw(Game1.mouseCursors, new Vector2(arrowX, arrowY),
-                    DownScrollArrowSourceRect, Color.White, 0f, Vector2.Zero,
+                    UIHelpers.DownScrollArrowSourceRect, Color.White, 0f, Vector2.Zero,
                     ConfigScrollArrowScale, SpriteEffects.None, 1f);
             }
         }

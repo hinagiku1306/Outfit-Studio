@@ -25,22 +25,22 @@ namespace OutfitStudio
             bool scrollKeyHeld = false;
             int scrollDirection = 0;
 
-            if (keyboard.IsKeyDown(Keys.Up) || keyboard.IsKeyDown(Keys.W))
+            if (keyboard.IsKeyDown(Keys.Up))
             {
                 scrollKeyHeld = true;
                 scrollDirection = -1;
             }
-            else if (keyboard.IsKeyDown(Keys.Down) || keyboard.IsKeyDown(Keys.S))
+            else if (keyboard.IsKeyDown(Keys.Down))
             {
                 scrollKeyHeld = true;
                 scrollDirection = 1;
             }
-            else if (keyboard.IsKeyDown(Keys.Left) || keyboard.IsKeyDown(Keys.A))
+            else if (keyboard.IsKeyDown(Keys.Left))
             {
                 scrollKeyHeld = true;
                 scrollDirection = -visibleRows;
             }
-            else if (keyboard.IsKeyDown(Keys.Right) || keyboard.IsKeyDown(Keys.D))
+            else if (keyboard.IsKeyDown(Keys.Right))
             {
                 scrollKeyHeld = true;
                 scrollDirection = visibleRows;

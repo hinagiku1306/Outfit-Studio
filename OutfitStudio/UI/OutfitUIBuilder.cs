@@ -147,10 +147,11 @@ namespace OutfitStudio
 
         private void PositionTabs(int tabY)
         {
-            int allTabWidth = UIHelpers.CalculateButtonWidth(TranslationCache.TabAll);
-            int shirtTabWidth = UIHelpers.CalculateButtonWidth(TranslationCache.TabShirts);
-            int pantsTabWidth = UIHelpers.CalculateButtonWidth(TranslationCache.TabPants);
-            int hatsTabWidth = UIHelpers.CalculateButtonWidth(TranslationCache.TabHats);
+            int maxTabWidth = (Width - TabAndButtonGap * 3) / 4;
+            int allTabWidth = UIHelpers.CalculateButtonWidth(TranslationCache.TabAll, maxTabWidth);
+            int shirtTabWidth = UIHelpers.CalculateButtonWidth(TranslationCache.TabShirts, maxTabWidth);
+            int pantsTabWidth = UIHelpers.CalculateButtonWidth(TranslationCache.TabPants, maxTabWidth);
+            int hatsTabWidth = UIHelpers.CalculateButtonWidth(TranslationCache.TabHats, maxTabWidth);
 
             int totalTabsWidth = allTabWidth + shirtTabWidth + pantsTabWidth + hatsTabWidth + TabAndButtonGap * 3;
             int tabsStartX = X + (Width - totalTabsWidth) / 2;
@@ -230,9 +231,10 @@ namespace OutfitStudio
                 "Lookup"
             );
 
-            int newOutfitButtonWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ButtonNewOutfit);
-            int outfitsButtonWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ButtonOutfits);
-            int schedulesButtonWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ButtonSchedules);
+            int maxLeftButtonWidth = LeftPanelWidth;
+            int newOutfitButtonWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ButtonNewOutfit, maxLeftButtonWidth);
+            int outfitsButtonWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ButtonOutfits, maxLeftButtonWidth);
+            int schedulesButtonWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ButtonSchedules, maxLeftButtonWidth);
             int leftButtonWidth = Math.Max(Math.Max(newOutfitButtonWidth, outfitsButtonWidth), schedulesButtonWidth);
 
             int leftButtonsStartX = centerX - leftButtonWidth / 2;
@@ -308,8 +310,9 @@ namespace OutfitStudio
             int gridHeight = VISIBLE_ROWS * SLOT_SIZE + (VISIBLE_ROWS - 1) * ItemSlotGap;
             int bottomButtonsY = gridY + gridHeight + GridToButtonGap;
 
-            int applyWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ButtonApply);
-            int resetWidth = UIHelpers.CalculateButtonWidth(TranslationCache.CommonReset);
+            int maxBottomButtonWidth = (gridWidth - ElementGap) / 2;
+            int applyWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ButtonApply, maxBottomButtonWidth);
+            int resetWidth = UIHelpers.CalculateButtonWidth(TranslationCache.CommonReset, maxBottomButtonWidth);
 
             int resetX = panelX + gridWidth - resetWidth;
             int applyX = resetX - ElementGap - applyWidth;
@@ -520,7 +523,7 @@ namespace OutfitStudio
 
         private void DrawDyeColorButton(SpriteBatch b)
         {
-            bool isHovered = DyeColorButton.containsPoint(Game1.getMouseX(), Game1.getMouseY());
+            bool isHovered = !UIHelpers.SuppressHover && DyeColorButton.containsPoint(Game1.getMouseX(), Game1.getMouseY());
             float buttonScale = isHovered ? ButtonHoveringScale : 1f;
 
             int bgSize = (int)(DyeColorButton.bounds.Width * buttonScale);
@@ -561,7 +564,7 @@ namespace OutfitStudio
 
         public void DrawGearButton(SpriteBatch b)
         {
-            bool isHovered = GearButton.containsPoint(Game1.getMouseX(), Game1.getMouseY());
+            bool isHovered = !UIHelpers.SuppressHover && GearButton.containsPoint(Game1.getMouseX(), Game1.getMouseY());
             float buttonScale = isHovered ? ButtonHoveringScale : 1f;
 
             int bgSize = (int)(GearButton.bounds.Width * buttonScale);
@@ -649,24 +652,8 @@ namespace OutfitStudio
                 displayText,
                 isOpen,
                 clearButton: FilterClearButton,
-                hasValue: hasFilter,
-                drawClearButton: UIHelpers.DrawClearButton
+                hasValue: hasFilter
             );
-        }
-
-        /// <summary>Draws the search bar background.</summary>
-        public void DrawSearchBar(SpriteBatch b, bool isFocused, bool hasText = false)
-        {
-            if (SearchBar == null)
-                return;
-
-            UIHelpers.DrawTextureBox(b, SearchBar.bounds.X, SearchBar.bounds.Y,
-                SearchBar.bounds.Width, SearchBar.bounds.Height, Color.White);
-
-            if (hasText && SearchClearButton != null)
-            {
-                UIHelpers.DrawClearButton(b, SearchClearButton);
-            }
         }
 
         /// <summary>Draws the lookup icon on the character preview.</summary>
@@ -738,17 +725,7 @@ namespace OutfitStudio
 
         public void Cleanup()
         {
-            if (farmerRenderTarget != null && !farmerRenderTarget.IsDisposed)
-            {
-                farmerRenderTarget.Dispose();
-                farmerRenderTarget = null;
-            }
-
-            if (farmerSpriteBatch != null && !farmerSpriteBatch.IsDisposed)
-            {
-                farmerSpriteBatch.Dispose();
-                farmerSpriteBatch = null;
-            }
+            UIHelpers.SafeDispose(ref farmerRenderTarget, ref farmerSpriteBatch);
         }
     }
 }

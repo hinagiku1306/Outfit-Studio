@@ -33,6 +33,7 @@ namespace OutfitStudio
         private TextBox? searchTextBox;
         private bool searchBarFocused;
         private string lastSearchText = "";
+        private readonly ContinuousScrollHandler scrollHandler = new();
 
         public bool IsOverlayBlocking { get; set; }
 
@@ -88,7 +89,7 @@ namespace OutfitStudio
             searchTextBox.Height = bar.Height;
 
             uiBuilder.SearchClearButton.bounds = new Rectangle(
-                bar.Right - ClearButtonSize - 12,
+                bar.Right - ClearButtonRightMargin - ClearButtonSize,
                 bar.Y + (bar.Height - ClearButtonSize) / 2,
                 ClearButtonSize, ClearButtonSize);
         }
@@ -392,6 +393,35 @@ namespace OutfitStudio
                 return;
             }
 
+            if (ModEntry.Config.ArrowKeyScrolling && masterEnabled && uiBuilder.IsScrollable)
+            {
+                int stride = ScheduleRuleRowHeight + ScheduleItemGap;
+                int visibleRows = Math.Max(1, uiBuilder.RuleListClipRect.Height / stride);
+
+                int scrollAmount = key switch
+                {
+                    Keys.Up => -stride,
+                    Keys.Down => stride,
+                    Keys.Left => -stride * visibleRows,
+                    Keys.Right => stride * visibleRows,
+                    _ => 0
+                };
+
+                if (scrollAmount != 0)
+                {
+                    int oldOffset = uiBuilder.ScrollOffset;
+                    uiBuilder.ScrollOffset += scrollAmount;
+                    uiBuilder.ClampScrollOffset();
+                    if (uiBuilder.ScrollOffset != oldOffset)
+                    {
+                        uiBuilder.Recalculate(displayedRules.Count);
+                        UpdateSearchTextBoxBounds();
+                        Game1.playSound("shiny4");
+                    }
+                    return;
+                }
+            }
+
             if (key == Keys.Escape)
             {
                 CloseOverlay();
@@ -405,7 +435,7 @@ namespace OutfitStudio
 
         public override void receiveScrollWheelAction(int direction)
         {
-            if (!uiBuilder.IsScrollable)
+            if (!uiBuilder.IsScrollable || priorityDropdownOpen || showDeleteConfirmation)
                 return;
 
             int oldOffset = uiBuilder.ScrollOffset;
@@ -435,6 +465,7 @@ namespace OutfitStudio
             if (!masterEnabled)
             {
                 searchTextBox.Selected = false;
+                scrollHandler.Reset();
                 return;
             }
 
@@ -446,10 +477,37 @@ namespace OutfitStudio
                 lastSearchText = searchTextBox.Text;
                 RebuildDisplayedRules();
             }
+
+            if (ModEntry.Config.ArrowKeyScrolling && !showDeleteConfirmation
+                && !priorityDropdownOpen && uiBuilder.IsScrollable)
+            {
+                int stride = ScheduleRuleRowHeight + ScheduleItemGap;
+                int visibleRows = Math.Max(1, uiBuilder.RuleListClipRect.Height / stride);
+                int scrollAmount = scrollHandler.Update(time, visibleRows, out bool shouldPlaySound);
+                if (scrollAmount != 0)
+                {
+                    int oldOffset = uiBuilder.ScrollOffset;
+                    uiBuilder.ScrollOffset += scrollAmount * stride;
+                    uiBuilder.ClampScrollOffset();
+                    if (uiBuilder.ScrollOffset != oldOffset)
+                    {
+                        uiBuilder.Recalculate(displayedRules.Count);
+                        UpdateSearchTextBoxBounds();
+                        if (shouldPlaySound) Game1.playSound("shiny4");
+                    }
+                }
+            }
+            else
+            {
+                scrollHandler.Reset();
+            }
         }
 
         public override void draw(SpriteBatch b)
         {
+            bool oldSuppressHover = UIHelpers.SuppressHover;
+            UIHelpers.SuppressHover = true;
+
             if (parentMenu is OutfitMenu outfitMenu)
                 outfitMenu.IsOverlayBlocking = true;
 
@@ -457,6 +515,8 @@ namespace OutfitStudio
 
             if (parentMenu is OutfitMenu outfitMenuAfter)
                 outfitMenuAfter.IsOverlayBlocking = false;
+
+            UIHelpers.SuppressHover = oldSuppressHover;
 
             b.Draw(Game1.fadeToBlackRect,
                 new Rectangle(0, 0, Game1.uiViewport.Width, Game1.uiViewport.Height),
@@ -477,24 +537,13 @@ namespace OutfitStudio
             float filterOpacity = masterEnabled ? 1f : DisabledSectionOpacity;
             uiBuilder.DrawPriorityDropdown(b, selectedPriorityLabel, priorityDropdownOpen, filterOpacity);
 
-            uiBuilder.DrawSearchBarBackground(b, filterOpacity);
             bool hasSearchText = !string.IsNullOrEmpty(searchTextBox?.Text);
-            bool showCaret = masterEnabled
-                && Game1.currentGameTime.TotalGameTime.TotalMilliseconds % 1000.0 >= 500.0
-                && (searchTextBox?.Selected ?? false);
-
-            if (hasSearchText)
-            {
-                uiBuilder.DrawSearchText(b, searchTextBox!.Text, showCaret, filterOpacity);
-                if (masterEnabled)
-                    UIHelpers.DrawClearButton(b, uiBuilder.SearchClearButton);
-            }
-            else
-            {
-                uiBuilder.DrawSearchPlaceholder(b, filterOpacity);
-                if (showCaret)
-                    uiBuilder.DrawSearchText(b, "", true, filterOpacity);
-            }
+            bool searchFocused = masterEnabled && (searchTextBox?.Selected ?? false);
+            UIHelpers.DrawInputBar(b, uiBuilder.SearchBar.bounds,
+                searchTextBox?.Text ?? "", searchFocused,
+                placeholder: TranslationCache.ScheduleSearchPlaceholder,
+                clearButton: masterEnabled && hasSearchText ? uiBuilder.SearchClearButton : null,
+                opacity: filterOpacity);
 
             // Divider
             uiBuilder.DrawDivider(b);
@@ -503,6 +552,9 @@ namespace OutfitStudio
             string? hoveredTooltip = null;
             int mouseX = Game1.getMouseX();
             int mouseY = Game1.getMouseY();
+
+            if (priorityDropdownOpen)
+                UIHelpers.SuppressHover = true;
 
             if (displayedRules.Count == 0)
             {
@@ -526,6 +578,9 @@ namespace OutfitStudio
                 hoveredTooltip = DrawRuleList(b, mouseX, mouseY);
             }
 
+            if (priorityDropdownOpen)
+                UIHelpers.SuppressHover = false;
+
             uiBuilder.DrawScrollIndicators(b);
             uiBuilder.DrawButtons(b, masterEnabled);
             uiBuilder.DrawCloseButton(b);
@@ -538,14 +593,14 @@ namespace OutfitStudio
 
             if (!showDeleteConfirmation && !priorityDropdownOpen && hoveredTooltip != null && ModEntry.Config.ShowTooltip)
             {
-                string wrapped = hoveredTooltip.Contains(' ')
-                    ? Game1.parseText(hoveredTooltip, Game1.smallFont, 300)
-                    : hoveredTooltip;
-                IClickableMenu.drawHoverText(b, wrapped, Game1.smallFont);
+                UIHelpers.DrawWrappedTooltip(b, hoveredTooltip);
             }
 
             if (showDeleteConfirmation)
-                DrawDeleteConfirmation(b);
+                UIHelpers.DrawDeleteConfirmationDialog(b, deleteDialogBounds,
+                    TranslationCache.ScheduleEditDeleteRuleConfirm,
+                    deleteYesButton!, TranslationCache.DeleteConfirmYes,
+                    deleteNoButton!, TranslationCache.DeleteConfirmNo);
 
             drawMouse(b);
         }
@@ -583,6 +638,10 @@ namespace OutfitStudio
             height = uiBuilder.Height;
             xPositionOnScreen = uiBuilder.X;
             yPositionOnScreen = uiBuilder.Y;
+
+            if (showDeleteConfirmation)
+                (deleteDialogBounds, deleteYesButton, deleteNoButton) = UIHelpers.CalculateDeleteDialogLayout(
+                    TranslationCache.ScheduleEditDeleteRuleConfirm, TranslationCache.DeleteConfirmYes, TranslationCache.DeleteConfirmNo);
         }
 
         private void OpenEditOverlay(string ruleId)
@@ -606,34 +665,8 @@ namespace OutfitStudio
         {
             showDeleteConfirmation = true;
             pendingDeleteIndex = ruleIndex;
-
-            string questionText = TranslationCache.ScheduleEditDeleteRuleConfirm;
-            Vector2 questionSize = Game1.dialogueFont.MeasureString(questionText);
-
-            int yesWidth = UIHelpers.CalculateButtonWidth(TranslationCache.DeleteConfirmYes);
-            int noWidth = UIHelpers.CalculateButtonWidth(TranslationCache.DeleteConfirmNo);
-            int buttonSpacing = 20;
-            int totalButtonsWidth = yesWidth + buttonSpacing + noWidth;
-
-            int topPadding = 28;
-            int questionToButtons = 30;
-            int bottomPadding = 24;
-
-            int dialogWidth = Math.Max((int)questionSize.X + 60, totalButtonsWidth + 60);
-            int dialogHeight = topPadding + (int)questionSize.Y + questionToButtons + TabAndButtonHeight + bottomPadding;
-            int dialogX = (Game1.uiViewport.Width - dialogWidth) / 2;
-            int dialogY = (Game1.uiViewport.Height - dialogHeight) / 2;
-            deleteDialogBounds = new Rectangle(dialogX, dialogY, dialogWidth, dialogHeight);
-
-            int buttonsY = dialogY + topPadding + (int)questionSize.Y + questionToButtons;
-            int buttonsStartX = dialogX + (dialogWidth - totalButtonsWidth) / 2;
-
-            deleteYesButton = new ClickableComponent(
-                new Rectangle(buttonsStartX, buttonsY, yesWidth, TabAndButtonHeight),
-                "yes");
-            deleteNoButton = new ClickableComponent(
-                new Rectangle(buttonsStartX + yesWidth + buttonSpacing, buttonsY, noWidth, TabAndButtonHeight),
-                "no");
+            (deleteDialogBounds, deleteYesButton, deleteNoButton) = UIHelpers.CalculateDeleteDialogLayout(
+                TranslationCache.ScheduleEditDeleteRuleConfirm, TranslationCache.DeleteConfirmYes, TranslationCache.DeleteConfirmNo);
         }
 
         private void HideDeleteConfirmation()
@@ -666,50 +699,6 @@ namespace OutfitStudio
             }
         }
 
-        private void DrawDeleteConfirmation(SpriteBatch b)
-        {
-            b.Draw(Game1.fadeToBlackRect, new Rectangle(0, 0, Game1.uiViewport.Width, Game1.uiViewport.Height),
-                Color.Black * 0.2f);
-
-            UIHelpers.DrawTextureBox(b, deleteDialogBounds.X, deleteDialogBounds.Y,
-                deleteDialogBounds.Width, deleteDialogBounds.Height, Color.White);
-
-            string questionText = TranslationCache.ScheduleEditDeleteRuleConfirm;
-            Vector2 textSize = Game1.dialogueFont.MeasureString(questionText);
-            Vector2 textPos = new Vector2(
-                deleteDialogBounds.X + (deleteDialogBounds.Width - textSize.X) / 2,
-                deleteDialogBounds.Y + 28);
-            Utility.drawTextWithShadow(b, questionText, Game1.dialogueFont, textPos, Game1.textColor);
-
-            if (deleteYesButton != null)
-                DrawDeleteDialogButton(b, deleteYesButton, TranslationCache.DeleteConfirmYes, Color.LightGreen);
-            if (deleteNoButton != null)
-                DrawDeleteDialogButton(b, deleteNoButton, TranslationCache.DeleteConfirmNo, Color.Red);
-        }
-
-        private void DrawDeleteDialogButton(SpriteBatch b, ClickableComponent button, string label, Color hoverColor)
-        {
-            bool isHovered = button.containsPoint(Game1.getMouseX(), Game1.getMouseY());
-
-            UIHelpers.DrawTextureBox(b, button.bounds.X, button.bounds.Y,
-                button.bounds.Width, button.bounds.Height, Color.White);
-
-            if (isHovered)
-                b.Draw(Game1.staminaRect, button.bounds, hoverColor * 0.2f);
-
-            Vector2 textSize = Game1.smallFont.MeasureString(label);
-            Vector2 textPos = UIHelpers.GetVisualCenter(button.bounds, textSize);
-
-            if (isHovered)
-            {
-                Utility.drawTextWithShadow(b, label, Game1.smallFont, textPos + new Vector2(-1, 0), Game1.textColor * 0.8f);
-                Utility.drawTextWithShadow(b, label, Game1.smallFont, textPos, Game1.textColor);
-            }
-            else
-            {
-                Utility.drawTextWithShadow(b, label, Game1.smallFont, textPos, Game1.textColor);
-            }
-        }
 
         private void CloseOverlay()
         {

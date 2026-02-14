@@ -17,8 +17,7 @@ namespace OutfitStudio
     {
         private readonly WardrobeUIBuilder uiBuilder;
         private readonly OutfitSetStore store;
-        private readonly OutfitMenu? parentMenu;
-        private bool shouldClose;
+        private readonly IClickableMenu parentMenu;
 
         private List<OutfitSet> displayedSets = new();
         private int selectedIndex = -1;
@@ -52,7 +51,10 @@ namespace OutfitStudio
             new FarmerSprite.AnimationFrame(0, 0, secondaryArm: false, flip: false),  // 2 = Down
             new FarmerSprite.AnimationFrame(6, 0, secondaryArm: false, flip: true),   // 3 = Left
         };
+        private readonly ContinuousScrollHandler scrollHandler = new();
+
         private static bool lastShowInvalid = true;
+        private static bool lastMatchAllTags = true;
         private int previewDirection = 2;
         private const int PreviewFarmerScale = 4;
 
@@ -61,7 +63,7 @@ namespace OutfitStudio
         private Hat? cachedHat;
         private string? cachedSetId;
 
-        public WardrobeOverlay(OutfitSetStore store, OutfitMenu? parentMenu = null)
+        public WardrobeOverlay(OutfitSetStore store, IClickableMenu parentMenu)
         {
             this.store = store;
             this.parentMenu = parentMenu;
@@ -78,7 +80,11 @@ namespace OutfitStudio
             if (!ModEntry.Config.ResetShowInvalidOnOpen)
                 filterState.ShowInvalid = lastShowInvalid;
 
+            if (!ModEntry.Config.ResetMatchAllOnOpen)
+                filterState.MatchAllTags = lastMatchAllTags;
+
             CreateSearchTextBox();
+            Game1.keyboardDispatcher.Subscriber = searchTextBox;
             RefreshDisplayedSets();
             CacheItemsForSet(null);
         }
@@ -169,24 +175,17 @@ namespace OutfitStudio
             if (!string.IsNullOrEmpty(set.ShirtId) && store.IsItemValid(set.ShirtId, "(S)"))
             {
                 cachedShirt = ItemRegistry.Create<Clothing>("(S)" + set.ShirtId);
-                ApplySavedColor(cachedShirt, set.ShirtColor);
+                ColorHelper.ApplyColor(cachedShirt, set.ShirtColor);
             }
 
             if (!string.IsNullOrEmpty(set.PantsId) && store.IsItemValid(set.PantsId, "(P)"))
             {
                 cachedPants = ItemRegistry.Create<Clothing>("(P)" + set.PantsId);
-                ApplySavedColor(cachedPants, set.PantsColor);
+                ColorHelper.ApplyColor(cachedPants, set.PantsColor);
             }
 
             if (!string.IsNullOrEmpty(set.HatId) && store.IsItemValid(set.HatId, "(H)"))
                 cachedHat = ItemRegistry.Create<Hat>("(H)" + set.HatId);
-        }
-
-        private static void ApplySavedColor(Clothing item, string? colorString)
-        {
-            var color = ColorHelper.ParseColor(colorString);
-            if (color.HasValue)
-                item.clothesColor.Set(color.Value);
         }
 
         private void CloseAllDropdowns()
@@ -199,6 +198,7 @@ namespace OutfitStudio
         public override void gameWindowSizeChanged(Rectangle oldBounds, Rectangle newBounds)
         {
             base.gameWindowSizeChanged(oldBounds, newBounds);
+            parentMenu.gameWindowSizeChanged(oldBounds, newBounds);
 
             uiBuilder.Recalculate();
             width = uiBuilder.Width;
@@ -207,15 +207,23 @@ namespace OutfitStudio
             yPositionOnScreen = uiBuilder.Y;
             UpdateSearchTextBoxBounds();
             CloseAllDropdowns();
+
+            if (showDeleteConfirmation)
+                (deleteDialogBounds, deleteYesButton, deleteNoButton) = UIHelpers.CalculateDeleteDialogLayout(
+                    TranslationCache.DeleteConfirmQuestion, TranslationCache.DeleteConfirmYes, TranslationCache.DeleteConfirmNo);
         }
 
-        public override bool readyToClose() => shouldClose;
+        private void CloseOverlay()
+        {
+            cleanupBeforeExit();
+            Game1.activeClickableMenu = parentMenu;
+        }
 
         public override void receiveLeftClick(int x, int y, bool playSound = true)
         {
             if (!isWithinBounds(x, y) && ModEntry.Config.CloseOnClickOutside)
             {
-                shouldClose = true;
+                CloseOverlay();
                 if (playSound) Game1.playSound("bigDeSelect");
                 return;
             }
@@ -232,7 +240,7 @@ namespace OutfitStudio
                 if (uiBuilder.CloseButton.containsPoint(x, y))
                 {
                     CloseAllDropdowns();
-                    shouldClose = true;
+                    CloseOverlay();
                     if (playSound) Game1.playSound("bigDeSelect");
                     return;
                 }
@@ -314,7 +322,7 @@ namespace OutfitStudio
 
             if (uiBuilder.CloseButton.containsPoint(x, y))
             {
-                shouldClose = true;
+                CloseOverlay();
                 if (playSound) Game1.playSound("bigDeSelect");
                 return;
             }
@@ -356,10 +364,10 @@ namespace OutfitStudio
                 if (SelectedSet != null)
                 {
                     store.ApplySet(SelectedSet);
-                    parentMenu?.NotifyOutfitApplied(SelectedSet);
+                    (parentMenu as OutfitMenu)?.NotifyOutfitApplied(SelectedSet);
                     if (playSound) Game1.playSound("coin");
                 }
-                shouldClose = true;
+                CloseOverlay();
                 return;
             }
 
@@ -603,6 +611,7 @@ namespace OutfitStudio
             if (matchAllArea.Contains(x, y))
             {
                 filterState.MatchAllTags = !filterState.MatchAllTags;
+                lastMatchAllTags = filterState.MatchAllTags;
                 RefreshDisplayedSets();
                 if (playSound) Game1.playSound("smallSelect");
                 return true;
@@ -628,10 +637,10 @@ namespace OutfitStudio
 
         private void OpenEditOverlay()
         {
-            if (SelectedSet == null || parentMenu == null)
+            if (SelectedSet == null)
                 return;
 
-            Game1.activeClickableMenu = new SaveSetOverlay(parentMenu, store, () =>
+            Game1.activeClickableMenu = new SaveSetOverlay(this, store, () =>
             {
                 cachedSetId = null;
                 lastPreviewSetId = null;
@@ -642,37 +651,8 @@ namespace OutfitStudio
         private void ShowDeleteConfirmation()
         {
             showDeleteConfirmation = true;
-
-            string questionText = TranslationCache.DeleteConfirmQuestion;
-            Vector2 questionSize = Game1.dialogueFont.MeasureString(questionText);
-
-            int yesWidth = UIHelpers.CalculateButtonWidth(TranslationCache.DeleteConfirmYes);
-            int noWidth = UIHelpers.CalculateButtonWidth(TranslationCache.DeleteConfirmNo);
-            int buttonSpacing = 20;
-            int totalButtonsWidth = yesWidth + buttonSpacing + noWidth;
-
-            int topPadding = 28;
-            int questionToButtons = 30;
-            int bottomPadding = 24;
-
-            int dialogWidth = Math.Max((int)questionSize.X + 60, totalButtonsWidth + 60);
-            int dialogHeight = topPadding + (int)questionSize.Y + questionToButtons + TabAndButtonHeight + bottomPadding;
-            int dialogX = (Game1.uiViewport.Width - dialogWidth) / 2;
-            int dialogY = (Game1.uiViewport.Height - dialogHeight) / 2;
-            deleteDialogBounds = new Rectangle(dialogX, dialogY, dialogWidth, dialogHeight);
-
-            int buttonsY = dialogY + topPadding + (int)questionSize.Y + questionToButtons;
-            int buttonsStartX = dialogX + (dialogWidth - totalButtonsWidth) / 2;
-
-            deleteYesButton = new ClickableComponent(
-                new Rectangle(buttonsStartX, buttonsY, yesWidth, TabAndButtonHeight),
-                "yes"
-            );
-
-            deleteNoButton = new ClickableComponent(
-                new Rectangle(buttonsStartX + yesWidth + buttonSpacing, buttonsY, noWidth, TabAndButtonHeight),
-                "no"
-            );
+            (deleteDialogBounds, deleteYesButton, deleteNoButton) = UIHelpers.CalculateDeleteDialogLayout(
+                TranslationCache.DeleteConfirmQuestion, TranslationCache.DeleteConfirmYes, TranslationCache.DeleteConfirmNo);
         }
 
         private void ConfirmDelete()
@@ -776,7 +756,7 @@ namespace OutfitStudio
 
             if (key == Keys.Escape)
             {
-                shouldClose = true;
+                CloseOverlay();
                 Game1.playSound("bigDeSelect");
             }
         }
@@ -821,7 +801,7 @@ namespace OutfitStudio
         {
             base.update(time);
 
-            parentMenu?.HandleItemInfoToggle();
+            (parentMenu as OutfitMenu)?.HandleItemInfoToggle();
 
             if (searchTextBox != null)
             {
@@ -835,6 +815,27 @@ namespace OutfitStudio
                     filterState.SearchText = searchTextBox.Text;
                     RefreshDisplayedSets();
                 }
+            }
+
+            if (ModEntry.Config.ArrowKeyScrolling && !showDeleteConfirmation
+                && !searchScopeOpen && !tagsDropdownOpen && !filterDropdownOpen)
+            {
+                int maxVisible = uiBuilder.OutfitListItems.Count;
+                int scrollAmount = scrollHandler.Update(time, maxVisible, out bool shouldPlaySound);
+                if (scrollAmount != 0)
+                {
+                    int maxScroll = Math.Max(0, displayedSets.Count - maxVisible);
+                    int newOffset = Math.Clamp(listScrollOffset + scrollAmount, 0, maxScroll);
+                    if (newOffset != listScrollOffset)
+                    {
+                        listScrollOffset = newOffset;
+                        if (shouldPlaySound) Game1.playSound("shiny4");
+                    }
+                }
+            }
+            else
+            {
+                scrollHandler.Reset();
             }
         }
 
@@ -882,7 +883,7 @@ namespace OutfitStudio
                     if (!string.IsNullOrEmpty(set.ShirtId) && store.IsItemValid(set.ShirtId, "(S)"))
                     {
                         var shirt = ItemRegistry.Create<Clothing>("(S)" + set.ShirtId);
-                        ApplySavedColor(shirt, set.ShirtColor);
+                        ColorHelper.ApplyColor(shirt, set.ShirtColor);
                         Game1.player.shirtItem.Value = shirt;
                     }
                     else
@@ -891,7 +892,7 @@ namespace OutfitStudio
                     if (!string.IsNullOrEmpty(set.PantsId) && store.IsItemValid(set.PantsId, "(P)"))
                     {
                         var pants = ItemRegistry.Create<Clothing>("(P)" + set.PantsId);
-                        ApplySavedColor(pants, set.PantsColor);
+                        ColorHelper.ApplyColor(pants, set.PantsColor);
                         Game1.player.pantsItem.Value = pants;
                     }
                     else
@@ -954,87 +955,14 @@ namespace OutfitStudio
 
         private void DrawItemSprites(SpriteBatch b)
         {
-            if (cachedHat != null)
-            {
-                Rectangle slot = uiBuilder.HatSlot;
-                Vector2 drawPos = new Vector2(
-                    slot.X + (slot.Width - DrawnItemSize) / 2,
-                    slot.Y + (slot.Height - DrawnItemSize) / 2
-                );
-                cachedHat.drawInMenu(b, drawPos, 1f, 1f, 0.9f, StackDrawType.Hide);
-            }
-
-            if (cachedShirt != null)
-            {
-                Rectangle slot = uiBuilder.ShirtSlot;
-                Vector2 drawPos = new Vector2(
-                    slot.X + (slot.Width - DrawnItemSize) / 2,
-                    slot.Y + (slot.Height - DrawnItemSize) / 2
-                );
-                cachedShirt.drawInMenu(b, drawPos, 1f, 1f, 0.9f, StackDrawType.Hide);
-            }
-
-            if (cachedPants != null)
-            {
-                Rectangle slot = uiBuilder.PantsSlot;
-                Vector2 drawPos = new Vector2(
-                    slot.X + (slot.Width - DrawnItemSize) / 2,
-                    slot.Y + (slot.Height - DrawnItemSize) / 2
-                );
-                cachedPants.drawInMenu(b, drawPos, 1f, 1f, 0.9f, StackDrawType.Hide);
-            }
-        }
-
-        private void DrawDeleteConfirmation(SpriteBatch b)
-        {
-            b.Draw(Game1.fadeToBlackRect, new Rectangle(0, 0, Game1.uiViewport.Width, Game1.uiViewport.Height),
-                Color.Black * 0.2f);
-
-            UIHelpers.DrawTextureBox(b, deleteDialogBounds.X, deleteDialogBounds.Y,
-                deleteDialogBounds.Width, deleteDialogBounds.Height, Color.White);
-
-            string questionText = TranslationCache.DeleteConfirmQuestion;
-            Vector2 textSize = Game1.dialogueFont.MeasureString(questionText);
-            Vector2 textPos = new Vector2(
-                deleteDialogBounds.X + (deleteDialogBounds.Width - textSize.X) / 2,
-                deleteDialogBounds.Y + 28
-            );
-            Utility.drawTextWithShadow(b, questionText, Game1.dialogueFont, textPos, Game1.textColor);
-
-            if (deleteYesButton != null)
-                DrawDeleteDialogButton(b, deleteYesButton, TranslationCache.DeleteConfirmYes, Color.LightGreen);
-
-            if (deleteNoButton != null)
-                DrawDeleteDialogButton(b, deleteNoButton, TranslationCache.DeleteConfirmNo, Color.Red);
-        }
-
-        private void DrawDeleteDialogButton(SpriteBatch b, ClickableComponent button, string label, Color hoverColor)
-        {
-            bool isHovered = button.containsPoint(Game1.getMouseX(), Game1.getMouseY());
-
-            UIHelpers.DrawTextureBox(b, button.bounds.X, button.bounds.Y,
-                button.bounds.Width, button.bounds.Height, Color.White);
-
-            if (isHovered)
-                b.Draw(Game1.staminaRect, button.bounds, hoverColor * 0.2f);
-
-            Vector2 textSize = Game1.smallFont.MeasureString(label);
-            Vector2 textPos = UIHelpers.GetVisualCenter(button.bounds, textSize);
-
-            if (isHovered)
-            {
-                Utility.drawTextWithShadow(b, label, Game1.smallFont, textPos + new Vector2(-1, 0), Game1.textColor * 0.8f);
-                Utility.drawTextWithShadow(b, label, Game1.smallFont, textPos, Game1.textColor);
-            }
-            else
-            {
-                Utility.drawTextWithShadow(b, label, Game1.smallFont, textPos, Game1.textColor);
-            }
+            if (cachedHat != null)   UIHelpers.DrawItemInSlot(b, uiBuilder.HatSlot, cachedHat);
+            if (cachedShirt != null) UIHelpers.DrawItemInSlot(b, uiBuilder.ShirtSlot, cachedShirt);
+            if (cachedPants != null) UIHelpers.DrawItemInSlot(b, uiBuilder.PantsSlot, cachedPants);
         }
 
         private void DrawItemTooltips(SpriteBatch b, int mouseX, int mouseY)
         {
-            if (parentMenu != null && !parentMenu.ShowItemInfo)
+            if (parentMenu is OutfitMenu om && !om.ShowItemInfo)
                 return;
 
             if (uiBuilder.ShirtSlot.Contains(mouseX, mouseY) && cachedShirt != null)
@@ -1054,22 +982,20 @@ namespace OutfitStudio
         protected override void cleanupBeforeExit()
         {
             base.cleanupBeforeExit();
-
-            if (previewRenderTarget != null && !previewRenderTarget.IsDisposed)
-            {
-                previewRenderTarget.Dispose();
-                previewRenderTarget = null;
-            }
-
-            if (previewSpriteBatch != null && !previewSpriteBatch.IsDisposed)
-            {
-                previewSpriteBatch.Dispose();
-                previewSpriteBatch = null;
-            }
+            UIHelpers.SafeDispose(ref previewRenderTarget, ref previewSpriteBatch);
         }
 
         public override void draw(SpriteBatch b)
         {
+            bool oldSuppressHover = UIHelpers.SuppressHover;
+            UIHelpers.SuppressHover = true;
+            if (parentMenu is OutfitMenu outfitMenu)
+                outfitMenu.IsOverlayBlocking = true;
+            parentMenu.draw(b);
+            if (parentMenu is OutfitMenu outfitMenuAfter)
+                outfitMenuAfter.IsOverlayBlocking = false;
+            UIHelpers.SuppressHover = oldSuppressHover;
+
             b.Draw(Game1.fadeToBlackRect, new Rectangle(0, 0, Game1.uiViewport.Width, Game1.uiViewport.Height),
                 Color.Black * BackgroundOverlayOpacity);
 
@@ -1100,15 +1026,34 @@ namespace OutfitStudio
             string? tagsDropdownTooltip = null;
             if (searchScopeOpen)
             {
-                uiBuilder.DrawSearchScopeDropdown(b, filterState.SearchScope);
+                string scopeLabel = filterState.SearchScope switch
+                {
+                    SearchScope.Set => TranslationCache.WardrobeFilterSearchSet,
+                    SearchScope.Item => TranslationCache.WardrobeFilterSearchItem,
+                    SearchScope.All => TranslationCache.WardrobeFilterSearchAll,
+                    _ => TranslationCache.WardrobeFilterSearchSet
+                };
+                UIHelpers.DrawDropdownOptions(b, uiBuilder.SearchScopeDropdown.bounds,
+                    uiBuilder.SearchScopeOptions, 0, uiBuilder.SearchScopeOptions.Count,
+                    isSelected: opt => opt.name == scopeLabel);
             }
             else if (tagsDropdownOpen)
             {
-                tagsDropdownTooltip = uiBuilder.DrawTagsDropdown(b, filterState.SelectedTags);
+                tagsDropdownTooltip = UIHelpers.DrawMultiSelectDropdownOptions(b,
+                    uiBuilder.TagsDropdown.bounds, uiBuilder.TagsOptions,
+                    uiBuilder.TagsFirstVisible, WardrobeDropdownMaxVisible,
+                    isChecked: opt => filterState.SelectedTags.Contains(opt.name));
             }
             else if (filterDropdownOpen)
             {
-                uiBuilder.DrawFilterDropdown(b, filterState);
+                UIHelpers.DrawMultiSelectDropdownOptions(b,
+                    uiBuilder.FilterDropdown.bounds, uiBuilder.FilterOptions,
+                    0, uiBuilder.FilterOptions.Count,
+                    isChecked: opt =>
+                        (opt.name == TranslationCache.CommonFavorite && filterState.FavoritesOnly) ||
+                        (opt.name == TranslationCache.WardrobeFilterInvalid && filterState.InvalidOnly) ||
+                        (opt.name == TranslationCache.WardrobeFilterGlobal && filterState.ShowGlobal) ||
+                        (opt.name == TranslationCache.WardrobeFilterLocal && filterState.ShowLocal));
             }
 
             if (!searchScopeOpen && !tagsDropdownOpen && !filterDropdownOpen && !showDeleteConfirmation)
@@ -1119,26 +1064,18 @@ namespace OutfitStudio
 
                 if (uiBuilder.HoveredTruncatedSetName != null && ModEntry.Config.ShowTooltip)
                 {
-                    string text = uiBuilder.HoveredTruncatedSetName;
-                    if (text.Contains(' '))
-                        text = Game1.parseText(text, Game1.smallFont, 300);
-                    IClickableMenu.drawHoverText(b, text, Game1.smallFont);
+                    UIHelpers.DrawWrappedTooltip(b, uiBuilder.HoveredTruncatedSetName);
                 }
                 else if (uiBuilder.TagsTextTruncated && SelectedSet != null
                     && uiBuilder.TagsTextBounds.Contains(mouseX, mouseY))
                 {
-                    string fullTags = string.Join(", ", SelectedSet.Tags);
-                    string wrapped = Game1.parseText(fullTags, Game1.smallFont, 300);
-                    IClickableMenu.drawHoverText(b, wrapped, Game1.smallFont);
+                    UIHelpers.DrawWrappedTooltip(b, string.Join(", ", SelectedSet.Tags));
                 }
             }
 
             if (tagsDropdownTooltip != null)
             {
-                string text = tagsDropdownTooltip.Contains(' ')
-                    ? Game1.parseText(tagsDropdownTooltip, Game1.smallFont, 300)
-                    : tagsDropdownTooltip;
-                IClickableMenu.drawHoverText(b, text, Game1.smallFont);
+                UIHelpers.DrawWrappedTooltip(b, tagsDropdownTooltip);
             }
             else if (!searchScopeOpen && !showDeleteConfirmation && filterState.SelectedTags.Count > 0)
             {
@@ -1146,15 +1083,16 @@ namespace OutfitStudio
                 int mouseY = Game1.getMouseY();
                 if (uiBuilder.TagsDropdown.containsPoint(mouseX, mouseY))
                 {
-                    string tagsList = string.Join(", ", filterState.SelectedTags);
-                    string wrapped = Game1.parseText(tagsList, Game1.smallFont, 300);
-                    IClickableMenu.drawHoverText(b, wrapped, Game1.smallFont);
+                    UIHelpers.DrawWrappedTooltip(b, string.Join(", ", filterState.SelectedTags));
                 }
             }
 
             if (showDeleteConfirmation)
             {
-                DrawDeleteConfirmation(b);
+                UIHelpers.DrawDeleteConfirmationDialog(b, deleteDialogBounds,
+                    TranslationCache.DeleteConfirmQuestion,
+                    deleteYesButton!, TranslationCache.DeleteConfirmYes,
+                    deleteNoButton!, TranslationCache.DeleteConfirmNo);
             }
 
             drawMouse(b);
