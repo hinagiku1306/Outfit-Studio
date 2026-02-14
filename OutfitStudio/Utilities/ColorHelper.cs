@@ -1,9 +1,17 @@
 using Microsoft.Xna.Framework;
+using StardewValley.Objects;
 
 namespace OutfitStudio
 {
     public static class ColorHelper
     {
+        public static void ApplyColor(Clothing item, string? colorString)
+        {
+            var color = ParseColor(colorString);
+            if (color.HasValue)
+                item.clothesColor.Set(color.Value);
+        }
+
         public static string ToColorString(Color color)
         {
             return $"{color.R},{color.G},{color.B},{color.A}";

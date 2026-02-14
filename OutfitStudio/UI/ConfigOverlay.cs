@@ -276,6 +276,9 @@ namespace OutfitStudio
 
         public override void draw(SpriteBatch b)
         {
+            bool oldSuppressHover = UIHelpers.SuppressHover;
+            UIHelpers.SuppressHover = true;
+
             if (parentMenu is OutfitMenu outfitMenu)
                 outfitMenu.IsOverlayBlocking = true;
 
@@ -283,6 +286,8 @@ namespace OutfitStudio
 
             if (parentMenu is OutfitMenu outfitMenuAfter)
                 outfitMenuAfter.IsOverlayBlocking = false;
+
+            UIHelpers.SuppressHover = oldSuppressHover;
 
             b.Draw(Game1.fadeToBlackRect,
                 new Rectangle(0, 0, Game1.uiViewport.Width, Game1.uiViewport.Height),

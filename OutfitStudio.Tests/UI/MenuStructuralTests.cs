@@ -20,6 +20,7 @@ namespace OutfitStudio.Tests.UI
         // Type B overlays that swap Game1.activeClickableMenu and must forward resize to parent
         private static readonly string[] TypeBOverlayFiles = new[]
         {
+            "UI/WardrobeOverlay.cs",
             "UI/SaveSetOverlay.cs",
             "UI/ConfigOverlay.cs",
             "UI/ScheduleMenu.cs",
@@ -68,25 +69,11 @@ namespace OutfitStudio.Tests.UI
         }
 
         // ----------------------------------------------------------------
-        //  S3: OutfitMenu forwards resize to Type A child overlay
-        // ----------------------------------------------------------------
-
-        [Fact]
-        // Expected: OutfitMenu forwards gameWindowSizeChanged to wardrobeOverlay (Type A child)
-        public void OutfitMenu_ForwardsResize_ToWardrobeOverlay()
-        {
-            string source = SourceScanner.ReadSourceFile("UI/OutfitMenu.cs");
-            bool found = SourceScanner.MethodContains(source,
-                "override void gameWindowSizeChanged", "wardrobeOverlay?.gameWindowSizeChanged");
-            Assert.True(found,
-                "OutfitMenu.gameWindowSizeChanged must forward to wardrobeOverlay");
-        }
-
-        // ----------------------------------------------------------------
         //  S4: Type B overlays forward resize to parent
         // ----------------------------------------------------------------
 
         [Theory]
+        [InlineData("UI/WardrobeOverlay.cs")]
         [InlineData("UI/SaveSetOverlay.cs")]
         [InlineData("UI/ConfigOverlay.cs")]
         [InlineData("UI/ScheduleMenu.cs")]
@@ -121,65 +108,6 @@ namespace OutfitStudio.Tests.UI
                 "override void receiveLeftClick", "isWithinBounds");
             Assert.True(found,
                 $"{sourceFile}: receiveLeftClick must check isWithinBounds for close-on-outside-bounds");
-        }
-
-        // ----------------------------------------------------------------
-        //  S6: OutfitMenu forwards all input methods to wardrobeOverlay
-        // ----------------------------------------------------------------
-
-        [Fact]
-        // Expected: OutfitMenu.update forwards to wardrobeOverlay.update
-        public void OutfitMenu_Update_ForwardsToWardrobeOverlay()
-        {
-            string source = SourceScanner.ReadSourceFile("UI/OutfitMenu.cs");
-            bool found = SourceScanner.MethodContains(source,
-                "override void update", "wardrobeOverlay");
-            Assert.True(found,
-                "OutfitMenu.update must reference wardrobeOverlay for forwarding");
-        }
-
-        [Fact]
-        // Expected: OutfitMenu.draw forwards to wardrobeOverlay.draw
-        public void OutfitMenu_Draw_ForwardsToWardrobeOverlay()
-        {
-            string source = SourceScanner.ReadSourceFile("UI/OutfitMenu.cs");
-            bool found = SourceScanner.MethodContains(source,
-                "override void draw", "wardrobeOverlay");
-            Assert.True(found,
-                "OutfitMenu.draw must reference wardrobeOverlay for forwarding");
-        }
-
-        [Fact]
-        // Expected: OutfitInputHandler forwards receiveLeftClick to wardrobeOverlay
-        public void InputHandler_HandleLeftClick_ForwardsToWardrobeOverlay()
-        {
-            string source = SourceScanner.ReadSourceFile("Input/OutfitInputHandler.cs");
-            Assert.Contains("wardrobeOverlay.receiveLeftClick", source);
-        }
-
-        [Fact]
-        // Expected: OutfitInputHandler forwards receiveScrollWheelAction to wardrobeOverlay
-        public void InputHandler_HandleScrollWheel_ForwardsToWardrobeOverlay()
-        {
-            string source = SourceScanner.ReadSourceFile("Input/OutfitInputHandler.cs");
-            Assert.Contains("wardrobeOverlay.receiveScrollWheelAction", source);
-        }
-
-        [Fact]
-        // Expected: OutfitInputHandler forwards receiveKeyPress to wardrobeOverlay
-        public void InputHandler_HandleKeyPress_ForwardsToWardrobeOverlay()
-        {
-            string source = SourceScanner.ReadSourceFile("Input/OutfitInputHandler.cs");
-            Assert.Contains("wardrobeOverlay.receiveKeyPress", source);
-        }
-
-        [Fact]
-        // Expected: OutfitInputHandler checks readyToClose after forwarding click to wardrobeOverlay
-        public void InputHandler_HandleLeftClick_ChecksReadyToClose()
-        {
-            string source = SourceScanner.ReadSourceFile("Input/OutfitInputHandler.cs");
-            // After forwarding the click, the handler must check readyToClose for cleanup
-            Assert.Contains("wardrobeOverlay.readyToClose()", source);
         }
 
         // ----------------------------------------------------------------
@@ -357,12 +285,13 @@ namespace OutfitStudio.Tests.UI
         }
 
         [Fact]
-        // Expected: ScheduleEditOverlay has a name TextBox with focus tracking
-        public void ScheduleEditOverlay_HasNameTextBox()
+        // Expected: ScheduleEditOverlay auto-generates rule name (no name TextBox)
+        public void ScheduleEditOverlay_AutoGeneratesRuleName()
         {
             string source = SourceScanner.ReadSourceFile("UI/ScheduleEditOverlay.cs");
-            Assert.Contains("nameTextBox", source);
-            Assert.Contains("nameBoxFocused", source);
+            Assert.Contains("GenerateRuleName", source);
+            Assert.DoesNotContain("nameTextBox", source);
+            Assert.DoesNotContain("nameBoxFocused", source);
         }
 
         // ----------------------------------------------------------------
@@ -404,47 +333,7 @@ namespace OutfitStudio.Tests.UI
             Assert.Contains("ClearButtonSize - 10", body);
         }
 
-        // ----------------------------------------------------------------
-        //  S6j: ScheduleEditOverlay name TextBox width matches list display width
-        // ----------------------------------------------------------------
-
-        [Fact]
-        // Expected: UpdateNameTextBoxBounds computes width from ScheduleMenu list constants + TextBox 21px padding
-        public void UpdateNameTextBoxBounds_UsesListDisplayWidth()
-        {
-            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditOverlay.cs");
-            string body = SourceScanner.ExtractMethodBody(source, "void UpdateNameTextBoxBounds");
-            // Must derive width from the ScheduleMenu list width constants
-            Assert.Contains("ScheduleMenuWidth", body);
-            Assert.Contains("ScheduleBorderPadding", body);
-            // Must compensate for TextBox internal 21px padding
-            Assert.Contains("+ 21", body);
-        }
-
-        [Fact]
-        // Expected: Name TextBox effective input width equals the list name column width
-        public void NameTextBox_EffectiveWidth_MatchesListNameColumn()
-        {
-            // Verify the math: TextBox.Width - 21 must equal the name column in BuildRuleComponents
-            int listContentWidth = OutfitLayoutConstants.ScheduleMenuWidth
-                - OutfitLayoutConstants.ScheduleBorderPadding * 2
-                - OutfitLayoutConstants.ScheduleScrollArrowRightPadding;
-            int iconsOffset = OutfitLayoutConstants.ClearButtonSize + 10
-                + OutfitLayoutConstants.ScheduleNameToInfoGap
-                + OutfitLayoutConstants.ScheduleInfoButtonSize
-                + OutfitLayoutConstants.ScheduleNameToInfoGap;
-            int nameStartOffset = OutfitLayoutConstants.ScheduleNameIndent
-                + OutfitLayoutConstants.ScheduleCheckboxSize + 12;
-
-            int expectedNameColumnWidth = listContentWidth - iconsOffset - nameStartOffset;
-            int textBoxWidth = expectedNameColumnWidth + 21;
-
-            // TextBox limits input at Width - 21 pixels, so effective = textBoxWidth - 21
-            Assert.Equal(expectedNameColumnWidth, textBoxWidth - 21);
-            // Sanity: the column width must be positive and reasonable
-            Assert.True(expectedNameColumnWidth > 200, $"Name column width {expectedNameColumnWidth}px is too narrow");
-            Assert.True(expectedNameColumnWidth < 600, $"Name column width {expectedNameColumnWidth}px is suspiciously wide");
-        }
+        // S6j: removed — name TextBox was removed from ScheduleEditOverlay
 
         // ----------------------------------------------------------------
         //  S6k: ScheduleMenu search TextBox focus pattern
@@ -534,12 +423,13 @@ namespace OutfitStudio.Tests.UI
         // ----------------------------------------------------------------
 
         [Fact]
-        // Expected: ScheduleMenu.draw renders search placeholder when search is empty
-        public void ScheduleMenu_Draw_ShowsSearchPlaceholderWhenEmpty()
+        // Expected: ScheduleMenu.draw uses UIHelpers.DrawInputBar for search with placeholder
+        public void ScheduleMenu_Draw_UsesDrawInputBarForSearch()
         {
             string source = SourceScanner.ReadSourceFile("UI/ScheduleMenu.cs");
             string body = SourceScanner.ExtractMethodBody(source, "override void draw");
-            Assert.Contains("DrawSearchPlaceholder", body);
+            Assert.Contains("UIHelpers.DrawInputBar", body);
+            Assert.Contains("ScheduleSearchPlaceholder", body);
         }
 
         [Fact]
@@ -859,13 +749,12 @@ namespace OutfitStudio.Tests.UI
         }
 
         [Fact]
-        // Expected: SearchScope dropdown (WardrobeUIBuilder) highlights the currently selected scope
-        public void WardrobeUIBuilder_DrawSearchScopeDropdown_HighlightsSelectedScope()
+        // Expected: SearchScope dropdown draw in WardrobeOverlay passes isSelected to DrawDropdownOptions
+        public void WardrobeOverlay_DrawSearchScopeDropdown_PassesIsSelected()
         {
-            string source = SourceScanner.ReadSourceFile("UI/WardrobeUIBuilder.cs");
-            string body = SourceScanner.ExtractMethodBody(source, "void DrawSearchScopeDropdown");
-            Assert.Contains("isSelected", body);
-            Assert.Contains("Color.Wheat * 0.6f", body);
+            string source = SourceScanner.ReadSourceFile("UI/WardrobeOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void draw");
+            Assert.Contains("isSelected:", body);
         }
 
         [Fact]
@@ -885,6 +774,1012 @@ namespace OutfitStudio.Tests.UI
             string source = SourceScanner.ReadSourceFile("UI/ScheduleMenuUIBuilder.cs");
             string body = SourceScanner.ExtractMethodBody(source, "string? DrawPriorityDropdownOptions");
             Assert.Contains("isSelected:", body);
+        }
+
+        // ----------------------------------------------------------------
+        //  S13: Main menu search bar placeholder
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: OutfitSearchManager.Draw passes a placeholder to UIHelpers.DrawInputBar
+        public void OutfitSearchManager_Draw_PassesPlaceholder()
+        {
+            string source = SourceScanner.ReadSourceFile("Managers/OutfitSearchManager.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void Draw");
+            Assert.Contains("UIHelpers.DrawInputBar", body);
+            Assert.Contains("placeholder:", body);
+        }
+
+        [Fact]
+        // Expected: OutfitSearchManager.Draw reuses WardrobeSearch translation for placeholder
+        public void OutfitSearchManager_Draw_ReusesWardrobeSearchTranslation()
+        {
+            string source = SourceScanner.ReadSourceFile("Managers/OutfitSearchManager.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void Draw");
+            Assert.Contains("TranslationCache.WardrobeSearch", body);
+        }
+
+        // ----------------------------------------------------------------
+        //  S14: Schedule edit UI hover effects
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: DrawWeddingRow computes a hitArea for hover detection over checkbox + label
+        public void ScheduleEditUIBuilder_DrawWeddingRow_HasHoverHitArea()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void DrawWeddingRow");
+            Assert.Contains("hitArea", body);
+            Assert.Contains("isHovered", body);
+        }
+
+        [Fact]
+        // Expected: DrawWeddingRow bold effect uses offset shadow pattern (Vector2(-1, 0)) when hovered
+        public void ScheduleEditUIBuilder_DrawWeddingRow_BoldOnHover()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void DrawWeddingRow");
+            Assert.Contains("new Vector2(-1, 0)", body);
+            Assert.Contains("textColor * 0.8f", body);
+        }
+
+        // ----------------------------------------------------------------
+        //  S15: SuppressHover pattern
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: UIHelpers.SuppressHover is a public static property
+        public void UIHelpers_HasSuppressHover_PublicStatic()
+        {
+            string source = SourceScanner.ReadSourceFile("Utilities/UIHelpers.cs");
+            Assert.Contains("public static bool SuppressHover", source);
+        }
+
+        [Theory]
+        [InlineData("void DrawTextButton")]
+        [InlineData("void DrawTextureButton")]
+        [InlineData("void DrawDropdownButton")]
+        [InlineData("void DrawClearButton")]
+        [InlineData("void DrawTabWithText")]
+        [InlineData("void DrawToggleButton")]
+        // Expected: Each UIHelpers draw method gates hover with !SuppressHover
+        public void UIHelpers_DrawMethod_GatesHoverWithSuppressHover(string methodSignature)
+        {
+            string source = SourceScanner.ReadSourceFile("Utilities/UIHelpers.cs");
+            string body = SourceScanner.ExtractMethodBody(source, methodSignature);
+            Assert.Contains("!SuppressHover", body);
+        }
+
+        [Theory]
+        [InlineData("UI/WardrobeOverlay.cs")]
+        [InlineData("UI/ConfigOverlay.cs")]
+        [InlineData("UI/ScheduleMenu.cs")]
+        [InlineData("UI/SaveSetOverlay.cs")]
+        [InlineData("UI/ScheduleEditOverlay.cs")]
+        // Expected: Type B overlay draw() sets SuppressHover=true before parentMenu.draw and restores after
+        public void TypeBOverlay_Draw_SetsSuppressHoverAroundParentDraw(string sourceFile)
+        {
+            string source = SourceScanner.ReadSourceFile(sourceFile);
+            string body = SourceScanner.ExtractMethodBody(source, "override void draw");
+            Assert.Contains("oldSuppressHover = UIHelpers.SuppressHover", body);
+            Assert.Contains("UIHelpers.SuppressHover = true", body);
+            Assert.Contains("parentMenu.draw(b)", body);
+            Assert.Contains("UIHelpers.SuppressHover = oldSuppressHover", body);
+        }
+
+        [Fact]
+        // Expected: OutfitMenu.draw sets SuppressHover based on hasOverlay flag
+        public void OutfitMenu_Draw_SetsSuppressHoverBasedOnHasOverlay()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/OutfitMenu.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "override void draw");
+            Assert.Contains("hasOverlay", body);
+            Assert.Contains("oldSuppressHover = UIHelpers.SuppressHover", body);
+            Assert.Contains("UIHelpers.SuppressHover = true", body);
+        }
+
+        [Fact]
+        // Expected: OutfitUIBuilder.DrawGearButton gates hover with UIHelpers.SuppressHover
+        public void OutfitUIBuilder_DrawGearButton_GatesSuppressHover()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/OutfitUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void DrawGearButton");
+            Assert.Contains("!UIHelpers.SuppressHover", body);
+        }
+
+        [Fact]
+        // Expected: OutfitUIBuilder.DrawDyeColorButton gates hover with UIHelpers.SuppressHover
+        public void OutfitUIBuilder_DrawDyeColorButton_GatesSuppressHover()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/OutfitUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void DrawDyeColorButton");
+            Assert.Contains("!UIHelpers.SuppressHover", body);
+        }
+
+        [Fact]
+        // Expected: ScheduleMenuUIBuilder.DrawMasterToggle gates hover with UIHelpers.SuppressHover
+        public void ScheduleMenuUIBuilder_DrawMasterToggle_GatesSuppressHover()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleMenuUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void DrawMasterToggle");
+            Assert.Contains("!UIHelpers.SuppressHover", body);
+        }
+
+        [Fact]
+        // Expected: WardrobeUIBuilder outfit list hover gates with UIHelpers.SuppressHover
+        public void WardrobeUIBuilder_OutfitListHover_GatesSuppressHover()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/WardrobeUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void DrawOutfitSetList");
+            Assert.Contains("!UIHelpers.SuppressHover", body);
+        }
+
+        [Fact]
+        // Expected: WardrobeUIBuilder.DrawCheckbox gates hover with UIHelpers.SuppressHover
+        public void WardrobeUIBuilder_DrawCheckbox_GatesSuppressHover()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/WardrobeUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void DrawCheckbox");
+            Assert.Contains("!UIHelpers.SuppressHover", body);
+        }
+
+        [Fact]
+        // Expected: ScheduleEditOverlay.draw suppresses own hover when previewOverlay is open
+        public void ScheduleEditOverlay_Draw_SuppressesHoverWhenPreviewOpen()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "override void draw");
+            Assert.Contains("previewOverlay != null", body);
+            Assert.Contains("UIHelpers.SuppressHover = true", body);
+            Assert.Contains("UIHelpers.SuppressHover = false", body);
+        }
+
+        // ----------------------------------------------------------------
+        //  S15b: DrawToggleButton usage
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: UIHelpers has DrawToggleButton with SpriteBatch, ClickableComponent, bool params
+        public void UIHelpers_HasDrawToggleButton()
+        {
+            string source = SourceScanner.ReadSourceFile("Utilities/UIHelpers.cs");
+            Assert.Contains("public static void DrawToggleButton(SpriteBatch b, ClickableComponent button, bool isOpen)", source);
+        }
+
+        [Fact]
+        // Expected: UIHelpers has GetToggleButtonWidth method
+        public void UIHelpers_HasGetToggleButtonWidth()
+        {
+            string source = SourceScanner.ReadSourceFile("Utilities/UIHelpers.cs");
+            Assert.Contains("public static int GetToggleButtonWidth()", source);
+        }
+
+        [Fact]
+        // Expected: SaveSetUIBuilder.DrawTagsRow delegates to UIHelpers.DrawToggleButton
+        public void SaveSetUIBuilder_DrawTagsRow_UsesDrawToggleButton()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/SaveSetUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void DrawTagsRow");
+            Assert.Contains("UIHelpers.DrawToggleButton", body);
+        }
+
+        [Fact]
+        // Expected: ScheduleEditUIBuilder.DrawTagsRow delegates to UIHelpers.DrawToggleButton
+        public void ScheduleEditUIBuilder_DrawTagsRow_UsesDrawToggleButton()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void DrawTagsRow");
+            Assert.Contains("UIHelpers.DrawToggleButton", body);
+        }
+
+        [Fact]
+        // Expected: ScheduleEditUIBuilder.DrawSetsRow delegates to UIHelpers.DrawToggleButton
+        public void ScheduleEditUIBuilder_DrawSetsRow_UsesDrawToggleButton()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void DrawSetsRow");
+            Assert.Contains("UIHelpers.DrawToggleButton", body);
+        }
+
+        [Fact]
+        // Expected: ScheduleEditUIBuilder no longer has private DrawAddButton method
+        public void ScheduleEditUIBuilder_NoDrawAddButtonMethod()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditUIBuilder.cs");
+            Assert.DoesNotContain("private void DrawAddButton", source);
+        }
+
+        // ----------------------------------------------------------------
+        //  S16: Config menu clickable text hover effects
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: ConfigUIBuilder.DrawKeybindRow has hover detection via containsPoint
+        public void ConfigUIBuilder_DrawKeybindRow_HasHoverDetection()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ConfigUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void DrawKeybindRow");
+            Assert.Contains("containsPoint", body);
+            Assert.Contains("isHovered", body);
+        }
+
+        [Fact]
+        // Expected: ConfigUIBuilder.DrawKeybindRow suppresses hover when listening for keybind
+        public void ConfigUIBuilder_DrawKeybindRow_SuppressesHoverWhenListening()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ConfigUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void DrawKeybindRow");
+            Assert.Contains("!isListening", body);
+        }
+
+        [Fact]
+        // Expected: ConfigUIBuilder.DrawSearchScopeRow has hover detection via containsPoint
+        public void ConfigUIBuilder_DrawSearchScopeRow_HasHoverDetection()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ConfigUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void DrawSearchScopeRow");
+            Assert.Contains("containsPoint", body);
+            Assert.Contains("isHovered", body);
+        }
+
+        [Fact]
+        // Expected: ConfigUIBuilder.DrawSearchScopeRow suppresses hover when dropdown is open
+        public void ConfigUIBuilder_DrawSearchScopeRow_SuppressesHoverWhenOpen()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ConfigUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void DrawSearchScopeRow");
+            Assert.Contains("!isOpen", body);
+        }
+        // ----------------------------------------------------------------
+        //  S17: ApplySavedColor / ApplyCapturedColor consolidated to ColorHelper.ApplyColor
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: ColorHelper has public static ApplyColor method
+        public void ColorHelper_HasApplyColor()
+        {
+            string source = SourceScanner.ReadSourceFile("Utilities/ColorHelper.cs");
+            Assert.Contains("public static void ApplyColor", source);
+        }
+
+        [Theory]
+        [InlineData("UI/WardrobeOverlay.cs")]
+        [InlineData("UI/SaveSetOverlay.cs")]
+        [InlineData("UI/SetPreviewOverlay.cs")]
+        // Expected: No private ApplySavedColor/ApplyCapturedColor — all use ColorHelper.ApplyColor
+        public void Menu_UsesColorHelperApplyColor(string sourceFile)
+        {
+            string source = SourceScanner.ReadSourceFile(sourceFile);
+            Assert.DoesNotContain("private static void ApplySavedColor", source);
+            Assert.DoesNotContain("private static void ApplyCapturedColor", source);
+            Assert.Contains("ColorHelper.ApplyColor", source);
+        }
+
+        // ----------------------------------------------------------------
+        //  S18: Delete confirmation uses UIHelpers shared helpers
+        // ----------------------------------------------------------------
+
+        [Theory]
+        [InlineData("UI/WardrobeOverlay.cs")]
+        [InlineData("UI/ScheduleMenu.cs")]
+        // Expected: No private DrawDeleteDialogButton/DrawDeleteConfirmation — uses UIHelpers
+        public void Menu_UsesSharedDeleteDialog(string sourceFile)
+        {
+            string source = SourceScanner.ReadSourceFile(sourceFile);
+            Assert.DoesNotContain("private void DrawDeleteDialogButton", source);
+            Assert.DoesNotContain("private void DrawDeleteConfirmation", source);
+            Assert.Contains("UIHelpers.DrawDeleteConfirmationDialog", source);
+            Assert.Contains("UIHelpers.CalculateDeleteDialogLayout", source);
+        }
+        // ----------------------------------------------------------------
+        //  S19: Tooltip drawing uses UIHelpers.DrawWrappedTooltip
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: UIHelpers has public static DrawWrappedTooltip method
+        public void UIHelpers_HasDrawWrappedTooltip()
+        {
+            string source = SourceScanner.ReadSourceFile("Utilities/UIHelpers.cs");
+            Assert.Contains("public static void DrawWrappedTooltip", source);
+        }
+
+        [Theory]
+        [InlineData("UI/WardrobeOverlay.cs")]
+        [InlineData("UI/ScheduleMenu.cs")]
+        [InlineData("UI/ScheduleEditOverlay.cs")]
+        [InlineData("UI/SetPreviewOverlay.cs")]
+        [InlineData("UI/ScheduleSetPickerPanel.cs")]
+        // Expected: These files use UIHelpers.DrawWrappedTooltip instead of inline wrapping
+        public void Menu_UsesDrawWrappedTooltip(string sourceFile)
+        {
+            string source = SourceScanner.ReadSourceFile(sourceFile);
+            Assert.Contains("UIHelpers.DrawWrappedTooltip", source);
+        }
+        // ----------------------------------------------------------------
+        //  S20: Item sprite drawing uses UIHelpers.DrawItemInSlot
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: UIHelpers has public static DrawItemInSlot method
+        public void UIHelpers_HasDrawItemInSlot()
+        {
+            string source = SourceScanner.ReadSourceFile("Utilities/UIHelpers.cs");
+            Assert.Contains("public static void DrawItemInSlot", source);
+        }
+
+        [Theory]
+        [InlineData("UI/WardrobeOverlay.cs")]
+        [InlineData("UI/SaveSetOverlay.cs")]
+        // Expected: DrawItemSprites body uses UIHelpers.DrawItemInSlot, no inline centering math
+        public void Menu_DrawItemSprites_UsesDrawItemInSlot(string sourceFile)
+        {
+            string source = SourceScanner.ReadSourceFile(sourceFile);
+            string body = SourceScanner.ExtractMethodBody(source, "void DrawItemSprites");
+            Assert.Contains("UIHelpers.DrawItemInSlot", body);
+            Assert.DoesNotContain("DrawnItemSize) / 2", body);
+        }
+
+        // ----------------------------------------------------------------
+        //  S21: All checkbox draws use UIHelpers source rect constants
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: ScheduleSetPickerPanel uses UIHelpers constants, not inline rects
+        public void ScheduleSetPickerPanel_UsesUIHelpersCheckboxRects()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleSetPickerPanel.cs");
+            Assert.DoesNotContain("new Rectangle(236, 425, 9, 9)", source);
+            Assert.DoesNotContain("new Rectangle(227, 425, 9, 9)", source);
+            Assert.Contains("UIHelpers.CheckedSourceRect", source);
+            Assert.Contains("UIHelpers.UncheckedSourceRect", source);
+        }
+
+        // ----------------------------------------------------------------
+        //  S22: All menus with render targets override cleanupBeforeExit
+        // ----------------------------------------------------------------
+
+        [Theory]
+        [InlineData("UI/WardrobeOverlay.cs")]
+        [InlineData("UI/SaveSetOverlay.cs")]
+        [InlineData("UI/SetPreviewOverlay.cs")]
+        // Expected: Overlays with render targets override cleanupBeforeExit to prevent GPU leaks
+        public void Overlay_WithRenderTarget_OverridesCleanupBeforeExit(string sourceFile)
+        {
+            string source = SourceScanner.ReadSourceFile(sourceFile);
+            Assert.Contains("override void cleanupBeforeExit", source);
+        }
+
+        [Fact]
+        // Expected: UIHelpers has public static SafeDispose method
+        public void UIHelpers_HasSafeDispose()
+        {
+            string source = SourceScanner.ReadSourceFile("Utilities/UIHelpers.cs");
+            Assert.Contains("public static void SafeDispose", source);
+        }
+
+        // ----------------------------------------------------------------
+        //  S23: Delete dialog recalculates on window resize
+        // ----------------------------------------------------------------
+
+        [Theory]
+        [InlineData("UI/WardrobeOverlay.cs")]
+        [InlineData("UI/ScheduleMenu.cs")]
+        // Expected: gameWindowSizeChanged recalculates delete dialog layout when dialog is showing
+        public void Menu_GameWindowSizeChanged_RecalculatesDeleteDialog(string sourceFile)
+        {
+            string source = SourceScanner.ReadSourceFile(sourceFile);
+            string body = SourceScanner.ExtractMethodBody(source, "override void gameWindowSizeChanged");
+            Assert.Contains("showDeleteConfirmation", body);
+            Assert.Contains("CalculateDeleteDialogLayout", body);
+        }
+
+        // ----------------------------------------------------------------
+        //  S24: DrawWrappedTooltip uses custom drawing (not drawHoverText)
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: DrawWrappedTooltip draws text with drawTextWithShadow, not drawHoverText
+        public void UIHelpers_DrawWrappedTooltip_UsesCustomDrawing()
+        {
+            string source = SourceScanner.ReadSourceFile("Utilities/UIHelpers.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void DrawWrappedTooltip");
+            Assert.Contains("drawTextWithShadow", body);
+            Assert.Contains("drawTextureBox", body);
+            Assert.DoesNotContain("drawHoverText", body);
+        }
+
+        // ----------------------------------------------------------------
+        //  S25: ScheduleEditOverlay picker toggle-off on re-click
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: ScheduleEditOverlay.receiveLeftClick closes tagPicker when Tags [+] is clicked while open
+        public void ScheduleEditOverlay_ReceiveLeftClick_ToglesOffTagPicker()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "override void receiveLeftClick");
+            Assert.Contains("tagPicker.IsOpen", body);
+            Assert.Contains("TagsAddButton.containsPoint", body);
+            Assert.Contains("tagPicker.Close()", body);
+        }
+
+        [Fact]
+        // Expected: ScheduleEditOverlay.receiveLeftClick closes setPicker when Sets [+] is clicked while open
+        public void ScheduleEditOverlay_ReceiveLeftClick_TogglesOffSetPicker()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "override void receiveLeftClick");
+            Assert.Contains("setPicker.IsOpen", body);
+            Assert.Contains("SetsAddButton.containsPoint", body);
+            Assert.Contains("setPicker.Close()", body);
+        }
+
+        // ----------------------------------------------------------------
+        //  S26: DyeColorManager slider hit areas expanded horizontally
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: TryStartSliderDrag uses horizontal expansion (expandX) for cursor half-width
+        public void DyeColorManager_TryStartSliderDrag_ExpandsHitAreaHorizontally()
+        {
+            string source = SourceScanner.ReadSourceFile("Managers/DyeColorManager.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void TryStartSliderDrag");
+            Assert.Contains("expandX", body);
+            Assert.Contains("hueBarBounds.X - expandX", body);
+            Assert.Contains("hueBarBounds.Width + expandX * 2", body);
+        }
+
+        [Fact]
+        // Expected: CalculateLayout uses 16px gap between HSV label and slider bar
+        public void DyeColorManager_CalculateLayout_HasCorrectBarOffset()
+        {
+            string source = SourceScanner.ReadSourceFile("Managers/DyeColorManager.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void CalculateLayout");
+            Assert.Contains("maxLabelWidth + 16", body);
+        }
+
+        // ----------------------------------------------------------------
+        //  S27: Wardrobe preview panel shows total outfits count
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: DrawPreviewPanel renders total outfits text using ScheduleEditTotalOutfits translation
+        public void WardrobeUIBuilder_DrawPreviewPanel_ShowsTotalOutfits()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/WardrobeUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void DrawPreviewPanel");
+            Assert.Contains("ScheduleEditTotalOutfits", body);
+            Assert.Contains("displayedCount", body);
+        }
+
+        [Fact]
+        // Expected: CalculatePreviewAndButtons shifts preview down 10px to make room for total outfits
+        public void WardrobeUIBuilder_CalculatePreviewAndButtons_ShiftsPreviewDown()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/WardrobeUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void CalculatePreviewAndButtons");
+            Assert.Contains("+ 10", body);
+        }
+
+        // ----------------------------------------------------------------
+        //  S28: WardrobeOverlay respects ResetMatchAllOnOpen config
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: WardrobeOverlay constructor checks ResetMatchAllOnOpen to restore lastMatchAllTags
+        public void WardrobeOverlay_Constructor_RespectsResetMatchAllOnOpenConfig()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/WardrobeOverlay.cs");
+            Assert.Contains("ResetMatchAllOnOpen", source);
+            Assert.Contains("lastMatchAllTags", source);
+        }
+
+        [Fact]
+        // Expected: WardrobeOverlay persists MatchAllTags to static field on toggle
+        public void WardrobeOverlay_MatchAllToggle_PersistsToStaticField()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/WardrobeOverlay.cs");
+            Assert.Contains("lastMatchAllTags = filterState.MatchAllTags", source);
+        }
+
+        [Fact]
+        // Expected: DrawWrappedTooltip text position uses x+16 and y+20
+        public void UIHelpers_DrawWrappedTooltip_TextPosition()
+        {
+            string source = SourceScanner.ReadSourceFile("Utilities/UIHelpers.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void DrawWrappedTooltip");
+            Assert.Contains("x + 20", body);
+            Assert.Contains("y + 16", body);
+        }
+
+        // ----------------------------------------------------------------
+        //  S29: ContinuousScrollHandler only uses arrow keys (no WASD)
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: ContinuousScrollHandler.Update does not reference Keys.W, Keys.A, Keys.S, or Keys.D
+        public void ContinuousScrollHandler_NoWASDKeys()
+        {
+            string source = SourceScanner.ReadSourceFile("Utilities/ContinuousScrollHandler.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "int Update");
+            Assert.DoesNotContain("Keys.W)", body);
+            Assert.DoesNotContain("Keys.A)", body);
+            Assert.DoesNotContain("Keys.S)", body);
+            Assert.DoesNotContain("Keys.D)", body);
+        }
+
+        [Fact]
+        // Expected: ContinuousScrollHandler.Update checks all four arrow keys
+        public void ContinuousScrollHandler_ChecksAllArrowKeys()
+        {
+            string source = SourceScanner.ReadSourceFile("Utilities/ContinuousScrollHandler.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "int Update");
+            Assert.Contains("Keys.Up", body);
+            Assert.Contains("Keys.Down", body);
+            Assert.Contains("Keys.Left", body);
+            Assert.Contains("Keys.Right", body);
+        }
+
+        [Fact]
+        // Expected: ContinuousScrollHandler.Update signature has no arrowKeysOnly parameter
+        public void ContinuousScrollHandler_NoArrowKeysOnlyParameter()
+        {
+            string source = SourceScanner.ReadSourceFile("Utilities/ContinuousScrollHandler.cs");
+            Assert.DoesNotContain("arrowKeysOnly", source);
+        }
+
+        // ----------------------------------------------------------------
+        //  S30: Arrow key scrolling is config-gated in all menus
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: OutfitInputHandler.HandleKeyPress gates arrow key scrolling on ArrowKeyScrolling config
+        public void OutfitInputHandler_HandleKeyPress_GatesArrowScrollOnConfig()
+        {
+            string source = SourceScanner.ReadSourceFile("Input/OutfitInputHandler.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "bool HandleKeyPress");
+            Assert.Contains("ArrowKeyScrolling", body);
+            Assert.Contains("Keys.Up", body);
+            Assert.Contains("Keys.Down", body);
+        }
+
+        [Fact]
+        // Expected: WardrobeOverlay.receiveKeyPress gates arrow key scrolling on ArrowKeyScrolling config
+        public void WardrobeOverlay_ReceiveKeyPress_GatesArrowScrollOnConfig()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/WardrobeOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "override void receiveKeyPress");
+            Assert.Contains("ArrowKeyScrolling", body);
+            Assert.Contains("Keys.Up", body);
+            Assert.Contains("Keys.Down", body);
+        }
+
+        [Fact]
+        // Expected: WardrobeOverlay.update gates continuous scroll on ArrowKeyScrolling config
+        public void WardrobeOverlay_Update_GatesContinuousScrollOnConfig()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/WardrobeOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "override void update");
+            Assert.Contains("ArrowKeyScrolling", body);
+            Assert.Contains("scrollHandler.Update", body);
+        }
+
+        [Fact]
+        // Expected: ScheduleMenu.receiveKeyPress gates arrow key scrolling on ArrowKeyScrolling config
+        public void ScheduleMenu_ReceiveKeyPress_GatesArrowScrollOnConfig()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleMenu.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "override void receiveKeyPress");
+            Assert.Contains("ArrowKeyScrolling", body);
+            Assert.Contains("Keys.Up", body);
+            Assert.Contains("Keys.Down", body);
+        }
+
+        [Fact]
+        // Expected: ScheduleMenu.update gates continuous scroll on ArrowKeyScrolling config
+        public void ScheduleMenu_Update_GatesContinuousScrollOnConfig()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleMenu.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "override void update");
+            Assert.Contains("ArrowKeyScrolling", body);
+            Assert.Contains("scrollHandler.Update", body);
+        }
+
+        [Fact]
+        // Expected: ScheduleEditOverlay.receiveKeyPress gates arrow key scrolling on ArrowKeyScrolling config
+        public void ScheduleEditOverlay_ReceiveKeyPress_GatesArrowScrollOnConfig()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "override void receiveKeyPress");
+            Assert.Contains("ArrowKeyScrolling", body);
+            Assert.Contains("Keys.Up", body);
+            Assert.Contains("Keys.Down", body);
+        }
+
+        [Fact]
+        // Expected: ScheduleEditOverlay.update gates continuous scroll on ArrowKeyScrolling config
+        public void ScheduleEditOverlay_Update_GatesContinuousScrollOnConfig()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "override void update");
+            Assert.Contains("ArrowKeyScrolling", body);
+            Assert.Contains("scrollHandler.Update", body);
+        }
+
+        // ----------------------------------------------------------------
+        //  S31: ArrowKeyScrolling config option has all 6 touchpoints
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: ModConfig declares ArrowKeyScrolling property with default true
+        public void ModConfig_HasArrowKeyScrollingProperty()
+        {
+            string source = SourceScanner.ReadSourceFile("Core/ModConfig.cs");
+            Assert.Contains("ArrowKeyScrolling", source);
+            Assert.Contains("= true", source);
+        }
+
+        [Fact]
+        // Expected: ConfigUIBuilder creates ArrowKeyScrolling checkbox component
+        public void ConfigUIBuilder_HasArrowKeyScrollingCheckbox()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ConfigUIBuilder.cs");
+            Assert.Contains("ArrowKeyScrollingCheckbox", source);
+            Assert.Contains("ConfigArrowKeyScrollingName", source);
+        }
+
+        [Fact]
+        // Expected: ConfigOverlay loads, toggles, saves, and draws ArrowKeyScrolling
+        public void ConfigOverlay_HandlesArrowKeyScrolling()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ConfigOverlay.cs");
+            Assert.Contains("arrowKeyScrolling", source);
+            Assert.Contains("config.ArrowKeyScrolling = arrowKeyScrolling", source);
+        }
+
+        [Fact]
+        // Expected: TranslationCache has ConfigArrowKeyScrolling properties initialized from i18n
+        public void TranslationCache_HasArrowKeyScrollingTranslations()
+        {
+            string source = SourceScanner.ReadSourceFile("Utilities/TranslationCache.cs");
+            Assert.Contains("ConfigArrowKeyScrollingName", source);
+            Assert.Contains("ConfigArrowKeyScrollingTooltip", source);
+            Assert.Contains("config.arrow-key-scrolling.name", source);
+        }
+
+        [Fact]
+        // Expected: default.json has i18n keys for ArrowKeyScrolling config option
+        public void I18n_HasArrowKeyScrollingKeys()
+        {
+            string source = SourceScanner.ReadSourceFile("i18n/default.json");
+            Assert.Contains("config.arrow-key-scrolling.name", source);
+            Assert.Contains("config.arrow-key-scrolling.tooltip", source);
+        }
+
+        [Fact]
+        // Expected: ModEntry registers ArrowKeyScrolling with GMCM
+        public void ModEntry_RegistersArrowKeyScrollingWithGMCM()
+        {
+            string source = SourceScanner.ReadSourceFile("Core/ModEntry.cs");
+            Assert.Contains("config.ArrowKeyScrolling", source);
+            Assert.Contains("ConfigArrowKeyScrollingName", source);
+        }
+
+        // ----------------------------------------------------------------
+        //  S32: Arrow key scroll blocking conditions
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: WardrobeOverlay blocks arrow key scrolling during delete confirmation and open dropdowns
+        public void WardrobeOverlay_ArrowScroll_BlockedByDeleteConfirmAndDropdowns()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/WardrobeOverlay.cs");
+            string updateBody = SourceScanner.ExtractMethodBody(source, "override void update");
+            Assert.Contains("!showDeleteConfirmation", updateBody);
+            Assert.Contains("!searchScopeOpen", updateBody);
+            Assert.Contains("!tagsDropdownOpen", updateBody);
+            Assert.Contains("!filterDropdownOpen", updateBody);
+        }
+
+        [Fact]
+        // Expected: ScheduleMenu blocks arrow key scrolling during delete confirmation and priority dropdown
+        public void ScheduleMenu_ArrowScroll_BlockedByDeleteConfirmAndPriorityDropdown()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleMenu.cs");
+            string updateBody = SourceScanner.ExtractMethodBody(source, "override void update");
+            Assert.Contains("!showDeleteConfirmation", updateBody);
+            Assert.Contains("!priorityDropdownOpen", updateBody);
+        }
+
+        [Fact]
+        // Expected: ScheduleEditOverlay blocks continuous scroll when previewOverlay or tagPicker is active
+        public void ScheduleEditOverlay_ArrowScroll_BlockedByPreviewAndTagPicker()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditOverlay.cs");
+            string updateBody = SourceScanner.ExtractMethodBody(source, "override void update");
+            Assert.Contains("previewOverlay == null", updateBody);
+            Assert.Contains("!tagPicker.IsOpen", updateBody);
+        }
+
+        [Fact]
+        // Expected: ScheduleSetPickerPanel.HandleKeyPress only handles keys when panel is open
+        public void ScheduleSetPickerPanel_HandleKeyPress_GuardedByIsOpen()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleSetPickerPanel.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "bool HandleKeyPress");
+            Assert.Contains("!isOpen", body);
+            Assert.Contains("Keys.Up", body);
+            Assert.Contains("Keys.Down", body);
+        }
+
+        // ── S33–S48: ScheduleEdit refactor tests ──────────────────────────────
+
+        [Fact]
+        // Expected: Section header renamed from Triggers to Conditions
+        public void ScheduleEditUIBuilder_HasConditionsHeader_NotTriggersHeader()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditUIBuilder.cs");
+            Assert.Contains("DrawConditionsHeader", source);
+            Assert.DoesNotContain("DrawTriggersHeader", source);
+        }
+
+        [Fact]
+        // Expected: ScheduleEditUIBuilder has DrawSpecialEventsHeader method
+        public void ScheduleEditUIBuilder_HasSpecialEventsHeader()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditUIBuilder.cs");
+            Assert.Contains("DrawSpecialEventsHeader", source);
+            string body = SourceScanner.ExtractMethodBody(source, "void DrawSpecialEventsHeader");
+            // Bold double-draw pattern
+            Assert.Contains("new Vector2(1, 0)", body);
+        }
+
+        [Fact]
+        // Expected: Condition bars use placeholder parameter (no label: for condition dropdowns)
+        public void ScheduleEditOverlay_ConditionBars_UsePlaceholder()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditOverlay.cs");
+            string drawBody = SourceScanner.ExtractMethodBody(source, "override void draw");
+            // All five condition bars pass placeholder:
+            Assert.Contains("placeholder: seasonPlaceholder", drawBody);
+            Assert.Contains("placeholder: weatherPlaceholder", drawBody);
+            Assert.Contains("placeholder: areaPlaceholder", drawBody);
+            Assert.Contains("placeholder: locationPlaceholder", drawBody);
+            Assert.Contains("placeholder: festivalPlaceholder", drawBody);
+            // Condition bars should NOT use label: parameter
+            Assert.DoesNotContain("label: seasonLabel", drawBody);
+            Assert.DoesNotContain("label: weatherLabel", drawBody);
+            Assert.DoesNotContain("label: areaLabel", drawBody);
+        }
+
+        [Fact]
+        // Expected: Festival and Location dropdowns use DrawInputBar when open
+        public void ScheduleEditOverlay_SearchDropdowns_UseDrawInputBar()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditOverlay.cs");
+            string drawBody = SourceScanner.ExtractMethodBody(source, "override void draw");
+            Assert.Contains("locationsDropdownOpen", drawBody);
+            Assert.Contains("festivalsDropdownOpen", drawBody);
+            Assert.Contains("DrawInputBar", drawBody);
+        }
+
+        [Fact]
+        // Expected: CloseAllDropdowns cleans up search state (subscriber, textbox, activeSearchDropdown)
+        public void ScheduleEditOverlay_CloseAllDropdowns_CleansUpSearchState()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void CloseAllDropdowns");
+            Assert.Contains("activeSearchDropdown", body);
+            Assert.Contains("searchTextBox", body);
+            Assert.Contains("keyboardDispatcher.Subscriber", body);
+        }
+
+        [Fact]
+        // Expected: Constructor auto-opens tag picker when AutoOpenTagMenu config is set
+        public void ScheduleEditOverlay_Constructor_AutoOpensTagPicker()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditOverlay.cs");
+            Assert.Contains("AutoOpenTagMenu", source);
+            Assert.Contains("OpenTagPicker", source);
+        }
+
+        [Fact]
+        // Expected: Draw method suppresses hover behind open dropdown panels
+        public void ScheduleEditOverlay_Draw_SuppressesHoverBehindDropdownPanels()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditOverlay.cs");
+            string drawBody = SourceScanner.ExtractMethodBody(source, "override void draw");
+            Assert.Contains("IsAnyDropdownOpen", drawBody);
+            Assert.Contains("IsInAnyDropdownPanel", drawBody);
+            Assert.Contains("SuppressHover", drawBody);
+        }
+
+        [Fact]
+        // Expected: Bottom buttons use Math.Max for same width
+        public void ScheduleEditUIBuilder_BottomButtons_SameWidth()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void CalculateLayout");
+            Assert.Contains("Math.Max(previewWidth, cancelWidth)", body);
+        }
+
+        [Fact]
+        // Expected: Priority and Rotate use right-aligned labels via OptionsLabelRightX
+        public void ScheduleEditOverlay_OptionsLabels_RightAligned()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditOverlay.cs");
+            string drawBody = SourceScanner.ExtractMethodBody(source, "override void draw");
+            Assert.Contains("OptionsLabelRightX", drawBody);
+            Assert.Contains("priorityLabelX", drawBody);
+            Assert.Contains("rotateLabelX", drawBody);
+        }
+
+        [Fact]
+        // Expected: Recalculate uses new gap constants
+        public void ScheduleEditUIBuilder_Recalculate_UsesNewGapConstants()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void Recalculate");
+            Assert.Contains("ScheduleEditSectionHeaderHeight", body);
+            Assert.Contains("ScheduleEditBarRowGap", body);
+            Assert.Contains("ScheduleEditOptionRowGap", body);
+        }
+
+        [Fact]
+        // Expected: CreateClearButton uses ScheduleEditClearButtonLeftShift
+        public void ScheduleEditUIBuilder_ClearButton_UsesLeftShift()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "ClickableComponent CreateClearButton");
+            Assert.Contains("ScheduleEditClearButtonLeftShift", body);
+        }
+
+        [Fact]
+        // Expected: TagPickerManager dims non-All tags when All is selected (0.4f opacity)
+        public void TagPickerManager_DimsTagsWhenAllSelected()
+        {
+            string source = SourceScanner.ReadSourceFile("Managers/TagPickerManager.cs");
+            string drawBody = SourceScanner.ExtractMethodBody(source, "void DrawTagOptions");
+            Assert.Contains("isDimmed", drawBody);
+            Assert.Contains("0.4f", drawBody);
+        }
+
+        [Fact]
+        // Expected: TagPickerManager blocks clicks on dimmed tags when All is selected
+        public void TagPickerManager_BlocksClicksOnDimmedTags()
+        {
+            string source = SourceScanner.ReadSourceFile("Managers/TagPickerManager.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "bool HandleClick");
+            // After "AllOptionKey" check, there's an "else if (allSelected)" guard
+            Assert.Contains("else if (allSelected)", body);
+        }
+
+        [Fact]
+        // Expected: UIHelpers.DrawDropdownButton has placeholder parameter
+        public void UIHelpers_DrawDropdownButton_HasPlaceholderParameter()
+        {
+            string source = SourceScanner.ReadSourceFile("Utilities/UIHelpers.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void DrawDropdownButton");
+            Assert.Contains("placeholder", body);
+            Assert.Contains("Color.Gray", body);
+        }
+
+        [Fact]
+        // Expected: Old names removed — no AdvanceQueue or Triggers references remain
+        public void ScheduleEdit_OldNamesRemoved()
+        {
+            string overlay = SourceScanner.ReadSourceFile("UI/ScheduleEditOverlay.cs");
+            string uiBuilder = SourceScanner.ReadSourceFile("UI/ScheduleEditUIBuilder.cs");
+            string translations = SourceScanner.ReadSourceFile("Utilities/TranslationCache.cs");
+
+            Assert.DoesNotContain("DrawTriggersHeader", overlay);
+            Assert.DoesNotContain("DrawTriggersHeader", uiBuilder);
+            Assert.DoesNotContain("ScheduleEditTriggers", translations);
+            Assert.DoesNotContain("ScheduleEditAdvanceQueue", translations);
+        }
+
+        [Fact]
+        // Expected: TranslationCache has renamed properties (Conditions, Rotate, SpecialEvents)
+        public void TranslationCache_HasRenamedScheduleEditProperties()
+        {
+            string source = SourceScanner.ReadSourceFile("Utilities/TranslationCache.cs");
+            Assert.Contains("ScheduleEditConditions", source);
+            Assert.Contains("ScheduleEditRotate", source);
+            Assert.Contains("ScheduleEditSpecialEvents", source);
+        }
+
+        [Fact]
+        // Expected: ScheduleEditOverlay blocks all keys (except Escape) when search dropdown is active
+        public void ScheduleEditOverlay_SearchDropdown_BlocksNonEscapeKeys()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "override void receiveKeyPress");
+            Assert.Contains("activeSearchDropdown", body);
+            Assert.Contains("Keys.Escape", body);
+        }
+
+        [Fact]
+        // Expected: ScheduleMenu blocks scroll wheel when priority dropdown or delete confirmation is active
+        public void ScheduleMenu_ScrollWheel_BlockedByDropdownAndDeleteConfirm()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleMenu.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "override void receiveScrollWheelAction");
+            Assert.Contains("priorityDropdownOpen", body);
+            Assert.Contains("showDeleteConfirmation", body);
+        }
+
+        [Fact]
+        // Expected: ScheduleMenu suppresses hover on rule list when priority dropdown is open
+        public void ScheduleMenu_Draw_SuppressesRuleListHoverWhenDropdownOpen()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleMenu.cs");
+            string drawBody = SourceScanner.ExtractMethodBody(source, "override void draw");
+            Assert.Contains("priorityDropdownOpen", drawBody);
+            Assert.Contains("SuppressHover = true", drawBody);
+            Assert.Contains("SuppressHover = false", drawBody);
+        }
+        // ----------------------------------------------------------------
+        //  S49: WardrobeOverlay Type B conversion
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: OutfitInputHandler opens wardrobe via Game1.activeClickableMenu swap (Type B)
+        public void InputHandler_OpensWardrobe_ViaActiveClickableMenuSwap()
+        {
+            string source = SourceScanner.ReadSourceFile("Input/OutfitInputHandler.cs");
+            Assert.Contains("Game1.activeClickableMenu = new WardrobeOverlay(", source);
+        }
+
+        [Fact]
+        // Expected: WardrobeOverlay.CloseOverlay restores parentMenu as active menu
+        public void WardrobeOverlay_CloseOverlay_RestoresParentMenu()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/WardrobeOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void CloseOverlay");
+            Assert.Contains("Game1.activeClickableMenu = parentMenu", body);
+        }
+
+        [Fact]
+        // Expected: WardrobeOverlay no longer overrides readyToClose (Type B uses CloseOverlay instead)
+        public void WardrobeOverlay_DoesNotOverride_ReadyToClose()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/WardrobeOverlay.cs");
+            Assert.DoesNotContain("override bool readyToClose", source);
+        }
+
+        [Fact]
+        // Expected: OutfitMenu no longer references wardrobeOverlay (forwarding removed)
+        public void OutfitMenu_NoLongerReferences_WardrobeOverlay()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/OutfitMenu.cs");
+            Assert.DoesNotContain("wardrobeOverlay", source);
+        }
+
+        [Fact]
+        // Expected: OutfitInputHandler no longer references wardrobe forwarding fields
+        public void InputHandler_NoLongerReferences_WardrobeOverlay()
+        {
+            string source = SourceScanner.ReadSourceFile("Input/OutfitInputHandler.cs");
+            Assert.DoesNotContain("getWardrobeOverlay", source);
+            Assert.DoesNotContain("setWardrobeOverlay", source);
+            Assert.DoesNotContain("getParentMenu", source);
+        }
+
+        [Fact]
+        // Expected: WardrobeOverlay parentMenu field is IClickableMenu (not OutfitMenu)
+        public void WardrobeOverlay_ParentMenu_IsIClickableMenu()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/WardrobeOverlay.cs");
+            Assert.Contains("IClickableMenu parentMenu", source);
+        }
+
+        [Fact]
+        // Expected: WardrobeOverlay.OpenEditOverlay passes self as parent to SaveSetOverlay
+        public void WardrobeOverlay_OpenEditOverlay_PassesSelfAsParent()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/WardrobeOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void OpenEditOverlay");
+            Assert.Contains("new SaveSetOverlay(this,", body);
         }
     }
 }

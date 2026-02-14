@@ -156,14 +156,14 @@ namespace OutfitStudio
             {
                 string qualifiedId = "(S)" + capturedShirtId;
                 cachedShirt = ItemRegistry.Create<Clothing>(qualifiedId);
-                ApplyCapturedColor(cachedShirt, capturedShirtColor);
+                ColorHelper.ApplyColor(cachedShirt, capturedShirtColor);
             }
 
             if (HasPants() && capturedPantsId != null)
             {
                 string qualifiedId = "(P)" + capturedPantsId;
                 cachedPants = ItemRegistry.Create<Clothing>(qualifiedId);
-                ApplyCapturedColor(cachedPants, capturedPantsColor);
+                ColorHelper.ApplyColor(cachedPants, capturedPantsColor);
             }
 
             if (HasHat() && capturedHatId != null)
@@ -450,19 +450,15 @@ namespace OutfitStudio
             Game1.activeClickableMenu = parentMenu;
         }
 
-        private static void ApplyCapturedColor(Clothing item, string? colorString)
-        {
-            var color = ColorHelper.ParseColor(colorString);
-            if (color.HasValue)
-                item.clothesColor.Set(color.Value);
-        }
-
         private bool HasShirt() => !string.IsNullOrEmpty(capturedShirtId) && capturedShirtId != NoShirtId;
         private bool HasPants() => !string.IsNullOrEmpty(capturedPantsId) && capturedPantsId != NoPantsId;
         private bool HasHat() => !string.IsNullOrEmpty(capturedHatId) && capturedHatId != NoHatId;
 
         public override void draw(SpriteBatch b)
         {
+            bool oldSuppressHover = UIHelpers.SuppressHover;
+            UIHelpers.SuppressHover = true;
+
             if (parentMenu is OutfitMenu outfitMenu)
             {
                 outfitMenu.IsOverlayBlocking = true;
@@ -475,16 +471,21 @@ namespace OutfitStudio
                 outfitMenuAfter.IsOverlayBlocking = false;
             }
 
+            UIHelpers.SuppressHover = oldSuppressHover;
+
             b.Draw(Game1.fadeToBlackRect,
                 new Rectangle(0, 0, Game1.uiViewport.Width, Game1.uiViewport.Height),
                 Color.Black * BackgroundOverlayOpacity);
 
             UIHelpers.DrawTextureBox(b, xPositionOnScreen, yPositionOnScreen, width, height, Color.White);
 
-            bool showPlaceholder = string.IsNullOrEmpty(nameTextBox.Text);
             int jiggleOffset = GetNameBoxJiggleOffset();
-            uiBuilder.DrawNameInput(b, nameTextBox.Text ?? "", showPlaceholder, jiggleOffset);
-            uiBuilder.DrawNameCursor(b, nameTextBox.Text ?? "", nameBoxFocused, jiggleOffset);
+            uiBuilder.DrawDiceButton(b);
+            UIHelpers.DrawInputBar(b, uiBuilder.NameInputArea.bounds,
+                nameTextBox.Text ?? "", nameBoxFocused,
+                placeholder: TranslationCache.SaveSetNamePlaceholder,
+                clearButton: !string.IsNullOrEmpty(nameTextBox.Text) ? uiBuilder.NameClearButton : null,
+                xOffset: jiggleOffset);
 
             uiBuilder.DrawPreviewBackground(b);
             DrawCharacterPreview(b);
@@ -497,7 +498,7 @@ namespace OutfitStudio
             uiBuilder.DrawItemSlot(b, uiBuilder.PantsSlot, includePants, HasPants(), mouseX, mouseY);
             DrawItemSprites(b, includeShirt, includePants, includeHat);
 
-            uiBuilder.DrawTagsRow(b, mouseX, mouseY, tagPickerManager.IsOpen);
+            uiBuilder.DrawTagsRow(b, tagPickerManager.IsOpen);
             uiBuilder.DrawFavoriteCheckbox(b, isFavorite, uiBuilder.FavoriteCheckbox.containsPoint(mouseX, mouseY));
             uiBuilder.DrawLocalOnlyCheckbox(b, isLocalOnly, Context.IsWorldReady,
                 uiBuilder.LocalOnlyCheckbox?.containsPoint(mouseX, mouseY) ?? false);
@@ -578,7 +579,7 @@ namespace OutfitStudio
                 if (includeShirt && !string.IsNullOrEmpty(capturedShirtId) && store.IsItemValid(capturedShirtId, "(S)"))
                 {
                     var shirt = ItemRegistry.Create<Clothing>("(S)" + capturedShirtId);
-                    ApplyCapturedColor(shirt, capturedShirtColor);
+                    ColorHelper.ApplyColor(shirt, capturedShirtColor);
                     Game1.player.shirtItem.Value = shirt;
                 }
                 else
@@ -587,7 +588,7 @@ namespace OutfitStudio
                 if (includePants && !string.IsNullOrEmpty(capturedPantsId) && store.IsItemValid(capturedPantsId, "(P)"))
                 {
                     var pants = ItemRegistry.Create<Clothing>("(P)" + capturedPantsId);
-                    ApplyCapturedColor(pants, capturedPantsColor);
+                    ColorHelper.ApplyColor(pants, capturedPantsColor);
                     Game1.player.pantsItem.Value = pants;
                 }
                 else
@@ -637,41 +638,13 @@ namespace OutfitStudio
 
         private void DrawItemSprites(SpriteBatch b, bool shirtIncluded, bool pantsIncluded, bool hatIncluded)
         {
-            const float includedTransparency = 1f;
             const float excludedTransparency = 0.4f;
-
             if (HasHat() && cachedHat != null)
-            {
-                Rectangle slot = uiBuilder.HatSlot;
-                float transparency = hatIncluded ? includedTransparency : excludedTransparency;
-                Vector2 drawPos = new Vector2(
-                    slot.X + (slot.Width - DrawnItemSize) / 2,
-                    slot.Y + (slot.Height - DrawnItemSize) / 2
-                );
-                cachedHat.drawInMenu(b, drawPos, 1f, transparency, 0.9f, StackDrawType.Hide);
-            }
-
+                UIHelpers.DrawItemInSlot(b, uiBuilder.HatSlot, cachedHat, hatIncluded ? 1f : excludedTransparency);
             if (HasShirt() && cachedShirt != null)
-            {
-                Rectangle slot = uiBuilder.ShirtSlot;
-                float transparency = shirtIncluded ? includedTransparency : excludedTransparency;
-                Vector2 drawPos = new Vector2(
-                    slot.X + (slot.Width - DrawnItemSize) / 2,
-                    slot.Y + (slot.Height - DrawnItemSize) / 2
-                );
-                cachedShirt.drawInMenu(b, drawPos, 1f, transparency, 0.9f, StackDrawType.Hide);
-            }
-
+                UIHelpers.DrawItemInSlot(b, uiBuilder.ShirtSlot, cachedShirt, shirtIncluded ? 1f : excludedTransparency);
             if (HasPants() && cachedPants != null)
-            {
-                Rectangle slot = uiBuilder.PantsSlot;
-                float transparency = pantsIncluded ? includedTransparency : excludedTransparency;
-                Vector2 drawPos = new Vector2(
-                    slot.X + (slot.Width - DrawnItemSize) / 2,
-                    slot.Y + (slot.Height - DrawnItemSize) / 2
-                );
-                cachedPants.drawInMenu(b, drawPos, 1f, transparency, 0.9f, StackDrawType.Hide);
-            }
+                UIHelpers.DrawItemInSlot(b, uiBuilder.PantsSlot, cachedPants, pantsIncluded ? 1f : excludedTransparency);
         }
 
         private void DrawItemTooltips(SpriteBatch b, int mouseX, int mouseY)
@@ -697,18 +670,7 @@ namespace OutfitStudio
         protected override void cleanupBeforeExit()
         {
             base.cleanupBeforeExit();
-
-            if (farmerRenderTarget != null && !farmerRenderTarget.IsDisposed)
-            {
-                farmerRenderTarget.Dispose();
-                farmerRenderTarget = null;
-            }
-
-            if (farmerSpriteBatch != null && !farmerSpriteBatch.IsDisposed)
-            {
-                farmerSpriteBatch.Dispose();
-                farmerSpriteBatch = null;
-            }
+            UIHelpers.SafeDispose(ref farmerRenderTarget, ref farmerSpriteBatch);
         }
     }
 }

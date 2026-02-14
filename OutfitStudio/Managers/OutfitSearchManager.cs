@@ -77,31 +77,12 @@ namespace OutfitStudio
 
         public void Draw(SpriteBatch b)
         {
-            if (uiBuilder.SearchBar == null)
-                return;
-
-            Rectangle bounds = uiBuilder.SearchBar.bounds;
-
-            if (!string.IsNullOrEmpty(searchBox.Text))
-            {
-                Vector2 textPosition = new Vector2(bounds.X + 20, bounds.Y + (bounds.Height - Game1.smallFont.MeasureString(searchBox.Text).Y) / 2);
-                Utility.drawTextWithShadow(b, searchBox.Text, Game1.smallFont, textPosition, Game1.textColor);
-            }
-
-            if (searchBox.Selected)
-            {
-                Vector2 textSize = string.IsNullOrEmpty(searchBox.Text)
-                    ? Vector2.Zero
-                    : Game1.smallFont.MeasureString(searchBox.Text);
-
-                Vector2 textPosition = new Vector2(bounds.X + 20, bounds.Y + (bounds.Height - 32) / 2);
-                Vector2 cursorPosition = new Vector2(textPosition.X + textSize.X, textPosition.Y);
-
-                if ((int)(Game1.currentGameTime.TotalGameTime.TotalMilliseconds / 500) % 2 == 0)
-                {
-                    b.Draw(Game1.staminaRect, new Rectangle((int)cursorPosition.X, (int)cursorPosition.Y, 4, 32), Game1.textColor);
-                }
-            }
+            if (uiBuilder.SearchBar == null) return;
+            bool hasText = !string.IsNullOrEmpty(searchBox.Text);
+            UIHelpers.DrawInputBar(b, uiBuilder.SearchBar.bounds,
+                searchBox.Text ?? "", searchBox.Selected,
+                placeholder: TranslationCache.WardrobeSearch,
+                clearButton: hasText ? uiBuilder.SearchClearButton : null);
         }
 
         public void Unfocus()

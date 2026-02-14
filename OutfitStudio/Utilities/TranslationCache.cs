@@ -127,7 +127,8 @@ namespace OutfitStudio
         public static string ScheduleNew { get; private set; } = "";
         public static string ScheduleClose { get; private set; } = "";
 
-        public static string ScheduleEditTriggers { get; private set; } = "";
+        public static string ScheduleEditConditions { get; private set; } = "";
+        public static string ScheduleEditSpecialEvents { get; private set; } = "";
         public static string ScheduleEditSeason { get; private set; } = "";
         public static string ScheduleEditFestival { get; private set; } = "";
         public static string ScheduleEditTags { get; private set; } = "";
@@ -137,10 +138,9 @@ namespace OutfitStudio
         public static string ScheduleEditPriorityHigh { get; private set; } = "";
         public static string ScheduleEditPriorityMedium { get; private set; } = "";
         public static string ScheduleEditPriorityLow { get; private set; } = "";
-        public static string ScheduleEditAdvanceQueue { get; private set; } = "";
-        public static string ScheduleEditAdvanceQueueOnceADay { get; private set; } = "";
-        public static string ScheduleEditAdvanceQueueOnLocationChange { get; private set; } = "";
-        public static string ScheduleEditNamePlaceholder { get; private set; } = "";
+        public static string ScheduleEditRotate { get; private set; } = "";
+        public static string ScheduleEditRotateOnceADay { get; private set; } = "";
+        public static string ScheduleEditRotateOnLocationChange { get; private set; } = "";
         public static string ScheduleEditWeather { get; private set; } = "";
         public static string ScheduleEditLocation { get; private set; } = "";
         public static string ScheduleEditArea { get; private set; } = "";
@@ -287,7 +287,8 @@ namespace OutfitStudio
             ScheduleNew = i18n.Get("schedule.new");
             ScheduleClose = i18n.Get("schedule.close");
 
-            ScheduleEditTriggers = i18n.Get("schedule.edit.triggers");
+            ScheduleEditConditions = i18n.Get("schedule.edit.conditions");
+            ScheduleEditSpecialEvents = i18n.Get("schedule.edit.special-events");
             ScheduleEditSeason = i18n.Get("schedule.edit.season");
             ScheduleEditFestival = i18n.Get("schedule.edit.festival");
             ScheduleEditTags = i18n.Get("schedule.edit.tags");
@@ -297,10 +298,9 @@ namespace OutfitStudio
             ScheduleEditPriorityHigh = i18n.Get("schedule.edit.priority.high");
             ScheduleEditPriorityMedium = i18n.Get("schedule.edit.priority.medium");
             ScheduleEditPriorityLow = i18n.Get("schedule.edit.priority.low");
-            ScheduleEditAdvanceQueue = i18n.Get("schedule.edit.advance-queue");
-            ScheduleEditAdvanceQueueOnceADay = i18n.Get("schedule.edit.advance-queue.once-a-day");
-            ScheduleEditAdvanceQueueOnLocationChange = i18n.Get("schedule.edit.advance-queue.on-location-change");
-            ScheduleEditNamePlaceholder = i18n.Get("schedule.edit.name-placeholder");
+            ScheduleEditRotate = i18n.Get("schedule.edit.rotate");
+            ScheduleEditRotateOnceADay = i18n.Get("schedule.edit.rotate.once-a-day");
+            ScheduleEditRotateOnLocationChange = i18n.Get("schedule.edit.rotate.on-location-change");
             ScheduleEditWeather = i18n.Get("schedule.edit.weather");
             ScheduleEditLocation = i18n.Get("schedule.edit.location");
             ScheduleEditArea = i18n.Get("schedule.edit.area");

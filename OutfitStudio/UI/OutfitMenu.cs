@@ -32,7 +32,6 @@ namespace OutfitStudio
         private OutfitCategoryManager.Category lastColorCategory = OutfitCategoryManager.Category.Pants;
 
         private bool showItemInfo = false;
-        private WardrobeOverlay? wardrobeOverlay = null;
 
         public bool IsOverlayBlocking { get; set; } = false;
         public bool ShowItemInfo => showItemInfo;
@@ -91,9 +90,6 @@ namespace OutfitStudio
                 getCurrentPantsIds: () => itemListProvider.GetCurrentPantsIds(),
                 getCurrentHatIds: () => itemListProvider.GetCurrentHatIds(),
                 getCurrentAllItems: () => itemListProvider.GetCurrentAllItems(),
-                getWardrobeOverlay: () => wardrobeOverlay,
-                setWardrobeOverlay: overlay => wardrobeOverlay = overlay,
-                getParentMenu: () => this,
                 outfitSetStore: outfitSetStore,
                 showSavedMessage: () => uiBuilder.ShowSavedMessage(),
                 getDyeColorManager: () => dyeColorManager,
@@ -134,8 +130,6 @@ namespace OutfitStudio
         public override void gameWindowSizeChanged(Rectangle oldBounds, Rectangle newBounds)
         {
             base.gameWindowSizeChanged(oldBounds, newBounds);
-
-            wardrobeOverlay?.gameWindowSizeChanged(oldBounds, newBounds);
 
             uiBuilder.Recalculate();
             searchManager.UpdateBounds();
@@ -211,7 +205,7 @@ namespace OutfitStudio
 
             bool clickInPanel = dyeColorManager.IsOpen && dyeColorManager.Bounds.Contains(x, y);
             bool clickOnFloatingButton = uiBuilder.GearButton.containsPoint(x, y) || uiBuilder.DyeColorButton.containsPoint(x, y);
-            if (wardrobeOverlay == null && !isWithinBounds(x, y) && !clickInPanel && !clickOnFloatingButton && mod.GetConfig().CloseOnClickOutside)
+            if (!isWithinBounds(x, y) && !clickInPanel && !clickOnFloatingButton && mod.GetConfig().CloseOnClickOutside)
             {
                 RevertAndClose();
                 return;
@@ -222,7 +216,6 @@ namespace OutfitStudio
 
         public override void leftClickHeld(int x, int y)
         {
-            if (wardrobeOverlay != null) return;
             if (dyeColorManager.IsOpen)
                 dyeColorManager.HandleClickHeld(x, y);
         }
@@ -250,12 +243,6 @@ namespace OutfitStudio
         public override void update(GameTime time)
         {
             base.update(time);
-
-            if (wardrobeOverlay != null)
-            {
-                wardrobeOverlay.update(time);
-                return;
-            }
 
             uiBuilder.Update((float)time.ElapsedGameTime.TotalMilliseconds);
 
@@ -297,7 +284,9 @@ namespace OutfitStudio
 
         public override void draw(SpriteBatch b)
         {
-            bool hasOverlay = wardrobeOverlay != null || IsOverlayBlocking;
+            bool hasOverlay = IsOverlayBlocking;
+            bool oldSuppressHover = UIHelpers.SuppressHover;
+            if (hasOverlay) UIHelpers.SuppressHover = true;
 
             OutfitUIBuilder.DrawOverlay(b);
 
@@ -320,7 +309,6 @@ namespace OutfitStudio
             UIHelpers.DrawTabWithText(b, uiBuilder.HatsTab, TranslationCache.TabHats,
                 categoryManager.CurrentCategory == OutfitCategoryManager.Category.Hats);
 
-            uiBuilder.DrawSearchBar(b, searchManager.IsFocused, !string.IsNullOrEmpty(searchManager.CurrentSearchText));
             searchManager.Draw(b);
 
             uiBuilder.DrawModFilterDropdown(b, state.GetModFilter(categoryManager.CurrentCategory), dropdownManager.IsOpen);
@@ -452,10 +440,7 @@ namespace OutfitStudio
 
             }
 
-            if (wardrobeOverlay != null)
-            {
-                wardrobeOverlay.draw(b);
-            }
+            UIHelpers.SuppressHover = oldSuppressHover;
 
             if (!hasOverlay)
             {

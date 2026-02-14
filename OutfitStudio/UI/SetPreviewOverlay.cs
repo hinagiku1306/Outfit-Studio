@@ -283,10 +283,7 @@ namespace OutfitStudio
 
             if (tooltip != null && ModEntry.Config.ShowTooltip)
             {
-                string wrapped = tooltip.Contains(' ')
-                    ? Game1.parseText(tooltip, Game1.smallFont, 300)
-                    : tooltip;
-                IClickableMenu.drawHoverText(b, wrapped, Game1.smallFont);
+                UIHelpers.DrawWrappedTooltip(b, tooltip);
             }
 
             drawMouse(b);
@@ -349,7 +346,7 @@ namespace OutfitStudio
                     if (!string.IsNullOrEmpty(set.ShirtId) && outfitSetStore.IsItemValid(set.ShirtId, "(S)"))
                     {
                         var shirt = ItemRegistry.Create<Clothing>("(S)" + set.ShirtId);
-                        ApplySavedColor(shirt, set.ShirtColor);
+                        ColorHelper.ApplyColor(shirt, set.ShirtColor);
                         Game1.player.shirtItem.Value = shirt;
                     }
                     else
@@ -358,7 +355,7 @@ namespace OutfitStudio
                     if (!string.IsNullOrEmpty(set.PantsId) && outfitSetStore.IsItemValid(set.PantsId, "(P)"))
                     {
                         var pants = ItemRegistry.Create<Clothing>("(P)" + set.PantsId);
-                        ApplySavedColor(pants, set.PantsColor);
+                        ColorHelper.ApplyColor(pants, set.PantsColor);
                         Game1.player.pantsItem.Value = pants;
                     }
                     else
@@ -418,11 +415,10 @@ namespace OutfitStudio
             Game1.graphics.GraphicsDevice.SetRenderTargets(renderTargets);
         }
 
-        private static void ApplySavedColor(Clothing item, string? colorString)
+        protected override void cleanupBeforeExit()
         {
-            var color = ColorHelper.ParseColor(colorString);
-            if (color.HasValue)
-                item.clothesColor.Set(color.Value);
+            base.cleanupBeforeExit();
+            UIHelpers.SafeDispose(ref previewRenderTarget, ref previewSpriteBatch);
         }
     }
 }

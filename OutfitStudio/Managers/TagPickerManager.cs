@@ -352,6 +352,10 @@ namespace OutfitStudio
                         allSelected = !allSelected;
                         onAllChanged?.Invoke(allSelected);
                     }
+                    else if (allSelected)
+                    {
+                        // Tags are unclickable when "All" is selected
+                    }
                     else if (selectedTags.Contains(tag))
                     {
                         selectedTags.Remove(tag);
@@ -730,8 +734,9 @@ namespace OutfitStudio
                 {
                     bool isAllOption = tag == AllOptionKey;
                     bool isChecked = isAllOption ? allSelected : isSelected;
+                    bool isDimmed = allSelected && !isAllOption;
 
-                    if (isHovered && !atLimit)
+                    if (isHovered && !atLimit && !isDimmed)
                     {
                         b.Draw(Game1.staminaRect, option.bounds, Color.Wheat * 0.3f);
                     }
@@ -740,10 +745,11 @@ namespace OutfitStudio
                         ? new Rectangle(236, 425, 9, 9)
                         : new Rectangle(227, 425, 9, 9);
 
+                    float checkboxOpacity = isDimmed ? 0.4f : 1f;
                     int checkboxY = option.bounds.Y + (option.bounds.Height - SaveSetLocalOnlyCheckboxSize) / 2;
                     b.Draw(Game1.mouseCursors,
                         new Vector2(option.bounds.X + 4, checkboxY),
-                        checkboxSource, Color.White, 0f, Vector2.Zero, SaveSetLocalOnlyCheckboxScale, SpriteEffects.None, 1f);
+                        checkboxSource, Color.White * checkboxOpacity, 0f, Vector2.Zero, SaveSetLocalOnlyCheckboxScale, SpriteEffects.None, 1f);
 
                     float textHeight = Game1.smallFont.MeasureString(displayText).Y;
                     Vector2 textPos = new Vector2(
@@ -751,7 +757,7 @@ namespace OutfitStudio
                         option.bounds.Y + (option.bounds.Height - textHeight) / 2
                     );
 
-                    Color textColor = atLimit ? Color.Gray : Game1.textColor;
+                    Color textColor = isDimmed ? Game1.textColor * 0.4f : (atLimit ? Color.Gray : Game1.textColor);
                     Utility.drawTextWithShadow(b, displayText, Game1.smallFont, textPos, textColor);
                 }
 

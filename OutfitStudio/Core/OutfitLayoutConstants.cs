@@ -78,6 +78,10 @@ namespace OutfitStudio
 
         public const int ClearButtonSize = 24;
         public const int ClearButtonRightMargin = 12;
+        public const int DropdownArrowPad = 8;
+        public const float DropdownArrowScale = 1.5f;
+        public const int InputBarTextStartX = 20;
+        public const int InputBarCaretWidth = 4;
         public const int DiceButtonSize = 40;
         public const int DiceButtonGap = 10;
 
@@ -182,7 +186,7 @@ namespace OutfitStudio
         public const int ScheduleDividerHeight = 2;
         public const int ScheduleRuleListBottomPad = 10;
 
-        public const int ScheduleEditWidth = 850;
+        public const int ScheduleEditWidth = 700;
         public const int ScheduleEditRowHeight = 48;
         public const int ScheduleEditLabelWidth = 110;
         public const int ScheduleEditDropdownMaxVisible = 5;
@@ -190,10 +194,13 @@ namespace OutfitStudio
         public const int ScheduleEditSectionGap = 8;
         public const int ScheduleEditTriggerIndent = 20;
         public const int ScheduleEditColumnGap = 20;
-        public const int ScheduleEditTriggerLabelWidth = 85;
         public const int ScheduleEditDropdownPanelPadding = 5;
-        public const int ScheduleEditTagRowPaddingV = 15;
         public const int ScheduleEditDeleteButtonSize = 20;
+        public const int ScheduleEditSectionHeaderHeight = 30;
+        public const int ScheduleEditBarRowGap = 10;
+        public const int ScheduleEditOptionRowGap = 10;
+        public const int ScheduleEditOptionsLabelToBarGap = 15;
+        public const int ScheduleEditClearButtonLeftShift = 8;
 
         public const int SetPreviewWidth = 750;
         public const int SetPreviewPanelGap = 30;

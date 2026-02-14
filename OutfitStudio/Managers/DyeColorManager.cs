@@ -128,11 +128,13 @@ namespace OutfitStudio
         private void TryStartSliderDrag(int x, int y)
         {
             // Use expanded hit areas for easier clicking
+            // expandX = cursor half-width (origin 16px at scale 1f) so the cursor is clickable at min/max
+            int expandX = 16;
             int expandY = 8;
 
-            Rectangle hueHit = new Rectangle(hueBarBounds.X, hueBarBounds.Y - expandY, hueBarBounds.Width, hueBarBounds.Height + expandY * 2);
-            Rectangle satHit = new Rectangle(satBarBounds.X, satBarBounds.Y - expandY, satBarBounds.Width, satBarBounds.Height + expandY * 2);
-            Rectangle valHit = new Rectangle(valBarBounds.X, valBarBounds.Y - expandY, valBarBounds.Width, valBarBounds.Height + expandY * 2);
+            Rectangle hueHit = new Rectangle(hueBarBounds.X - expandX, hueBarBounds.Y - expandY, hueBarBounds.Width + expandX * 2, hueBarBounds.Height + expandY * 2);
+            Rectangle satHit = new Rectangle(satBarBounds.X - expandX, satBarBounds.Y - expandY, satBarBounds.Width + expandX * 2, satBarBounds.Height + expandY * 2);
+            Rectangle valHit = new Rectangle(valBarBounds.X - expandX, valBarBounds.Y - expandY, valBarBounds.Width + expandX * 2, valBarBounds.Height + expandY * 2);
 
             if (hueHit.Contains(x, y))
             {
@@ -222,7 +224,7 @@ namespace OutfitStudio
                     (int)Game1.smallFont.MeasureString("V").X
                 )
             );
-            barOffsetX = maxLabelWidth + 10;
+            barOffsetX = maxLabelWidth + 16;
 
             int resetButtonWidth = UIHelpers.CalculateButtonWidth(TranslationCache.CommonReset);
             int resetButtonHeight = TabAndButtonHeight;
