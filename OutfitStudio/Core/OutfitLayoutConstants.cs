@@ -254,8 +254,8 @@ namespace OutfitStudio
         public const int ScheduleDebugBorderPadding = 40;
         public const int ScheduleDebugItemGap = 10;
         public const int ScheduleDebugTopPadding = 38;
-        public const int ScheduleDebugBottomPadding = 20;
-        public const int ScheduleDebugListToButtonGap = 30;
+        public const int ScheduleDebugBottomPadding = 30;
+        public const int ScheduleDebugListToButtonGap = 21;
         public const int ScheduleDebugLine2Indent = 30;
         public const int ScheduleDebugTitleToInfoGap = 6;
         public const int ScheduleDebugInfoToDividerGap = 8;

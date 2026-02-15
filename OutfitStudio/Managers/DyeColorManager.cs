@@ -13,6 +13,7 @@ namespace OutfitStudio
         private int hueValue;
         private int satValue;
         private int valValue;
+        internal int HueValue => hueValue;
         private Color originalColor;
         private int activeSliderIndex = -1;
 
@@ -70,7 +71,7 @@ namespace OutfitStudio
         public void SetSlidersFromColor(Color color)
         {
             ColorPicker.RGBtoHSV(color.R, color.G, color.B, out float h, out float s, out float v);
-            hueValue = (int)(h / 360f * 100f);
+            hueValue = float.IsNaN(h) ? 0 : (int)(h / 360f * 100f);
             satValue = (int)(s * 100f);
             valValue = (int)(v / 255f * 100f);
         }

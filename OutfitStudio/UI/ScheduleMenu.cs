@@ -544,7 +544,7 @@ namespace OutfitStudio
             bool searchFocused = masterEnabled && (searchTextBox?.Selected ?? false);
             UIHelpers.DrawInputBar(b, uiBuilder.SearchBar.bounds,
                 searchTextBox?.Text ?? "", searchFocused,
-                placeholder: TranslationCache.ScheduleSearchPlaceholder,
+                placeholder: TranslationCache.WardrobeSearch,
                 clearButton: masterEnabled && hasSearchText ? uiBuilder.SearchClearButton : null,
                 opacity: filterOpacity);
 
@@ -601,7 +601,7 @@ namespace OutfitStudio
 
             if (showDeleteConfirmation)
                 UIHelpers.DrawDeleteConfirmationDialog(b, deleteDialogBounds,
-                    TranslationCache.ScheduleEditDeleteRuleConfirm,
+                    TranslationCache.ScheduleEditDeleteScheduleConfirm,
                     deleteYesButton!, TranslationCache.DeleteConfirmYes,
                     deleteNoButton!, TranslationCache.DeleteConfirmNo);
 
@@ -644,7 +644,7 @@ namespace OutfitStudio
 
             if (showDeleteConfirmation)
                 (deleteDialogBounds, deleteYesButton, deleteNoButton) = UIHelpers.CalculateDeleteDialogLayout(
-                    TranslationCache.ScheduleEditDeleteRuleConfirm, TranslationCache.DeleteConfirmYes, TranslationCache.DeleteConfirmNo);
+                    TranslationCache.ScheduleEditDeleteScheduleConfirm, TranslationCache.DeleteConfirmYes, TranslationCache.DeleteConfirmNo);
         }
 
         private void OpenEditOverlay(string ruleId)
@@ -669,7 +669,7 @@ namespace OutfitStudio
             showDeleteConfirmation = true;
             pendingDeleteIndex = ruleIndex;
             (deleteDialogBounds, deleteYesButton, deleteNoButton) = UIHelpers.CalculateDeleteDialogLayout(
-                TranslationCache.ScheduleEditDeleteRuleConfirm, TranslationCache.DeleteConfirmYes, TranslationCache.DeleteConfirmNo);
+                TranslationCache.ScheduleEditDeleteScheduleConfirm, TranslationCache.DeleteConfirmYes, TranslationCache.DeleteConfirmNo);
         }
 
         private void HideDeleteConfirmation()

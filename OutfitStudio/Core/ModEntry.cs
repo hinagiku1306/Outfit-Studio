@@ -203,6 +203,14 @@ namespace OutfitStudio
                     max: OutfitLayoutConstants.MaxSlotSize
                 );
 
+                gmcmApi.AddBoolOption(
+                    mod: ModManifest,
+                    name: () => TranslationCache.ConfigShowScheduleDebugLogName,
+                    tooltip: () => TranslationCache.ConfigShowScheduleDebugLogTooltip,
+                    getValue: () => config.ShowScheduleDebugLog,
+                    setValue: value => config.ShowScheduleDebugLog = value
+                );
+
                 gmcmApi.AddSectionTitle(
                     mod: ModManifest,
                     text: () => TranslationCache.ConfigWardrobeMenuSection
@@ -243,14 +251,6 @@ namespace OutfitStudio
                 gmcmApi.AddSectionTitle(
                     mod: ModManifest,
                     text: () => TranslationCache.ConfigScheduleSection
-                );
-
-                gmcmApi.AddBoolOption(
-                    mod: ModManifest,
-                    name: () => TranslationCache.ConfigShowScheduleDebugLogName,
-                    tooltip: () => TranslationCache.ConfigShowScheduleDebugLogTooltip,
-                    getValue: () => config.ShowScheduleDebugLog,
-                    setValue: value => config.ShowScheduleDebugLog = value
                 );
 
                 gmcmApi.AddBoolOption(

@@ -18,8 +18,8 @@ namespace OutfitStudio
         private const int WarpIconSize = 10 * WarpIconScale; // 30px
         private const int NameToWarpIconGap = 8;
         private const int TopPadding = 38;
-        private const int BottomPadding = 20;
-        private const int ListToButtonGap = 20;
+        private const int BottomPadding = 30;
+        private const int ListToButtonGap = 12;
         private const int HoverExtend = 10;
 
         public ClickableTextureComponent CloseButton { get; private set; } = null!;
@@ -457,7 +457,7 @@ namespace OutfitStudio
         public void DrawNoRulesText(SpriteBatch b, bool masterEnabled)
         {
             float opacity = masterEnabled ? 0.5f : DisabledSectionOpacity * 0.5f;
-            string text = TranslationCache.ScheduleNoRules;
+            string text = TranslationCache.ScheduleNoSchedules;
             Vector2 textSize = Game1.smallFont.MeasureString(text);
             float textX = contentX + (contentWidth - textSize.X) / 2;
             float textY = ruleListY + (ruleListHeight - textSize.Y) / 2;

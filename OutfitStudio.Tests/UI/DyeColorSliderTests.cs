@@ -136,6 +136,38 @@ namespace OutfitStudio.Tests.UI
             Assert.Equal(BarX + BarWidth / 2, result);
         }
 
+        // --- NaN hue guard (pure white / achromatic colors) ---
+
+        [Fact]
+        // Expected: SetSlidersFromColor produces valid hueValue (0) for pure white, not NaN-derived garbage
+        public void SetSlidersFromColor_PureWhite_HueIsZero()
+        {
+            var manager = new DyeColorManager(() => { }, () => default);
+            manager.SetSlidersFromColor(Microsoft.Xna.Framework.Color.White);
+            int cursorX = DyeColorManager.CalculateCursorX(manager.HueValue, BarX, BarWidth);
+            Assert.InRange(cursorX, BarX, BarX + BarWidth);
+        }
+
+        [Fact]
+        // Expected: SetSlidersFromColor produces valid hueValue for pure black (max=0 path returns h=-1)
+        public void SetSlidersFromColor_PureBlack_HueIsZero()
+        {
+            var manager = new DyeColorManager(() => { }, () => default);
+            manager.SetSlidersFromColor(Microsoft.Xna.Framework.Color.Black);
+            int cursorX = DyeColorManager.CalculateCursorX(manager.HueValue, BarX, BarWidth);
+            Assert.InRange(cursorX, BarX, BarX + BarWidth);
+        }
+
+        [Fact]
+        // Expected: SetSlidersFromColor produces valid hueValue for mid-gray (achromatic, delta=0)
+        public void SetSlidersFromColor_Gray_HueIsZero()
+        {
+            var manager = new DyeColorManager(() => { }, () => default);
+            manager.SetSlidersFromColor(new Microsoft.Xna.Framework.Color(128, 128, 128));
+            int cursorX = DyeColorManager.CalculateCursorX(manager.HueValue, BarX, BarWidth);
+            Assert.InRange(cursorX, BarX, BarX + BarWidth);
+        }
+
         // --- Round-trip: click → value → cursor stays within gradient ---
 
         [Theory]

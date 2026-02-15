@@ -87,20 +87,25 @@ namespace OutfitStudio
         private int CalculateLeftPanelHeight()
         {
             int arrowHeight = (int)(ArrowNativeHeight * ArrowScale);
-            int arrowRowHeight = arrowHeight + ElementGap;
-            return CharacterPreviewHeight + arrowRowHeight + GapBetweenPortraitAndButtons
-                   + (TabAndButtonHeight * 3) + ElementGap * 2;
+            return CharacterPreviewHeight + ElementGap + arrowHeight
+                + GapBetweenPortraitAndButtons
+                + TabAndButtonHeight + ElementGap + TabAndButtonHeight;
         }
 
         private int CalculateRightPanelHeight()
         {
             int gridHeight = VISIBLE_ROWS * SLOT_SIZE + (VISIBLE_ROWS - 1) * ItemSlotGap;
-            return TabAndButtonHeight + ElementGap + gridHeight + GridToButtonGap + TabAndButtonHeight;
+            return TabAndButtonHeight + ElementGap + gridHeight;
+        }
+
+        private int CalculateBottomButtonsSectionHeight()
+        {
+            return GridToButtonGap + TabAndButtonHeight;
         }
 
         private int CalculateContentSectionHeight()
         {
-            return Math.Max(CalculateRightPanelHeight(), CalculateLeftPanelHeight());
+            return Math.Max(CalculateLeftPanelHeight(), CalculateRightPanelHeight() + CalculateBottomButtonsSectionHeight());
         }
 
         public int CalculateRequiredHeight()
@@ -189,8 +194,8 @@ namespace OutfitStudio
             int leftPanelY = sectionY + (sectionHeight - leftPanelHeight) / 2;
             PositionLeftPanel(leftPanelCenterX, leftPanelY);
 
-            int rightPanelHeight = CalculateRightPanelHeight();
-            int rightPanelY = sectionY + (sectionHeight - rightPanelHeight) / 2;
+            int rightTotalHeight = CalculateRightPanelHeight() + CalculateBottomButtonsSectionHeight();
+            int rightPanelY = sectionY + (sectionHeight - rightTotalHeight) / 2;
             PositionRightPanel(rightPanelX, rightPanelY, gridWidth);
         }
 
@@ -233,20 +238,14 @@ namespace OutfitStudio
             );
 
             int maxLeftButtonWidth = LeftPanelWidth;
-            int newOutfitButtonWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ButtonNewOutfit, maxLeftButtonWidth);
             int outfitsButtonWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ButtonOutfits, maxLeftButtonWidth);
             int schedulesButtonWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ButtonSchedules, maxLeftButtonWidth);
-            int leftButtonWidth = Math.Max(Math.Max(newOutfitButtonWidth, outfitsButtonWidth), schedulesButtonWidth);
+            int leftButtonWidth = Math.Max(outfitsButtonWidth, schedulesButtonWidth);
 
             int leftButtonsStartX = centerX - leftButtonWidth / 2;
-            int saveButtonY = arrowY + arrowHeight + GapBetweenPortraitAndButtons;
-            int wardrobeButtonY = saveButtonY + TabAndButtonHeight + ElementGap;
+            int wardrobeButtonY = arrowY + arrowHeight + GapBetweenPortraitAndButtons;
             int scheduleButtonY = wardrobeButtonY + TabAndButtonHeight + ElementGap;
 
-            SaveButton = new ClickableComponent(
-                new Rectangle(leftButtonsStartX, saveButtonY, leftButtonWidth, TabAndButtonHeight),
-                TranslationCache.ButtonNewOutfit
-            );
             WardrobeButton = new ClickableComponent(
                 new Rectangle(leftButtonsStartX, wardrobeButtonY, leftButtonWidth, TabAndButtonHeight),
                 TranslationCache.ButtonOutfits
@@ -311,12 +310,19 @@ namespace OutfitStudio
             int gridHeight = VISIBLE_ROWS * SLOT_SIZE + (VISIBLE_ROWS - 1) * ItemSlotGap;
             int bottomButtonsY = gridY + gridHeight + GridToButtonGap;
 
-            int maxBottomButtonWidth = (gridWidth - ElementGap) / 2;
+            int maxBottomButtonWidth = (gridWidth - ElementGap * 2) / 3;
+            int saveWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ButtonNewOutfit, maxBottomButtonWidth);
             int applyWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ButtonApply, maxBottomButtonWidth);
             int resetWidth = UIHelpers.CalculateButtonWidth(TranslationCache.CommonReset, maxBottomButtonWidth);
 
             int resetX = panelX + gridWidth - resetWidth;
             int applyX = resetX - ElementGap - applyWidth;
+            int saveX = applyX - ElementGap - saveWidth;
+
+            SaveButton = new ClickableComponent(
+                new Rectangle(saveX, bottomButtonsY, saveWidth, TabAndButtonHeight),
+                TranslationCache.ButtonNewOutfit
+            );
 
             ApplyButton = new ClickableComponent(
                 new Rectangle(applyX, bottomButtonsY, applyWidth, TabAndButtonHeight),
@@ -509,13 +515,13 @@ namespace OutfitStudio
             UIHelpers.DrawTextureButton(b, LeftArrowButton);
             UIHelpers.DrawTextureButton(b, RightArrowButton);
 
-            UIHelpers.DrawTextButton(b, SaveButton, TranslationCache.ButtonNewOutfit);
             UIHelpers.DrawTextButton(b, WardrobeButton, TranslationCache.ButtonOutfits);
             UIHelpers.DrawTextButton(b, ScheduleButton, TranslationCache.ButtonSchedules);
         }
 
         public void DrawBottomButtons(SpriteBatch b)
         {
+            UIHelpers.DrawTextButton(b, SaveButton, TranslationCache.ButtonNewOutfit);
             UIHelpers.DrawTextButton(b, ApplyButton, TranslationCache.ButtonApply);
             UIHelpers.DrawTextButton(b, ResetButton, TranslationCache.CommonReset);
         }
@@ -720,6 +726,7 @@ namespace OutfitStudio
                 ShirtsTab.containsPoint(mouseX, mouseY) ||
                 PantsTab.containsPoint(mouseX, mouseY) ||
                 HatsTab.containsPoint(mouseX, mouseY) ||
+                SaveButton.containsPoint(mouseX, mouseY) ||
                 ApplyButton.containsPoint(mouseX, mouseY) ||
                 ResetButton.containsPoint(mouseX, mouseY) ||
                 DyeColorButton.containsPoint(mouseX, mouseY) ||

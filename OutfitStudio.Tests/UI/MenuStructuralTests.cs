@@ -442,7 +442,7 @@ namespace OutfitStudio.Tests.UI
             string source = SourceScanner.ReadSourceFile("UI/ScheduleMenu.cs");
             string body = SourceScanner.ExtractMethodBody(source, "override void draw");
             Assert.Contains("UIHelpers.DrawInputBar", body);
-            Assert.Contains("ScheduleSearchPlaceholder", body);
+            Assert.Contains("WardrobeSearch", body);
         }
 
         [Fact]
@@ -548,11 +548,11 @@ namespace OutfitStudio.Tests.UI
         // ----------------------------------------------------------------
 
         [Fact]
-        // Expected: TranslationCache has ScheduleSearchPlaceholder property
-        public void TranslationCache_HasScheduleSearchPlaceholder()
+        // Expected: ScheduleMenu search uses WardrobeSearch (shared key)
+        public void ScheduleMenu_Search_UsesSharedWardrobeSearchKey()
         {
-            string source = SourceScanner.ReadSourceFile("Utilities/TranslationCache.cs");
-            Assert.Contains("ScheduleSearchPlaceholder", source);
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleMenu.cs");
+            Assert.Contains("WardrobeSearch", source);
         }
 
         // ----------------------------------------------------------------
@@ -2528,7 +2528,7 @@ namespace OutfitStudio.Tests.UI
             string body = SourceScanner.ExtractMethodBody(source, "DrawExpandedSections");
             Assert.Contains("ScheduleDebugLabelReason", body);
             Assert.Contains("WasTiebreak", body);
-            Assert.Contains("ScheduleDebugReasonPriority", body);
+            Assert.Contains("ScheduleEditPriority", body);
         }
 
         [Fact]
@@ -2605,11 +2605,11 @@ namespace OutfitStudio.Tests.UI
             Assert.Contains("ScheduleDebugLabelOutfit", body);
             Assert.Contains("ScheduleDebugLabelStatus", body);
             Assert.Contains("ScheduleDebugLabelRotation", body);
-            Assert.Contains("ScheduleDebugLabelSeason", body);
-            Assert.Contains("ScheduleDebugLabelWeather", body);
-            Assert.Contains("ScheduleDebugLabelLocation", body);
-            Assert.Contains("ScheduleDebugLabelArea", body);
-            Assert.Contains("ScheduleDebugLabelFestival", body);
+            Assert.Contains("ScheduleEditSeason", body);
+            Assert.Contains("ScheduleEditWeather", body);
+            Assert.Contains("ScheduleEditLocation", body);
+            Assert.Contains("ScheduleEditArea", body);
+            Assert.Contains("ScheduleEditFestival", body);
             Assert.Contains("ScheduleDebugLabelWedding", body);
         }
 
@@ -2619,12 +2619,12 @@ namespace OutfitStudio.Tests.UI
         {
             string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
             string body = SourceScanner.ExtractMethodBody(source, "string GetFailLabel");
-            Assert.Contains("ScheduleDebugFailSeason", body);
-            Assert.Contains("ScheduleDebugFailFestival", body);
-            Assert.Contains("ScheduleDebugFailWeather", body);
-            Assert.Contains("ScheduleDebugFailLocation", body);
-            Assert.Contains("ScheduleDebugFailArea", body);
-            Assert.Contains("ScheduleDebugFailWedding", body);
+            Assert.Contains("ScheduleEditSeason", body);
+            Assert.Contains("ScheduleEditFestival", body);
+            Assert.Contains("ScheduleEditWeather", body);
+            Assert.Contains("ScheduleEditLocation", body);
+            Assert.Contains("ScheduleEditArea", body);
+            Assert.Contains("ScheduleDebugLabelWedding", body);
             Assert.Contains("ScheduleDebugFailEmptyPool", body);
         }
 
@@ -2634,9 +2634,9 @@ namespace OutfitStudio.Tests.UI
         {
             string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
             string body = SourceScanner.ExtractMethodBody(source, "string GetPriorityLabel");
-            Assert.Contains("ScheduleDebugPriorityHigh", body);
-            Assert.Contains("ScheduleDebugPriorityMedium", body);
-            Assert.Contains("ScheduleDebugPriorityLow", body);
+            Assert.Contains("ScheduleEditPriorityHigh", body);
+            Assert.Contains("ScheduleEditPriorityMedium", body);
+            Assert.Contains("ScheduleEditPriorityLow", body);
         }
 
         [Fact]
@@ -2656,26 +2656,9 @@ namespace OutfitStudio.Tests.UI
         [InlineData("schedule.debug.label-outfit")]
         [InlineData("schedule.debug.label-status")]
         [InlineData("schedule.debug.label-rotation")]
-        [InlineData("schedule.debug.label-season")]
-        [InlineData("schedule.debug.label-weather")]
-        [InlineData("schedule.debug.label-location")]
-        [InlineData("schedule.debug.label-area")]
-        [InlineData("schedule.debug.label-festival")]
         [InlineData("schedule.debug.label-wedding")]
-        [InlineData("schedule.debug.yes")]
-        [InlineData("schedule.debug.no")]
         [InlineData("schedule.debug.trigger-daystarted")]
-        [InlineData("schedule.debug.reason-priority")]
-        [InlineData("schedule.debug.fail-season")]
-        [InlineData("schedule.debug.fail-festival")]
-        [InlineData("schedule.debug.fail-weather")]
-        [InlineData("schedule.debug.fail-location")]
-        [InlineData("schedule.debug.fail-area")]
-        [InlineData("schedule.debug.fail-wedding")]
         [InlineData("schedule.debug.fail-empty-pool")]
-        [InlineData("schedule.debug.priority-high")]
-        [InlineData("schedule.debug.priority-medium")]
-        [InlineData("schedule.debug.priority-low")]
         [InlineData("schedule.debug.priority-group-high")]
         [InlineData("schedule.debug.priority-group-medium")]
         [InlineData("schedule.debug.priority-group-low")]
@@ -2826,18 +2809,253 @@ namespace OutfitStudio.Tests.UI
         {
             string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
             string body = SourceScanner.ExtractMethodBody(source, "DrawExpandedSections");
-            Assert.Contains("ScheduleDebugLabelFestival, festivalText", body);
-            Assert.Contains("ScheduleDebugLabelLocation, entry.LocationName", body);
-            Assert.Contains("ScheduleDebugLabelWeather, entry.Weather", body);
+            Assert.Contains("ScheduleEditFestival, festivalText", body);
+            Assert.Contains("ScheduleEditLocation, entry.LocationName", body);
+            Assert.Contains("ScheduleEditWeather, entry.Weather", body);
         }
 
         [Fact]
-        // Expected: TranslationCache uses "label-festival" (singular) not "label-festivals"
+        // Expected: TranslationCache uses "ScheduleEditFestival" (singular) not "ScheduleEditFestivals"
         public void TranslationCache_UsesSingularFestivalLabel()
         {
             string source = SourceScanner.ReadSourceFile("Utilities/TranslationCache.cs");
-            Assert.Contains("ScheduleDebugLabelFestival", source);
-            Assert.DoesNotContain("ScheduleDebugLabelFestivals", source);
+            Assert.Contains("ScheduleEditFestival", source);
+            Assert.DoesNotContain("ScheduleEditFestivals", source);
+        }
+
+        // ----------------------------------------------------------------
+        //  S65: Manual outfit snapshot for individual items
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: ScheduleEngine uses ManualOutfitSnapshot instead of string for manual cache
+        public void ScheduleEngine_ManualCacheUsesSnapshot()
+        {
+            string source = SourceScanner.ReadSourceFile("Services/ScheduleEngine.cs");
+            Assert.Contains("Dictionary<string, ManualOutfitSnapshot>", source);
+            Assert.Contains("ManualOutfitSnapshot? lastManualSnapshot", source);
+        }
+
+        [Fact]
+        // Expected: SetManualOutfit accepts ManualOutfitSnapshot parameter
+        public void ScheduleEngine_SetManualOutfit_AcceptsSnapshot()
+        {
+            string source = SourceScanner.ReadSourceFile("Services/ScheduleEngine.cs");
+            Assert.Contains("SetManualOutfit(ManualOutfitSnapshot snapshot)", source);
+        }
+
+        [Fact]
+        // Expected: TryApplyManualOverride uses value comparison via MatchesCurrentPlayer
+        public void ScheduleEngine_TryApplyManualOverride_UsesValueComparison()
+        {
+            string source = SourceScanner.ReadSourceFile("Services/ScheduleEngine.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "bool TryApplyManualOverride");
+            Assert.Contains("MatchesCurrentPlayer", body);
+        }
+
+        [Fact]
+        // Expected: ManualOutfitSnapshot has FromCurrentPlayer and FromOutfitSet factory methods
+        public void ManualOutfitSnapshot_HasFactoryMethods()
+        {
+            string source = SourceScanner.ReadSourceFile("Services/ScheduleEngine.cs");
+            Assert.Contains("FromCurrentPlayer()", source);
+            Assert.Contains("FromOutfitSet(OutfitSet set)", source);
+        }
+
+        [Fact]
+        // Expected: ManualOutfitSnapshot has EquipmentEquals for value comparison ignoring metadata
+        public void ManualOutfitSnapshot_HasEquipmentEquals()
+        {
+            string source = SourceScanner.ReadSourceFile("Services/ScheduleEngine.cs");
+            Assert.Contains("EquipmentEquals(ManualOutfitSnapshot other)", source);
+        }
+
+        [Fact]
+        // Expected: OutfitMenu.ApplyOutfit notifies schedule engine with snapshot from current player
+        public void OutfitMenu_ApplyOutfit_NotifiesScheduleEngine()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/OutfitMenu.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void ApplyOutfit");
+            Assert.Contains("ManualOutfitSnapshot.FromCurrentPlayer()", body);
+            Assert.Contains("SetManualOutfit", body);
+        }
+
+        [Fact]
+        // Expected: OutfitMenu.NotifyOutfitApplied creates snapshot from set or current player
+        public void OutfitMenu_NotifyOutfitApplied_CreatesSnapshotFromSetOrPlayer()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/OutfitMenu.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void NotifyOutfitApplied");
+            Assert.Contains("ManualOutfitSnapshot.FromOutfitSet(set)", body);
+            Assert.Contains("ManualOutfitSnapshot.FromCurrentPlayer()", body);
+        }
+
+        [Fact]
+        // Expected: ScheduleEngine log populates ManualOverrideOutfitName with ScheduleManualItems fallback
+        public void ScheduleEngine_LogEntry_FallsBackToScheduleManualItems()
+        {
+            string source = SourceScanner.ReadSourceFile("Services/ScheduleEngine.cs");
+            Assert.Contains("ScheduleManualItems", source);
+        }
+
+        [Fact]
+        // Expected: TranslationCache has ScheduleManualItems property
+        public void TranslationCache_HasScheduleManualItems()
+        {
+            string source = SourceScanner.ReadSourceFile("Utilities/TranslationCache.cs");
+            Assert.Contains("ScheduleManualItems", source);
+            Assert.Contains("schedule.manual-items", source);
+        }
+
+        [Fact]
+        // Expected: default.json has schedule.manual-items key
+        public void DefaultJson_HasScheduleManualItemsKey()
+        {
+            string json = SourceScanner.ReadSourceFile("i18n/default.json");
+            Assert.Contains("\"schedule.manual-items\"", json);
+        }
+
+        // ----------------------------------------------------------------
+        //  S9a: i18n rule→schedule rename (no stale "rule" keys)
+        // ----------------------------------------------------------------
+
+        [Theory]
+        [InlineData("schedule.debug.schedules")]
+        [InlineData("schedule.no-schedules")]
+        [InlineData("schedule.schedules-header")]
+        [InlineData("schedule.edit.delete-schedule-confirm")]
+        // Expected: Renamed schedule i18n keys exist in default.json
+        public void DefaultJson_HasRenamedScheduleKeys(string key)
+        {
+            string json = SourceScanner.ReadSourceFile("i18n/default.json");
+            Assert.Contains($"\"{key}\"", json);
+        }
+
+        [Theory]
+        [InlineData("schedule.debug.rules")]
+        [InlineData("schedule.no-rules")]
+        [InlineData("schedule.rules-header")]
+        [InlineData("schedule.edit.delete-rule-confirm")]
+        // Expected: Old "rule" i18n keys no longer exist in default.json
+        public void DefaultJson_NoStaleRuleKeys(string key)
+        {
+            string json = SourceScanner.ReadSourceFile("i18n/default.json");
+            Assert.DoesNotContain($"\"{key}\"", json);
+        }
+
+        [Theory]
+        [InlineData("ScheduleDebugSchedules")]
+        [InlineData("ScheduleNoSchedules")]
+        [InlineData("ScheduleEditDeleteScheduleConfirm")]
+        // Expected: TranslationCache has renamed schedule properties
+        public void TranslationCache_HasRenamedScheduleProperties(string propertyName)
+        {
+            string source = SourceScanner.ReadSourceFile("Utilities/TranslationCache.cs");
+            Assert.Contains(propertyName, source);
+        }
+
+        [Theory]
+        [InlineData("ScheduleDebugRules")]
+        [InlineData("ScheduleNoRules")]
+        [InlineData("ScheduleEditDeleteRuleConfirm")]
+        // Expected: Old "Rule" TranslationCache properties no longer exist
+        public void TranslationCache_NoStaleRuleProperties(string propertyName)
+        {
+            string source = SourceScanner.ReadSourceFile("Utilities/TranslationCache.cs");
+            Assert.DoesNotContain(propertyName, source);
+        }
+
+        // ----------------------------------------------------------------
+        //  S9b: Save button moved to right panel bottom (next to Apply)
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: DrawBottomButtons draws SaveButton (moved from left panel)
+        public void OutfitUIBuilder_DrawBottomButtons_IncludesSaveButton()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/OutfitUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void DrawBottomButtons");
+            Assert.Contains("SaveButton", body);
+            Assert.Contains("ButtonNewOutfit", body);
+        }
+
+        [Fact]
+        // Expected: DrawLeftPanelButtons no longer draws SaveButton
+        public void OutfitUIBuilder_DrawLeftPanelButtons_NoSaveButton()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/OutfitUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void DrawLeftPanelButtons");
+            Assert.DoesNotContain("SaveButton", body);
+            Assert.DoesNotContain("ButtonNewOutfit", body);
+        }
+
+        // ----------------------------------------------------------------
+        //  S9c: Apply button closes menu
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: ApplyButton click handler calls exitActiveMenu to close the menu
+        public void OutfitInputHandler_ApplyButton_ClosesMenu()
+        {
+            string source = SourceScanner.ReadSourceFile("Input/OutfitInputHandler.cs");
+            Assert.Contains("exitActiveMenu", source);
+        }
+
+        // ----------------------------------------------------------------
+        //  S9d: Main menu panel height calculations
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: CalculateLeftPanelHeight uses actual left panel components (preview, arrows, buttons), not right panel height
+        public void OutfitUIBuilder_LeftPanelHeight_UsesActualComponents()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/OutfitUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "int CalculateLeftPanelHeight");
+            Assert.Contains("CharacterPreviewHeight", body);
+            Assert.Contains("ArrowNativeHeight", body);
+            Assert.Contains("GapBetweenPortraitAndButtons", body);
+            Assert.Contains("TabAndButtonHeight", body);
+            Assert.DoesNotContain("CalculateRightPanelHeight", body);
+        }
+
+        [Fact]
+        // Expected: CalculateRightPanelHeight excludes bottom buttons (grid section only)
+        public void OutfitUIBuilder_RightPanelHeight_ExcludesBottomButtons()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/OutfitUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "int CalculateRightPanelHeight");
+            Assert.DoesNotContain("GridToButtonGap", body);
+        }
+
+        [Fact]
+        // Expected: Bottom buttons section height is separated from right panel height
+        public void OutfitUIBuilder_BottomButtonsSectionHeight_Exists()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/OutfitUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "int CalculateBottomButtonsSectionHeight");
+            Assert.Contains("GridToButtonGap", body);
+            Assert.Contains("TabAndButtonHeight", body);
+        }
+
+        [Fact]
+        // Expected: Content section height = max(left, right + bottom)
+        public void OutfitUIBuilder_ContentSectionHeight_UsesMaxOfLeftAndRightPlusBottom()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/OutfitUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "int CalculateContentSectionHeight");
+            Assert.Contains("CalculateLeftPanelHeight()", body);
+            Assert.Contains("CalculateRightPanelHeight()", body);
+            Assert.Contains("CalculateBottomButtonsSectionHeight()", body);
+            Assert.Contains("Math.Max", body);
+        }
+
+        [Fact]
+        // Expected: Right panel positioning uses combined right + bottom height for centering
+        public void OutfitUIBuilder_PositionContentSection_CentersRightWithBottomButtons()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/OutfitUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void PositionContentSection");
+            Assert.Contains("CalculateBottomButtonsSectionHeight()", body);
         }
     }
 }
