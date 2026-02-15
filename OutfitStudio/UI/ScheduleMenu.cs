@@ -112,6 +112,9 @@ namespace OutfitStudio
 
             ruleStates.Sort((a, b) =>
                 string.Compare(a.Rule.Name, b.Rule.Name, StringComparison.OrdinalIgnoreCase));
+
+            for (int i = 0; i < ruleStates.Count; i++)
+                ruleStates[i].OriginalIndex = i + 1;
         }
 
         private void RebuildDisplayedRules()
@@ -130,7 +133,7 @@ namespace OutfitStudio
             }
 
             uiBuilder.ScrollOffset = 0;
-            uiBuilder.Recalculate(displayedRules.Count);
+            uiBuilder.Recalculate(displayedRules.Count, ruleStates.Count);
             UpdateSearchTextBoxBounds();
         }
 
@@ -208,7 +211,7 @@ namespace OutfitStudio
                 return;
             }
 
-            // When master is disabled, only Close button works
+            // When master is disabled, only Close button works (floating log handled above)
             if (!masterEnabled)
             {
                 if (uiBuilder.CloseMenuButton.containsPoint(x, y))
@@ -414,7 +417,7 @@ namespace OutfitStudio
                     uiBuilder.ClampScrollOffset();
                     if (uiBuilder.ScrollOffset != oldOffset)
                     {
-                        uiBuilder.Recalculate(displayedRules.Count);
+                        uiBuilder.Recalculate(displayedRules.Count, ruleStates.Count);
                         UpdateSearchTextBoxBounds();
                         Game1.playSound("shiny4");
                     }
@@ -450,7 +453,7 @@ namespace OutfitStudio
 
             if (uiBuilder.ScrollOffset != oldOffset)
             {
-                uiBuilder.Recalculate(displayedRules.Count);
+                uiBuilder.Recalculate(displayedRules.Count, ruleStates.Count);
                 UpdateSearchTextBoxBounds();
                 Game1.playSound("shiny4");
             }
@@ -491,7 +494,7 @@ namespace OutfitStudio
                     uiBuilder.ClampScrollOffset();
                     if (uiBuilder.ScrollOffset != oldOffset)
                     {
-                        uiBuilder.Recalculate(displayedRules.Count);
+                        uiBuilder.Recalculate(displayedRules.Count, ruleStates.Count);
                         UpdateSearchTextBoxBounds();
                         if (shouldPlaySound) Game1.playSound("shiny4");
                     }
@@ -632,7 +635,7 @@ namespace OutfitStudio
             base.gameWindowSizeChanged(oldBounds, newBounds);
             parentMenu.gameWindowSizeChanged(oldBounds, newBounds);
 
-            uiBuilder.Recalculate(displayedRules.Count);
+            uiBuilder.Recalculate(displayedRules.Count, ruleStates.Count);
             UpdateSearchTextBoxBounds();
             width = uiBuilder.Width;
             height = uiBuilder.Height;
@@ -709,6 +712,7 @@ namespace OutfitStudio
         {
             public ScheduleRule Rule { get; set; } = null!;
             public int TotalOutfits { get; set; }
+            public int OriginalIndex { get; set; }
         }
     }
 }

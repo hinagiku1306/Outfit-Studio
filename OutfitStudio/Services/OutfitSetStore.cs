@@ -68,7 +68,6 @@ namespace OutfitStudio.Services
 
             RebuildIndexes();
             ValidateAllSets();
-            monitor.Log($"Loaded {localData.Sets.Count} local outfit sets.", LogLevel.Debug);
         }
 
         public void ClearLocalData()
@@ -153,6 +152,7 @@ namespace OutfitStudio.Services
             ValidateSet(set);
             UpdateIndexesForSet(set);
             InvalidateFilterCache();
+            OnSetsChanged?.Invoke();
         }
 
         public void Update(OutfitSet set)

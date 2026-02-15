@@ -305,14 +305,15 @@ namespace OutfitStudio
                 new Vector2(contentX, textY), Game1.textColor);
         }
 
-        public void DrawConditionsHeader(SpriteBatch b)
+        public void DrawConditionsHeader(SpriteBatch b, float opacity = 1f)
         {
             string text = TranslationCache.ScheduleEditConditions;
             float textHeight = Game1.smallFont.MeasureString(text).Y;
             int textY = conditionsHeaderY + (int)((ScheduleEditSectionHeaderHeight - textHeight) / 2);
             Vector2 pos = new Vector2(contentX, textY);
-            Utility.drawTextWithShadow(b, text, Game1.smallFont, pos, Game1.textColor);
-            Utility.drawTextWithShadow(b, text, Game1.smallFont, pos + new Vector2(1, 0), Game1.textColor);
+            Color color = Game1.textColor * opacity;
+            Utility.drawTextWithShadow(b, text, Game1.smallFont, pos, color);
+            Utility.drawTextWithShadow(b, text, Game1.smallFont, pos + new Vector2(1, 0), color);
         }
 
         public void DrawSpecialEventsHeader(SpriteBatch b)

@@ -29,6 +29,9 @@ namespace OutfitStudio
         public ClickableComponent ResetSearchCheckbox { get; private set; } = null!;
         public ClickableComponent ResetMatchAllCheckbox { get; private set; } = null!;
         public ClickableComponent ResetShowInvalidCheckbox { get; private set; } = null!;
+        public ClickableComponent ShowScheduleDebugLogCheckbox { get; private set; } = null!;
+        public ClickableComponent ConsistentTiebreaksCheckbox { get; private set; } = null!;
+        public ClickableComponent LockManualOutfitCheckbox { get; private set; } = null!;
 
         public DiscreteSlider VisibleRowsSlider { get; private set; } = null!;
         public DiscreteSlider VisibleColumnsSlider { get; private set; } = null!;
@@ -44,6 +47,7 @@ namespace OutfitStudio
         public int GeneralHeaderY { get; private set; }
         public int MainMenuHeaderY { get; private set; }
         public int WardrobeHeaderY { get; private set; }
+        public int ScheduleHeaderY { get; private set; }
 
 
         private int[] rowYPositions = Array.Empty<int>();
@@ -76,8 +80,8 @@ namespace OutfitStudio
 
         public void Recalculate()
         {
-            int totalRows = 16;
-            int totalSections = 3;
+            int totalRows = 19;
+            int totalSections = 4;
 
             int scrollableContentNatural = (ConfigSectionHeaderHeight * totalSections)
                                            + (ConfigRowHeight * totalRows);
@@ -260,6 +264,27 @@ namespace OutfitStudio
             SearchScopePanelAnchor = new Rectangle(panelX, currentY, ConfigDropdownWidth, ConfigRowHeight);
 
             BuildSearchScopeOptions();
+            currentY += ConfigRowHeight;
+
+            ScheduleHeaderY = currentY;
+            currentY += ConfigSectionHeaderHeight;
+
+            rowYList.Add(currentY);
+            labelsList.Add(TranslationCache.ConfigShowScheduleDebugLogName);
+            tooltipsList.Add(TranslationCache.ConfigShowScheduleDebugLogTooltip);
+            ShowScheduleDebugLogCheckbox = CreateCheckbox(currentY, "ShowScheduleDebugLog");
+            currentY += ConfigRowHeight;
+
+            rowYList.Add(currentY);
+            labelsList.Add(TranslationCache.ConfigConsistentTiebreaksName);
+            tooltipsList.Add(TranslationCache.ConfigConsistentTiebreaksTooltip);
+            ConsistentTiebreaksCheckbox = CreateCheckbox(currentY, "ConsistentTiebreaks");
+            currentY += ConfigRowHeight;
+
+            rowYList.Add(currentY);
+            labelsList.Add(TranslationCache.ConfigLockManualOutfitName);
+            tooltipsList.Add(TranslationCache.ConfigLockManualOutfitTooltip);
+            LockManualOutfitCheckbox = CreateCheckbox(currentY, "LockManualOutfit");
             currentY += ConfigRowHeight;
 
             rowYPositions = rowYList.ToArray();

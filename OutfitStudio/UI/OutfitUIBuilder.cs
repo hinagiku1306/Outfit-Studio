@@ -39,6 +39,7 @@ namespace OutfitStudio
 
         public ClickableTextureComponent GearButton { get; private set; } = null!;
         public ClickableComponent ScheduleButton { get; private set; } = null!;
+        public ClickableComponent DebugLogButton { get; private set; } = null!;
 
         public ClickableTextureComponent LeftArrowButton { get; private set; } = null!;
         public ClickableTextureComponent RightArrowButton { get; private set; } = null!;
@@ -365,6 +366,7 @@ namespace OutfitStudio
             int buttonX = X + Width + 5;
             int dyeColorBtnY = dyePanelTopY - 5 - buttonSize;
             int gearBtnY = dyeColorBtnY - 5 - buttonSize;
+            int debugLogBtnY = gearBtnY - 5 - buttonSize;
 
             GearButton = new ClickableTextureComponent(
                 new Rectangle(buttonX, gearBtnY, buttonSize, buttonSize),
@@ -379,6 +381,9 @@ namespace OutfitStudio
                 new Rectangle(32, 48, 16, 16),
                 buttonSize / 16f
             );
+
+            DebugLogButton = new ClickableComponent(
+                new Rectangle(buttonX, debugLogBtnY, buttonSize, buttonSize), "DebugLog");
         }
 
         public void MarkPreviewDirty()
@@ -515,10 +520,35 @@ namespace OutfitStudio
             UIHelpers.DrawTextButton(b, ResetButton, TranslationCache.CommonReset);
         }
 
+        private static readonly Rectangle JournalIconSourceRect = new Rectangle(395, 497, 3, 8);
+
         public void DrawFloatingButtons(SpriteBatch b)
         {
+            if (ModEntry.Config.ShowScheduleDebugLog)
+                DrawDebugLogButton(b);
             DrawGearButton(b);
             DrawDyeColorButton(b);
+        }
+
+        private void DrawDebugLogButton(SpriteBatch b)
+        {
+            var bounds = DebugLogButton.bounds;
+            bool isHovered = !UIHelpers.SuppressHover
+                && DebugLogButton.containsPoint(Game1.getMouseX(), Game1.getMouseY());
+
+            float buttonScale = isHovered ? ButtonHoveringScale : 1f;
+            int bgSize = (int)(bounds.Width * buttonScale);
+            int bgX = bounds.X + (bounds.Width - bgSize) / 2;
+            int bgY = bounds.Y + (bounds.Height - bgSize) / 2;
+            UIHelpers.DrawTextureBox(b, bgX, bgY, bgSize, bgSize, Color.White, 1f, 4, 0.6f);
+
+            Vector2 iconCenter = new Vector2(
+                bounds.X + bounds.Width / 2,
+                bounds.Y + bounds.Height / 2);
+            float iconScale = (bgSize / 10f) * 0.6f;
+            Vector2 origin = new Vector2(JournalIconSourceRect.Width / 2f, JournalIconSourceRect.Height / 2f);
+            b.Draw(Game1.mouseCursors, iconCenter, JournalIconSourceRect,
+                Color.White, 0f, origin, iconScale, SpriteEffects.None, 1f);
         }
 
         private void DrawDyeColorButton(SpriteBatch b)
@@ -696,6 +726,7 @@ namespace OutfitStudio
                 CloseButton.containsPoint(mouseX, mouseY) ||
                 GearButton.containsPoint(mouseX, mouseY) ||
                 ScheduleButton.containsPoint(mouseX, mouseY) ||
+                (ModEntry.Config.ShowScheduleDebugLog && DebugLogButton.containsPoint(mouseX, mouseY)) ||
                 LeftArrowButton.containsPoint(mouseX, mouseY) ||
                 RightArrowButton.containsPoint(mouseX, mouseY) ||
                 GridScrollUpButton.containsPoint(mouseX, mouseY) ||

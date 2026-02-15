@@ -15,6 +15,7 @@ namespace OutfitStudio.Tests.UI
             "UI/ScheduleMenu.cs",
             "UI/ScheduleEditOverlay.cs",
             "UI/SetPreviewOverlay.cs",
+            "UI/ScheduleDebugLogOverlay.cs",
         };
 
         // Type B overlays that swap Game1.activeClickableMenu and must forward resize to parent
@@ -25,6 +26,7 @@ namespace OutfitStudio.Tests.UI
             "UI/ConfigOverlay.cs",
             "UI/ScheduleMenu.cs",
             "UI/ScheduleEditOverlay.cs",
+            "UI/ScheduleDebugLogOverlay.cs",
         };
 
         // ----------------------------------------------------------------
@@ -39,6 +41,7 @@ namespace OutfitStudio.Tests.UI
         [InlineData("UI/ScheduleMenu.cs")]
         [InlineData("UI/ScheduleEditOverlay.cs")]
         [InlineData("UI/SetPreviewOverlay.cs")]
+        [InlineData("UI/ScheduleDebugLogOverlay.cs")]
         // Expected: Every menu class overrides gameWindowSizeChanged to stay anchored on window resize
         public void Menu_Overrides_GameWindowSizeChanged(string sourceFile)
         {
@@ -78,6 +81,7 @@ namespace OutfitStudio.Tests.UI
         [InlineData("UI/ConfigOverlay.cs")]
         [InlineData("UI/ScheduleMenu.cs")]
         [InlineData("UI/ScheduleEditOverlay.cs")]
+        [InlineData("UI/ScheduleDebugLogOverlay.cs")]
         // Expected: Type B overlays forward gameWindowSizeChanged to parentMenu so the parent stays in sync
         public void TypeBOverlay_ForwardsResize_ToParent(string sourceFile)
         {
@@ -100,6 +104,7 @@ namespace OutfitStudio.Tests.UI
         [InlineData("UI/ScheduleMenu.cs")]
         [InlineData("UI/ScheduleEditOverlay.cs")]
         [InlineData("UI/SetPreviewOverlay.cs")]
+        [InlineData("UI/ScheduleDebugLogOverlay.cs")]
         // Expected: Every receiveLeftClick checks isWithinBounds for close-on-outside-bounds
         public void Menu_HandlesCloseOnClickOutside(string sourceFile)
         {
@@ -306,6 +311,14 @@ namespace OutfitStudio.Tests.UI
             Assert.Contains("TokenParser.ParseText", source);
         }
 
+        [Fact]
+        // Expected: ScheduleEditOverlay disambiguates duplicate location display names
+        public void ScheduleEditOverlay_DisambiguatesDuplicateLocationNames()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditOverlay.cs");
+            Assert.Contains("displayCounts", source);
+        }
+
         // ----------------------------------------------------------------
         //  S6h: ScheduleMenu draws priority dropdown
         // ----------------------------------------------------------------
@@ -370,7 +383,7 @@ namespace OutfitStudio.Tests.UI
             string source = SourceScanner.ReadSourceFile("UI/ScheduleMenu.cs");
             string body = SourceScanner.ExtractMethodBody(source, "void RebuildDisplayedRules");
             Assert.Contains("ScrollOffset = 0", body);
-            Assert.Contains("Recalculate(displayedRules.Count)", body);
+            Assert.Contains("Recalculate(displayedRules.Count, ruleStates.Count)", body);
             Assert.Contains("UpdateSearchTextBoxBounds()", body);
         }
 
@@ -583,6 +596,7 @@ namespace OutfitStudio.Tests.UI
         [InlineData("UI/ScheduleMenu.cs")]
         [InlineData("UI/ScheduleEditOverlay.cs")]
         [InlineData("UI/SetPreviewOverlay.cs")]
+        [InlineData("UI/ScheduleDebugLogOverlay.cs")]
         // Expected: Schedule menus gate truncated-text tooltips with Config.ShowTooltip
         public void ScheduleMenu_GatesTooltips_WithShowTooltipConfig(string sourceFile)
         {
@@ -856,6 +870,7 @@ namespace OutfitStudio.Tests.UI
         [InlineData("UI/ScheduleMenu.cs")]
         [InlineData("UI/SaveSetOverlay.cs")]
         [InlineData("UI/ScheduleEditOverlay.cs")]
+        [InlineData("UI/ScheduleDebugLogOverlay.cs")]
         // Expected: Type B overlay draw() sets SuppressHover=true before parentMenu.draw and restores after
         public void TypeBOverlay_Draw_SetsSuppressHoverAroundParentDraw(string sourceFile)
         {
@@ -1780,6 +1795,1049 @@ namespace OutfitStudio.Tests.UI
             string source = SourceScanner.ReadSourceFile("UI/WardrobeOverlay.cs");
             string body = SourceScanner.ExtractMethodBody(source, "void OpenEditOverlay");
             Assert.Contains("new SaveSetOverlay(this,", body);
+        }
+
+        // ----------------------------------------------------------------
+        //  S50: ScheduleDebugLogOverlay structural contracts
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: ScheduleDebugLogOverlay.gameWindowSizeChanged calls RecalculateAndSync to recompute layout
+        public void ScheduleDebugLogOverlay_GameWindowSizeChanged_CallsRecalculateAndSync()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogOverlay.cs");
+            bool found = SourceScanner.MethodContains(source,
+                "override void gameWindowSizeChanged", "RecalculateAndSync()");
+            Assert.True(found,
+                "ScheduleDebugLogOverlay.gameWindowSizeChanged must call RecalculateAndSync()");
+        }
+
+        [Fact]
+        // Expected: ScheduleDebugLogOverlay clears keyboard dispatcher (Type B, no TextBox)
+        public void ScheduleDebugLogOverlay_ClearsKeyboardDispatcher()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogOverlay.cs");
+            Assert.Contains("keyboardDispatcher.Subscriber = null", source);
+        }
+
+        [Fact]
+        // Expected: ScheduleDebugLogOverlay.receiveKeyPress gates arrow key scrolling on ArrowKeyScrolling config
+        public void ScheduleDebugLogOverlay_ReceiveKeyPress_GatesArrowScrollOnConfig()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "override void receiveKeyPress");
+            Assert.Contains("ArrowKeyScrolling", body);
+            Assert.Contains("Keys.Up", body);
+            Assert.Contains("Keys.Down", body);
+        }
+
+        [Fact]
+        // Expected: ScheduleDebugLogOverlay.update gates continuous scroll on ArrowKeyScrolling config
+        public void ScheduleDebugLogOverlay_Update_GatesContinuousScrollOnConfig()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "override void update");
+            Assert.Contains("ArrowKeyScrolling", body);
+            Assert.Contains("scrollHandler.Update", body);
+        }
+
+        [Fact]
+        // Expected: ScheduleDebugLogOverlay.CloseOverlay restores parentMenu as active menu
+        public void ScheduleDebugLogOverlay_CloseOverlay_RestoresParentMenu()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void CloseOverlay");
+            Assert.Contains("Game1.activeClickableMenu = parentMenu", body);
+        }
+
+        // ----------------------------------------------------------------
+        //  S51: OutfitMenu floating Debug Log button
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: OutfitUIBuilder has DebugLogButton property
+        public void OutfitUIBuilder_HasDebugLogButton()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/OutfitUIBuilder.cs");
+            Assert.Contains("DebugLogButton", source);
+        }
+
+        [Fact]
+        // Expected: OutfitUIBuilder draws DebugLogButton gated on ShowScheduleDebugLog config
+        public void OutfitUIBuilder_DrawFloatingButtons_GatesDebugLogOnConfig()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/OutfitUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void DrawFloatingButtons");
+            Assert.Contains("ShowScheduleDebugLog", body);
+            Assert.Contains("DrawDebugLogButton", body);
+        }
+
+        [Fact]
+        // Expected: OutfitInputHandler handles DebugLogButton click to open ScheduleDebugLogOverlay
+        public void OutfitInputHandler_HandlesDebugLogButtonClick()
+        {
+            string source = SourceScanner.ReadSourceFile("Input/OutfitInputHandler.cs");
+            Assert.Contains("DebugLogButton.containsPoint", source);
+            Assert.Contains("new ScheduleDebugLogOverlay", source);
+        }
+
+        [Fact]
+        // Expected: OutfitMenu close-on-click-outside includes DebugLogButton
+        public void OutfitMenu_CloseOnClickOutside_IncludesDebugLogButton()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/OutfitMenu.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "override void receiveLeftClick");
+            Assert.Contains("DebugLogButton.containsPoint", body);
+        }
+
+        // ----------------------------------------------------------------
+        //  S52: ScheduleDebugLogOverlay multi-expand and clear
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: ScheduleDebugLogOverlay uses HashSet<int> for multi-expand instead of single int
+        public void ScheduleDebugLogOverlay_UsesHashSetForMultiExpand()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogOverlay.cs");
+            Assert.Contains("HashSet<int> expandedEntries", source);
+        }
+
+        [Fact]
+        // Expected: Toggle logic adds/removes from HashSet (not single index assignment)
+        public void ScheduleDebugLogOverlay_ToggleExpand_UsesHashSet()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "override void receiveLeftClick");
+            Assert.Contains("expandedEntries.Contains(clickedIndex)", body);
+            Assert.Contains("expandedEntries.Remove(clickedIndex)", body);
+            Assert.Contains("expandedEntries.Add(clickedIndex)", body);
+        }
+
+        [Fact]
+        // Expected: RecalculateAndSync builds Dictionary<int, int> from expandedEntries HashSet
+        public void ScheduleDebugLogOverlay_RecalculateAndSync_BuildsExpandedRuleCounts()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void RecalculateAndSync");
+            Assert.Contains("new Dictionary<int, int>()", body);
+            Assert.Contains("foreach", body);
+            Assert.Contains("expandedEntries", body);
+        }
+
+        [Fact]
+        // Expected: ScheduleDebugLogOverlay has CollapseButton handling that collapses all expanded entries
+        public void ScheduleDebugLogOverlay_CollapseButton_CollapsesAll()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "override void receiveLeftClick");
+            Assert.Contains("CollapseButton.containsPoint", body);
+            Assert.Contains("expandedEntries.Clear()", body);
+        }
+
+        [Fact]
+        // Expected: ScheduleDebugLogOverlay draw calls DrawButtons which draws both Clear and Close
+        public void ScheduleDebugLogOverlay_Draw_CallsDrawButtons()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "override void draw");
+            Assert.Contains("uiBuilder.DrawButtons(b)", body);
+        }
+
+        // ----------------------------------------------------------------
+        //  S53: ScheduleDebugLogUIBuilder changes
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: ScheduleDebugLogUIBuilder has CollapseButton property
+        public void ScheduleDebugLogUIBuilder_HasCollapseButton()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            Assert.Contains("CollapseButton", source);
+        }
+
+        [Fact]
+        // Expected: Recalculate accepts expandedRuleHeights dictionary
+        public void ScheduleDebugLogUIBuilder_Recalculate_AcceptsDictionary()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            Assert.Contains("void Recalculate(int entryCount, Dictionary<int, int> expandedRuleHeights)", source);
+        }
+
+        [Fact]
+        // Expected: DrawCollapsedEntry uses LocationDisplayName for title
+        public void ScheduleDebugLogUIBuilder_DrawCollapsedEntry_UsesLocationDisplayName()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "DrawCollapsedEntry");
+            Assert.Contains("LocationDisplayName", body);
+        }
+
+        [Fact]
+        // Expected: DrawCollapsedEntry uses " > " arrow format for info line
+        public void ScheduleDebugLogUIBuilder_DrawCollapsedEntry_UsesArrowFormat()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "DrawCollapsedEntry");
+            Assert.Contains("\" ~ \"", body);
+        }
+
+        [Fact]
+        // Expected: DrawCollapsedEntry truncates rule and outfit parts independently (halfWidth)
+        public void ScheduleDebugLogUIBuilder_DrawCollapsedEntry_TruncatesIndependently()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "DrawCollapsedEntry");
+            Assert.Contains("halfWidth", body);
+            Assert.Contains("TruncateText(rulePart, halfWidth)", body);
+            Assert.Contains("TruncateText(outfitPart, halfWidth)", body);
+        }
+
+        [Fact]
+        // Expected: CalculateRuleSectionHeight uses ScheduleDebugMinExpandedRules for minimum rule slots
+        public void ScheduleDebugLogUIBuilder_CalculateRuleSectionHeight_UsesMinExpandedRules()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "int CalculateRuleSectionHeight");
+            Assert.Contains("ScheduleDebugMinExpandedRules", body);
+        }
+
+        [Fact]
+        // Expected: Min height only applies when failed rules exist, not for matched-only
+        public void ScheduleDebugLogUIBuilder_CalculateRuleSectionHeight_MinHeightOnlyWithFailed()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "int CalculateRuleSectionHeight");
+            Assert.Contains("hasFailed", body);
+            // Min height gated on hasFailed, not applied unconditionally
+            Assert.DoesNotContain("return Math.Max(minHeight, totalPx);", body);
+        }
+
+        [Fact]
+        // Expected: Cached path draws all matched rules, not just the first
+        public void ScheduleDebugLogUIBuilder_CachedPath_DrawsAllMatchedRules()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "string? DrawExpandedSections");
+            // Find the cached rules branch (in the Rules section)
+            int rulesSection = body.IndexOf("// --- Rules ---");
+            Assert.True(rulesSection >= 0, "Rules section must exist");
+            string rulesBody = body.Substring(rulesSection);
+            int cachedIdx = rulesBody.IndexOf("CacheOutcome == EvalCacheOutcome.Cached");
+            Assert.True(cachedIdx >= 0, "Cached branch in rules section must exist");
+            // After the cached check, must have a foreach loop (not just [0])
+            string afterCached = rulesBody.Substring(cachedIdx);
+            int foreachIdx = afterCached.IndexOf("foreach");
+            int elseIdx = afterCached.IndexOf("else if");
+            Assert.True(foreachIdx >= 0 && foreachIdx < elseIdx,
+                "Cached path must iterate rules with foreach before next branch");
+        }
+
+        [Fact]
+        // Expected: DrawExpandedSections draws sections in order: Context > Result > Rules
+        public void ScheduleDebugLogUIBuilder_DrawExpandedSections_SectionOrder()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "DrawExpandedSections");
+            int ctxIdx = body.IndexOf("ScheduleDebugContext");
+            int resIdx = body.IndexOf("ScheduleDebugResult");
+            int rulIdx = body.IndexOf("DrawRulesHeader");
+            Assert.True(ctxIdx < resIdx && resIdx < rulIdx,
+                "Expanded sections must be ordered Context > Result > Rules");
+        }
+
+        [Fact]
+        // Expected: DrawButtons draws both Collapse and Close buttons
+        public void ScheduleDebugLogUIBuilder_DrawButtons_DrawsCollapseAndClose()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void DrawButtons");
+            Assert.Contains("CollapseButton", body);
+            Assert.Contains("CloseMenuButton", body);
+        }
+
+        [Fact]
+        // Expected: DrawScrollIndicators positions arrows in right border padding area
+        public void ScheduleDebugLogUIBuilder_DrawScrollIndicators_ArrowsInRightPadding()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void DrawScrollIndicators");
+            Assert.Contains("rightPaddingStart", body);
+            Assert.Contains("arrowX", body);
+        }
+
+        [Fact]
+        // Expected: DayStarted title format includes " | " separator with location
+        public void ScheduleDebugLogUIBuilder_DrawCollapsedEntry_DayStartedTitleFormat()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "DrawCollapsedEntry");
+            Assert.Contains("ScheduleDebugTriggerDayStarted", body);
+        }
+
+        // ----------------------------------------------------------------
+        //  S54: ScheduleEvalEntry.LocationDisplayName and engine population
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: ScheduleEvalEntry model has LocationDisplayName property
+        public void ScheduleEvalEntry_HasLocationDisplayName()
+        {
+            string source = SourceScanner.ReadSourceFile("Models/ScheduleEvalLog.cs");
+            Assert.Contains("LocationDisplayName", source);
+        }
+
+        [Fact]
+        // Expected: ScheduleEngine populates LocationDisplayName in the eval log entry
+        public void ScheduleEngine_PopulatesLocationDisplayName()
+        {
+            string source = SourceScanner.ReadSourceFile("Services/ScheduleEngine.cs");
+            Assert.Contains("logEntry.LocationDisplayName", source);
+        }
+
+        // ----------------------------------------------------------------
+        //  S56: ScheduleDebugLogOverlay scroll preservation on expand/collapse
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: Toggle expand does not reset ScrollOffset to 0
+        public void ScheduleDebugLogOverlay_ToggleExpand_PreservesScroll()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "override void receiveLeftClick");
+            // Find the expand/collapse block and ensure it does NOT reset scroll
+            int toggleIdx = body.IndexOf("expandedEntries.Add(clickedIndex)");
+            int nextReturnIdx = body.IndexOf("}", toggleIdx);
+            string toggleBlock = body.Substring(toggleIdx, nextReturnIdx - toggleIdx);
+            Assert.DoesNotContain("ScrollOffset = 0", toggleBlock);
+        }
+
+        [Fact]
+        // Expected: CollapseButton handler calls RecalculateAndSync after clearing expanded entries
+        public void ScheduleDebugLogOverlay_CollapseButton_RecalculatesAfterCollapse()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "override void receiveLeftClick");
+            int collapseIdx = body.IndexOf("CollapseButton.containsPoint");
+            Assert.True(collapseIdx >= 0, "CollapseButton handler must exist");
+            string afterCollapse = body.Substring(collapseIdx, Math.Min(300, body.Length - collapseIdx));
+            Assert.Contains("expandedEntries.Clear()", afterCollapse);
+            Assert.Contains("RecalculateAndSync()", afterCollapse);
+        }
+
+        // ----------------------------------------------------------------
+        //  S57: Layout constants for debug log changes
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: ScheduleDebugLogWidth is 700
+        public void OutfitLayoutConstants_ScheduleDebugLogWidth_Is700()
+        {
+            string source = SourceScanner.ReadSourceFile("Core/OutfitLayoutConstants.cs");
+            Assert.Contains("ScheduleDebugLogWidth = 700", source);
+        }
+
+        [Fact]
+        // Expected: ScheduleDebugMaxVisibleEntries is 5 (was 6)
+        public void OutfitLayoutConstants_ScheduleDebugMaxVisibleEntries_Is5()
+        {
+            string source = SourceScanner.ReadSourceFile("Core/OutfitLayoutConstants.cs");
+            Assert.Contains("ScheduleDebugMaxVisibleEntries = 5", source);
+        }
+
+        [Fact]
+        // Expected: ScheduleDebugMinExpandedRules constant exists
+        public void OutfitLayoutConstants_HasScheduleDebugMinExpandedRules()
+        {
+            string source = SourceScanner.ReadSourceFile("Core/OutfitLayoutConstants.cs");
+            Assert.Contains("ScheduleDebugMinExpandedRules", source);
+        }
+
+        [Fact]
+        // Expected: ScheduleDebugTitleToInfoGap constant exists for 8px gap
+        public void OutfitLayoutConstants_HasScheduleDebugTitleToInfoGap()
+        {
+            string source = SourceScanner.ReadSourceFile("Core/OutfitLayoutConstants.cs");
+            Assert.Contains("ScheduleDebugTitleToInfoGap", source);
+        }
+
+        [Fact]
+        // Expected: ScheduleDebugButtonGap constant exists for Clear/Close spacing
+        public void OutfitLayoutConstants_HasScheduleDebugButtonGap()
+        {
+            string source = SourceScanner.ReadSourceFile("Core/OutfitLayoutConstants.cs");
+            Assert.Contains("ScheduleDebugButtonGap", source);
+        }
+
+        // ----------------------------------------------------------------
+        //  S58: ScheduleEvalLog.Clear method
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: ScheduleEvalLog service has Clear method
+        public void ScheduleEvalLog_HasClearMethod()
+        {
+            string source = SourceScanner.ReadSourceFile("Services/ScheduleEvalLog.cs");
+            Assert.Contains("void Clear()", source);
+        }
+
+        // ----------------------------------------------------------------
+        //  S59: Debug Log UI polish (v2.0.0 batch)
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: ScheduleDebugItemGap is 10 for proper rule spacing
+        public void OutfitLayoutConstants_ScheduleDebugItemGap_Is10()
+        {
+            string source = SourceScanner.ReadSourceFile("Core/OutfitLayoutConstants.cs");
+            Assert.Contains("ScheduleDebugItemGap = 10", source);
+        }
+
+        [Fact]
+        // Expected: ScheduleDebugContextLineHeight is 31 (+1px gap between lines)
+        public void OutfitLayoutConstants_ScheduleDebugContextLineHeight_Is31()
+        {
+            string source = SourceScanner.ReadSourceFile("Core/OutfitLayoutConstants.cs");
+            Assert.Contains("ScheduleDebugContextLineHeight = 31", source);
+        }
+
+        [Fact]
+        // Expected: ScheduleDebugExpandedSectionPad is 18 for info-to-Context gap
+        public void OutfitLayoutConstants_ScheduleDebugExpandedSectionPad_Is18()
+        {
+            string source = SourceScanner.ReadSourceFile("Core/OutfitLayoutConstants.cs");
+            Assert.Contains("ScheduleDebugExpandedSectionPad = 18", source);
+        }
+
+        [Fact]
+        // Expected: ScheduleDebugTitleToInfoGap is 6 (reduced by 2px)
+        public void OutfitLayoutConstants_ScheduleDebugTitleToInfoGap_Is6()
+        {
+            string source = SourceScanner.ReadSourceFile("Core/OutfitLayoutConstants.cs");
+            Assert.Contains("ScheduleDebugTitleToInfoGap = 6", source);
+        }
+
+        [Fact]
+        // Expected: contentWidth subtracts extra 20px for right-side padding
+        public void ScheduleDebugLogUIBuilder_ContentWidth_Has20pxRightPadding()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void Recalculate");
+            Assert.Contains("ScheduleDebugBorderPadding * 2 - 20", body);
+        }
+
+        [Fact]
+        // Expected: Hover rect is clipped to EntryListClipRect to prevent overflow
+        public void ScheduleDebugLogUIBuilder_DrawCollapsedEntry_ClipsHoverToClipRect()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "DrawCollapsedEntry");
+            Assert.Contains("Rectangle.Intersect", body);
+            Assert.Contains("EntryListClipRect", body);
+        }
+
+        [Fact]
+        // Expected: EnsureEntryVisible method exists for scroll adjustment on expand
+        public void ScheduleDebugLogUIBuilder_HasEnsureEntryVisible()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            Assert.Contains("void EnsureEntryVisible(int entryIndex)", source);
+        }
+
+        [Fact]
+        // Expected: EnsureEntryVisible scrolls to show expanded entry bottom, capped at entry top
+        public void ScheduleDebugLogUIBuilder_EnsureEntryVisible_ScrollsToShowEntry()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void EnsureEntryVisible");
+            Assert.Contains("entryBottom > visibleBottom", body);
+            Assert.Contains("Math.Min(entryBottom - entryListHeight, entryTop)", body);
+            Assert.Contains("ClampScrollOffset()", body);
+        }
+
+        [Fact]
+        // Expected: Overlay preserves scroll position when expanding/collapsing entries
+        public void ScheduleDebugLogOverlay_Expand_PreservesScrollPosition()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "override void receiveLeftClick");
+            Assert.Contains("screenYBefore", body);
+            Assert.Contains("screenYAfter", body);
+            Assert.Contains("ScrollOffset +=", body);
+        }
+
+        [Fact]
+        // Expected: Reason line in expanded view shows Tiebreak via TranslationCache
+        public void ScheduleDebugLogUIBuilder_ReasonLine_ShowsTiebreak()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "DrawExpandedSections");
+            Assert.Contains("ScheduleDebugLabelReason", body);
+            Assert.Contains("TranslationCache.ScheduleDebugTiebreak", body);
+        }
+
+        [Fact]
+        // Expected: Failed rule X icon uses faint red (IndianRed) tint
+        public void ScheduleDebugLogUIBuilder_DrawFailedRuleLine_XIconFaintRed()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "string? DrawFailedRuleLine");
+            Assert.Contains("FailIconSourceRect, failColor", body);
+            Assert.Contains("Color.IndianRed", body);
+        }
+
+        [Fact]
+        // Expected: X icon moved down by 2px in failed rule lines
+        public void ScheduleDebugLogUIBuilder_DrawFailedRuleLine_XIconMovedDown2px()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "string? DrawFailedRuleLine");
+            Assert.Contains("/ 2 + 2", body);
+        }
+
+        [Fact]
+        // Expected: X icon gap to fail label is 6px
+        public void ScheduleDebugLogUIBuilder_DrawFailedRuleLine_XIconGap6()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "string? DrawFailedRuleLine");
+            Assert.Contains("xIconGap = 6", body);
+        }
+
+        [Fact]
+        // Expected: Matched rules drawn in ForestGreen with priority suffix
+        public void ScheduleDebugLogUIBuilder_DrawMatchedRuleSummary_GreenWithPriority()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "string? DrawMatchedRuleSummary");
+            Assert.Contains("Color.ForestGreen", body);
+            Assert.Contains("GetPriorityLabel", body);
+            Assert.Contains("nameDisplay + prioritySuffix", body);
+        }
+
+        [Fact]
+        // Expected: Priority short labels H/M/L still available via GetPriorityShortLabel
+        public void ScheduleDebugLogUIBuilder_GetPriorityShortLabel_ReturnsHML()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "string GetPriorityShortLabel");
+            Assert.Contains("\"H\"", body);
+            Assert.Contains("\"M\"", body);
+            Assert.Contains("\"L\"", body);
+        }
+
+        [Fact]
+        // Expected: Rules section groups failed rules by priority with headers
+        public void ScheduleDebugLogUIBuilder_DrawExpandedSections_GroupsFailedByPriority()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "DrawExpandedSections");
+            Assert.Contains("ScheduleDebugPriorityGroupHigh", body);
+            Assert.Contains("ScheduleDebugPriorityGroupMedium", body);
+            Assert.Contains("ScheduleDebugPriorityGroupLow", body);
+            Assert.Contains("DrawMatchedRuleSummary", body);
+            Assert.Contains("DrawFailedRuleLine", body);
+        }
+
+        [Fact]
+        // Expected: Line 1 (location/trigger) has truncation tooltip when text is truncated
+        public void ScheduleDebugLogUIBuilder_DrawCollapsedEntry_Line1HasTruncationTooltip()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "DrawCollapsedEntry");
+            Assert.Contains("line1Display != line1Text", body);
+        }
+
+        //  S59: ScheduleDebugLogOverlay scissor clipping
+
+        [Fact]
+        // Expected: ScheduleDebugLogOverlay has ScissorEnabled RasterizerState field for clipping
+        public void ScheduleDebugLogOverlay_HasScissorEnabledField()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogOverlay.cs");
+            Assert.Contains("ScissorEnabled", source);
+            Assert.Contains("ScissorTestEnable = true", source);
+        }
+
+        [Fact]
+        // Expected: ScheduleDebugLogOverlay.draw uses scissor rect around entry list drawing
+        public void ScheduleDebugLogOverlay_Draw_UsesScissorClipping()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "draw");
+            Assert.Contains("ScissorRectangle", body);
+            Assert.Contains("EntryListClipRect", body);
+            Assert.Contains("ScissorEnabled", body);
+        }
+
+        [Fact]
+        // Expected: ScheduleDebugLogOverlay.draw restores old scissor rect after drawing entries
+        public void ScheduleDebugLogOverlay_Draw_RestoresOldScissorRect()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "draw");
+            Assert.Contains("oldScissorRect", body);
+        }
+
+        //  S60: Rotation reshuffled display
+
+        [Fact]
+        // Expected: DrawExpandedSections checks WasReshuffled before QueueSizeAfter for rotation line
+        public void ScheduleDebugLogUIBuilder_DrawExpandedSections_ReshuffledBeforeQueueCheck()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "DrawExpandedSections");
+            int reshuffledIdx = body.IndexOf("WasReshuffled");
+            int queueIdx = body.IndexOf("QueueSizeAfter");
+            Assert.True(reshuffledIdx >= 0, "Must check WasReshuffled");
+            Assert.True(reshuffledIdx < queueIdx, "WasReshuffled must be checked before QueueSizeAfter");
+        }
+
+        [Fact]
+        // Expected: Reshuffled rotation line uses ScheduleDebugRotationReshuffled translation
+        public void ScheduleDebugLogUIBuilder_DrawExpandedSections_UsesReshuffledTranslation()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "DrawExpandedSections");
+            Assert.Contains("ScheduleDebugRotationReshuffled", body);
+        }
+
+        [Fact]
+        // Expected: ScheduleDebugRotationReshuffled translation exists in TranslationCache
+        public void TranslationCache_HasScheduleDebugRotationReshuffled()
+        {
+            string source = SourceScanner.ReadSourceFile("Utilities/TranslationCache.cs");
+            Assert.Contains("ScheduleDebugRotationReshuffled", source);
+            Assert.Contains("schedule.debug.rotation-reshuffled", source);
+        }
+
+        //  S61: ManualOverrideOutfitName fallback
+
+        [Fact]
+        // Expected: ScheduleEvalEntry has ManualOverrideOutfitName property
+        public void ScheduleEvalEntry_HasManualOverrideOutfitName()
+        {
+            string source = SourceScanner.ReadSourceFile("Models/ScheduleEvalLog.cs");
+            Assert.Contains("ManualOverrideOutfitName", source);
+        }
+
+        [Fact]
+        // Expected: ScheduleEngine populates ManualOverrideOutfitName at log entry creation
+        public void ScheduleEngine_PopulatesManualOverrideOutfitName()
+        {
+            string source = SourceScanner.ReadSourceFile("Services/ScheduleEngine.cs");
+            Assert.Contains("ManualOverrideOutfitName", source);
+        }
+
+        [Fact]
+        // Expected: Collapsed entry outfit part uses ?? chain: ChosenOutfitName ?? ManualOverrideOutfitName ?? em-dash
+        public void ScheduleDebugLogUIBuilder_DrawCollapsedEntry_FallsBackToManualOverrideName()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "DrawCollapsedEntry");
+            Assert.Contains("ChosenOutfitName ?? entry.ManualOverrideOutfitName ??", body);
+        }
+
+        //  S62: TotalRules/EnabledRules populated at log entry creation
+
+        [Fact]
+        // Expected: ScheduleEngine sets TotalRules and EnabledRules at log entry creation (before cache check)
+        public void ScheduleEngine_SetsRuleCountsAtLogEntryCreation()
+        {
+            string source = SourceScanner.ReadSourceFile("Services/ScheduleEngine.cs");
+            int createEntryIdx = source.IndexOf("evalLog.CreateEntry()");
+            int cacheCheckIdx = source.IndexOf("contextCache.TryGetValue");
+            Assert.True(createEntryIdx >= 0 && cacheCheckIdx >= 0);
+            string betweenCreateAndCache = source.Substring(createEntryIdx, cacheCheckIdx - createEntryIdx);
+            Assert.Contains("TotalRules", betweenCreateAndCache);
+            Assert.Contains("EnabledRules", betweenCreateAndCache);
+        }
+
+        [Fact]
+        // Expected: Cached path adds RuleEvalEntry for ALL tied rules, not just the winner
+        public void ScheduleEngine_CachedPath_AddsAllTiedRulesToResults()
+        {
+            string source = SourceScanner.ReadSourceFile("Services/ScheduleEngine.cs");
+            // Find the cached path (between contextCache.TryGetValue and the full-eval "var rules = ")
+            int cacheHitIdx = source.IndexOf("contextCache.TryGetValue");
+            int fullEvalIdx = source.IndexOf("var rules = scheduleStore.GetRules()");
+            Assert.True(cacheHitIdx >= 0 && fullEvalIdx >= 0);
+            string cachedSection = source.Substring(cacheHitIdx, fullEvalIdx - cacheHitIdx);
+
+            // Must iterate cached.WinningRuleIds when adding RuleResults
+            Assert.Contains("foreach", cachedSection);
+            Assert.Contains("cached.WinningRuleIds", cachedSection);
+            Assert.Contains("RuleResults.Add", cachedSection);
+        }
+
+        //  S63: Collapse button (renamed from Clear)
+
+        [Fact]
+        // Expected: ScheduleDebugCollapse translation exists in TranslationCache
+        public void TranslationCache_HasScheduleDebugCollapse()
+        {
+            string source = SourceScanner.ReadSourceFile("Utilities/TranslationCache.cs");
+            Assert.Contains("ScheduleDebugCollapse", source);
+            Assert.Contains("schedule.debug.collapse", source);
+        }
+
+        [Fact]
+        // Expected: CollapseButton only collapses when entries are expanded (guards with Count > 0)
+        public void ScheduleDebugLogOverlay_CollapseButton_GuardsOnExpandedCount()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "override void receiveLeftClick");
+            Assert.Contains("expandedEntries.Count > 0", body);
+        }
+
+        //  S65: Debug log UI polish batch
+
+        [Fact]
+        // Expected: DrawCollapsedEntry expanded background uses full entryHeight, not just collapsed row height
+        public void ScheduleDebugLogUIBuilder_ExpandedBackground_UsesFullEntryHeight()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            Assert.Contains("int entryHeight", source);
+            string body = SourceScanner.ExtractMethodBody(source, "DrawCollapsedEntry");
+            Assert.Contains("new Rectangle(contentX, rowY, contentWidth, entryHeight)", body);
+        }
+
+        [Fact]
+        // Expected: Collapsed entry uses em-dash for missing rule/outfit instead of NoMatch translation
+        public void ScheduleDebugLogUIBuilder_CollapsedEntry_UsesEmDashNotNoMatch()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "DrawCollapsedEntry");
+            Assert.DoesNotContain("ScheduleDebugNoMatch", body);
+            Assert.Contains("\\u2014", body);
+        }
+
+        [Fact]
+        // Expected: Speed icon in collapsed entry has +1 vertical offset for alignment
+        public void ScheduleDebugLogUIBuilder_CollapsedEntry_SpeedIcon1pxDown()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "DrawCollapsedEntry");
+            Assert.Contains("/ 2 + 1", body);
+        }
+
+        [Fact]
+        // Expected: DrawExpandedSections includes a Reason line with Tiebreak and Priority logic
+        public void ScheduleDebugLogUIBuilder_ExpandedSections_HasReasonLine()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "DrawExpandedSections");
+            Assert.Contains("ScheduleDebugLabelReason", body);
+            Assert.Contains("WasTiebreak", body);
+            Assert.Contains("ScheduleDebugReasonPriority", body);
+        }
+
+        [Fact]
+        // Expected: CalculateExpandedHeight Result section has 5 lines (SELECTED, Reason, Outfit, Status, Rotation)
+        public void ScheduleDebugLogUIBuilder_ExpandedHeight_ResultSection5Lines()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "int CalculateExpandedHeight");
+            Assert.Contains("5 * ScheduleDebugContextLineHeight", body);
+        }
+
+        [Fact]
+        // Expected: CollapseButton resets ScrollOffset to 0 after collapsing
+        public void ScheduleDebugLogOverlay_CollapseButton_ScrollsToTop()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "override void receiveLeftClick");
+            int collapseIdx = body.IndexOf("expandedEntries.Clear()");
+            int scrollIdx = body.IndexOf("ScrollOffset = 0");
+            Assert.True(collapseIdx >= 0 && scrollIdx > collapseIdx,
+                "ScrollOffset must be reset to 0 after collapse");
+        }
+
+        [Fact]
+        // Expected: Failed rules under priority groups use PriorityGroupGap spacing
+        public void ScheduleDebugLogUIBuilder_PriorityGroups_UseGapConstant()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "DrawExpandedSections");
+            Assert.Contains("PriorityGroupGap", body);
+            Assert.Contains("PriorityHeaderToRulesGap", body);
+        }
+
+        [Fact]
+        // Expected: Failed rules under priority groups use PriorityRuleExtraIndent (20px)
+        public void ScheduleDebugLogUIBuilder_PriorityRules_Use20pxIndent()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            Assert.Contains("PriorityRuleExtraIndent = 20", source);
+            string body = SourceScanner.ExtractMethodBody(source, "DrawExpandedSections");
+            Assert.Contains("lineX + PriorityRuleExtraIndent", body);
+        }
+
+        [Fact]
+        // Expected: CalculateRuleSectionHeight includes PriorityGroupGap and PriorityHeaderToRulesGap in pixel calc
+        public void ScheduleDebugLogUIBuilder_RuleSectionHeight_IncludesGaps()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "int CalculateRuleSectionHeight");
+            Assert.Contains("PriorityGroupGap", body);
+            Assert.Contains("PriorityHeaderToRulesGap", body);
+        }
+
+        [Fact]
+        // Expected: DrawFailedRuleLine draws rule name in default text color and fail label in IndianRed
+        public void ScheduleDebugLogUIBuilder_FailedRuleLine_NameDefaultColor_FailRed()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "string? DrawFailedRuleLine");
+            Assert.Contains("nameDisplay, Game1.smallFont", body);
+            Assert.Contains("Game1.textColor * 0.8f", body);
+            Assert.Contains("failLabel, Game1.smallFont", body);
+            Assert.Contains("Color.IndianRed", body);
+        }
+
+        [Fact]
+        // Expected: All expanded section labels use TranslationCache (no hardcoded "Status:", "Rotation:", etc.)
+        public void ScheduleDebugLogUIBuilder_ExpandedSections_AllLabelsTranslated()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "DrawExpandedSections");
+            Assert.Contains("ScheduleDebugLabelSelected", body);
+            Assert.Contains("ScheduleDebugLabelReason", body);
+            Assert.Contains("ScheduleDebugLabelOutfit", body);
+            Assert.Contains("ScheduleDebugLabelStatus", body);
+            Assert.Contains("ScheduleDebugLabelRotation", body);
+            Assert.Contains("ScheduleDebugLabelSeason", body);
+            Assert.Contains("ScheduleDebugLabelWeather", body);
+            Assert.Contains("ScheduleDebugLabelLocation", body);
+            Assert.Contains("ScheduleDebugLabelArea", body);
+            Assert.Contains("ScheduleDebugLabelFestival", body);
+            Assert.Contains("ScheduleDebugLabelWedding", body);
+        }
+
+        [Fact]
+        // Expected: GetFailLabel uses TranslationCache for all fail reasons
+        public void ScheduleDebugLogUIBuilder_GetFailLabel_UsesTranslationCache()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "string GetFailLabel");
+            Assert.Contains("ScheduleDebugFailSeason", body);
+            Assert.Contains("ScheduleDebugFailFestival", body);
+            Assert.Contains("ScheduleDebugFailWeather", body);
+            Assert.Contains("ScheduleDebugFailLocation", body);
+            Assert.Contains("ScheduleDebugFailArea", body);
+            Assert.Contains("ScheduleDebugFailWedding", body);
+            Assert.Contains("ScheduleDebugFailEmptyPool", body);
+        }
+
+        [Fact]
+        // Expected: GetPriorityLabel uses TranslationCache for High/Medium/Low
+        public void ScheduleDebugLogUIBuilder_GetPriorityLabel_UsesTranslationCache()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "string GetPriorityLabel");
+            Assert.Contains("ScheduleDebugPriorityHigh", body);
+            Assert.Contains("ScheduleDebugPriorityMedium", body);
+            Assert.Contains("ScheduleDebugPriorityLow", body);
+        }
+
+        [Fact]
+        // Expected: Priority group headers use TranslationCache
+        public void ScheduleDebugLogUIBuilder_PriorityGroupHeaders_UseTranslationCache()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "DrawExpandedSections");
+            Assert.Contains("ScheduleDebugPriorityGroupHigh", body);
+            Assert.Contains("ScheduleDebugPriorityGroupMedium", body);
+            Assert.Contains("ScheduleDebugPriorityGroupLow", body);
+        }
+
+        [Theory]
+        [InlineData("schedule.debug.label-selected")]
+        [InlineData("schedule.debug.label-reason")]
+        [InlineData("schedule.debug.label-outfit")]
+        [InlineData("schedule.debug.label-status")]
+        [InlineData("schedule.debug.label-rotation")]
+        [InlineData("schedule.debug.label-season")]
+        [InlineData("schedule.debug.label-weather")]
+        [InlineData("schedule.debug.label-location")]
+        [InlineData("schedule.debug.label-area")]
+        [InlineData("schedule.debug.label-festival")]
+        [InlineData("schedule.debug.label-wedding")]
+        [InlineData("schedule.debug.yes")]
+        [InlineData("schedule.debug.no")]
+        [InlineData("schedule.debug.trigger-daystarted")]
+        [InlineData("schedule.debug.reason-priority")]
+        [InlineData("schedule.debug.fail-season")]
+        [InlineData("schedule.debug.fail-festival")]
+        [InlineData("schedule.debug.fail-weather")]
+        [InlineData("schedule.debug.fail-location")]
+        [InlineData("schedule.debug.fail-area")]
+        [InlineData("schedule.debug.fail-wedding")]
+        [InlineData("schedule.debug.fail-empty-pool")]
+        [InlineData("schedule.debug.priority-high")]
+        [InlineData("schedule.debug.priority-medium")]
+        [InlineData("schedule.debug.priority-low")]
+        [InlineData("schedule.debug.priority-group-high")]
+        [InlineData("schedule.debug.priority-group-medium")]
+        [InlineData("schedule.debug.priority-group-low")]
+        [InlineData("schedule.debug.tiebreak-consistent")]
+        [InlineData("schedule.debug.tiebreak-random")]
+        [InlineData("schedule.debug.reason-manual")]
+        [InlineData("schedule.debug.reason-special-event")]
+        // Expected: All new debug log i18n keys exist in default.json
+        public void DefaultJson_HasScheduleDebugLabelKey(string key)
+        {
+            string json = SourceScanner.ReadSourceFile("i18n/default.json");
+            Assert.Contains($"\"{key}\"", json);
+        }
+
+        [Fact]
+        // Expected: Reason line handles manual override with ScheduleDebugReasonManual
+        public void ScheduleDebugLogUIBuilder_ReasonLine_HandlesManualOverride()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "DrawExpandedSections");
+            Assert.Contains("ManualOverrideOutfitName", body);
+            Assert.Contains("ScheduleDebugReasonManual", body);
+        }
+
+        [Fact]
+        // Expected: Reason line handles special event with DarkGoldenrod color
+        public void ScheduleDebugLogUIBuilder_ReasonLine_SpecialEventOrange()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "DrawExpandedSections");
+            Assert.Contains("ScheduleDebugReasonSpecialEvent", body);
+            Assert.Contains("Color.DarkGoldenrod", body);
+        }
+
+        [Fact]
+        // Expected: Outfit line falls back to ManualOverrideOutfitName
+        public void ScheduleDebugLogUIBuilder_OutfitLine_FallsBackToManualOverride()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "DrawExpandedSections");
+            Assert.Contains("ChosenOutfitName ?? entry.ManualOverrideOutfitName", body);
+        }
+
+        [Fact]
+        // Expected: Rules section is hidden for manual override entries
+        public void ScheduleDebugLogUIBuilder_RulesSection_HiddenForManualOverride()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "DrawExpandedSections");
+            Assert.Contains("isManualOverride", body);
+            Assert.Contains("!isManualOverride", body);
+        }
+
+        [Fact]
+        // Expected: CalculateRuleSectionHeight returns 0 for manual override
+        public void ScheduleDebugLogUIBuilder_RuleSectionHeight_ZeroForManualOverride()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "int CalculateRuleSectionHeight");
+            Assert.Contains("isManualOverride", body);
+        }
+
+        [Fact]
+        // Expected: CalculateExpandedHeight skips rules section when ruleSectionHeight is 0
+        public void ScheduleDebugLogUIBuilder_ExpandedHeight_SkipsRulesWhenZero()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "int CalculateExpandedHeight");
+            Assert.Contains("ruleSectionHeight > 0", body);
+        }
+
+        [Fact]
+        // Expected: Tiebreak reason line shows tooltip with TiedRuleNames on hover
+        public void ScheduleDebugLogUIBuilder_TiebreakReason_ShowsTiedRuleNamesTooltip()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "DrawExpandedSections");
+            Assert.Contains("TiedRuleNames", body);
+        }
+
+        [Fact]
+        // Expected: OutfitUIBuilder debug log button uses ButtonHoveringScale for hover effect
+        public void OutfitUIBuilder_DebugLogButton_BoxScalesOnHover()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/OutfitUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void DrawDebugLogButton");
+            Assert.Contains("ButtonHoveringScale", body);
+            Assert.Contains("bgSize", body);
+        }
+
+        // ----------------------------------------------------------------
+        //  S62: Schedule rule list numbering
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: DrawRuleRow draws rule name with truncation and hover highlight
+        public void ScheduleMenuUIBuilder_DrawRuleRow_DrawsNameAndHighlight()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleMenuUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "string? DrawRuleRow");
+            Assert.Contains("TruncateText", body);
+            Assert.Contains("Color.Wheat", body);
+        }
+
+        // ----------------------------------------------------------------
+        //  S63: Debug log Collapse/Close same width
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: Collapse and Close buttons use Math.Max for equal width
+        public void ScheduleDebugLogUIBuilder_CollapseCloseButtons_SameWidth()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            Assert.Contains("Math.Max(collapseWidth, closeWidth)", source);
+        }
+
+        // ----------------------------------------------------------------
+        //  S64: Debug log context line tooltip shows value only
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: DrawContextLine accepts separate label and value parameters
+        public void ScheduleDebugLogUIBuilder_DrawContextLine_HasLabelAndValueParams()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "string? DrawContextLine");
+            Assert.Contains("leftLabel", body);
+            Assert.Contains("leftValue", body);
+            Assert.Contains("rightLabel", body);
+            Assert.Contains("rightValue", body);
+        }
+
+        [Fact]
+        // Expected: DrawContextLine tooltip returns value only, not the full "Label: Value" string
+        public void ScheduleDebugLogUIBuilder_DrawContextLine_TooltipReturnsValueOnly()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "string? DrawContextLine");
+            Assert.Contains("tooltip = leftValue", body);
+            Assert.Contains("tooltip = rightValue", body);
+            Assert.DoesNotContain("tooltip = leftFull", body);
+            Assert.DoesNotContain("tooltip = rightFull", body);
+        }
+
+        [Fact]
+        // Expected: DrawContextLine callers pass label and value as separate args (not pre-formatted)
+        public void ScheduleDebugLogUIBuilder_ContextLines_PassSeparateLabelAndValue()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "DrawExpandedSections");
+            Assert.Contains("ScheduleDebugLabelFestival, festivalText", body);
+            Assert.Contains("ScheduleDebugLabelLocation, entry.LocationName", body);
+            Assert.Contains("ScheduleDebugLabelWeather, entry.Weather", body);
+        }
+
+        [Fact]
+        // Expected: TranslationCache uses "label-festival" (singular) not "label-festivals"
+        public void TranslationCache_UsesSingularFestivalLabel()
+        {
+            string source = SourceScanner.ReadSourceFile("Utilities/TranslationCache.cs");
+            Assert.Contains("ScheduleDebugLabelFestival", source);
+            Assert.DoesNotContain("ScheduleDebugLabelFestivals", source);
         }
     }
 }

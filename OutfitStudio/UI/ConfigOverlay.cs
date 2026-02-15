@@ -35,6 +35,9 @@ namespace OutfitStudio
         private bool resetMatchAllOnOpen;
         private bool resetShowInvalidOnOpen;
         private string defaultSearchScope;
+        private bool showScheduleDebugLog;
+        private bool consistentTiebreaks;
+        private bool lockManualOutfit;
 
         private readonly int originalRows;
         private readonly int originalColumns;
@@ -67,6 +70,9 @@ namespace OutfitStudio
             resetMatchAllOnOpen = config.ResetMatchAllOnOpen;
             resetShowInvalidOnOpen = config.ResetShowInvalidOnOpen;
             defaultSearchScope = config.DefaultSearchScope;
+            showScheduleDebugLog = config.ShowScheduleDebugLog;
+            consistentTiebreaks = config.ConsistentTiebreaks;
+            lockManualOutfit = config.LockManualOutfit;
 
             originalRows = visibleRows;
             originalColumns = visibleColumns;
@@ -187,6 +193,9 @@ namespace OutfitStudio
             if (TryToggleCheckbox(uiBuilder.ResetSearchCheckbox, x, y, ref resetSearchOnTabSwitch, playSound)) return;
             if (TryToggleCheckbox(uiBuilder.ResetMatchAllCheckbox, x, y, ref resetMatchAllOnOpen, playSound)) return;
             if (TryToggleCheckbox(uiBuilder.ResetShowInvalidCheckbox, x, y, ref resetShowInvalidOnOpen, playSound)) return;
+            if (TryToggleCheckbox(uiBuilder.ShowScheduleDebugLogCheckbox, x, y, ref showScheduleDebugLog, playSound)) return;
+            if (TryToggleCheckbox(uiBuilder.ConsistentTiebreaksCheckbox, x, y, ref consistentTiebreaks, playSound)) return;
+            if (TryToggleCheckbox(uiBuilder.LockManualOutfitCheckbox, x, y, ref lockManualOutfit, playSound)) return;
 
             if (IsInRowOf(uiBuilder.SearchScopeDropdown, x, y))
             {
@@ -370,6 +379,11 @@ namespace OutfitStudio
             uiBuilder.DrawCheckboxRow(b, TranslationCache.ConfigResetMatchAllOnOpenName, resetMatchAllOnOpen, uiBuilder.ResetMatchAllCheckbox);
             uiBuilder.DrawCheckboxRow(b, TranslationCache.ConfigResetShowInvalidOnOpenName, resetShowInvalidOnOpen, uiBuilder.ResetShowInvalidCheckbox);
             uiBuilder.DrawSearchScopeRow(b, TranslationCache.ConfigDefaultSearchScopeName, defaultSearchScope, searchScopeDropdownOpen);
+
+            uiBuilder.DrawSectionHeader(b, uiBuilder.ScheduleHeaderY, TranslationCache.ConfigScheduleSection);
+            uiBuilder.DrawCheckboxRow(b, TranslationCache.ConfigShowScheduleDebugLogName, showScheduleDebugLog, uiBuilder.ShowScheduleDebugLogCheckbox);
+            uiBuilder.DrawCheckboxRow(b, TranslationCache.ConfigConsistentTiebreaksName, consistentTiebreaks, uiBuilder.ConsistentTiebreaksCheckbox);
+            uiBuilder.DrawCheckboxRow(b, TranslationCache.ConfigLockManualOutfitName, lockManualOutfit, uiBuilder.LockManualOutfitCheckbox);
         }
 
         public override void gameWindowSizeChanged(Rectangle oldBounds, Rectangle newBounds)
@@ -427,6 +441,14 @@ namespace OutfitStudio
             config.ResetMatchAllOnOpen = resetMatchAllOnOpen;
             config.ResetShowInvalidOnOpen = resetShowInvalidOnOpen;
             config.DefaultSearchScope = defaultSearchScope;
+            config.ShowScheduleDebugLog = showScheduleDebugLog;
+
+            bool tiebreaksChanged = config.ConsistentTiebreaks != consistentTiebreaks;
+            config.ConsistentTiebreaks = consistentTiebreaks;
+            if (tiebreaksChanged)
+                mod.GetScheduleEngine()?.InvalidateContextCache();
+
+            config.LockManualOutfit = lockManualOutfit;
 
             mod.SaveConfig();
 

@@ -13,7 +13,6 @@ namespace OutfitStudio
         private static readonly Rectangle GearIconSourceRect = new Rectangle(30, 428, 10, 10);
         private static readonly Rectangle ClearIconSourceRect = new Rectangle(337, 494, 12, 12);
         private static readonly Rectangle SpeedIconSourceRect = new Rectangle(130, 428, 10, 10);
-
         private const int RuleCheckboxToNameGap = 12;
         private const int WarpIconScale = 3;
         private const int WarpIconSize = 10 * WarpIconScale; // 30px
@@ -31,7 +30,6 @@ namespace OutfitStudio
         public List<ClickableComponent> RuleDeleteButtons { get; private set; } = new();
         public ClickableComponent NewButton { get; private set; } = null!;
         public ClickableComponent CloseMenuButton { get; private set; } = null!;
-
         // Priority dropdown
         public ClickableComponent PriorityDropdown { get; private set; } = null!;
         public ClickableComponent PriorityClearButton { get; private set; } = null!;
@@ -64,13 +62,14 @@ namespace OutfitStudio
         private int ruleCount;
         private int masterToggleHeight;
 
+
         public ScheduleMenuUIBuilder()
         {
             Width = ScheduleMenuWidth;
             Recalculate(0);
         }
 
-        public void Recalculate(int ruleCount)
+        public void Recalculate(int ruleCount, int totalRuleCount = 0)
         {
             this.ruleCount = ruleCount;
             masterToggleHeight = (int)Game1.smallFont.MeasureString("T").Y;
@@ -162,11 +161,13 @@ namespace OutfitStudio
 
             BuildRuleComponents();
 
-            // 5. Bottom buttons (inside content box)
+            // 5. Bottom buttons (inside content box) — New + Close only
             int buttonsY = ruleListY + ruleListHeight + ScheduleRuleListBottomPad + ListToButtonGap;
+
             int maxButtonWidth = (contentWidth - ScheduleBottomButtonGap) / 2;
             int newWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ScheduleNew, maxButtonWidth);
             int closeWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ScheduleClose, maxButtonWidth);
+
             int totalBtnWidth = newWidth + ScheduleBottomButtonGap + closeWidth;
             int btnStartX = X + (Width - totalBtnWidth) / 2;
 
@@ -180,6 +181,7 @@ namespace OutfitStudio
                 new Rectangle(X + Width - CloseButtonSize - CloseButtonEdgeMargin,
                     Y + CloseButtonEdgeMargin, CloseButtonSize, CloseButtonSize),
                 Game1.mouseCursors, new Rectangle(337, 494, 12, 12), 4f);
+
         }
 
         private void PositionPriorityAndSearch(int rowY)
@@ -245,6 +247,7 @@ namespace OutfitStudio
             RuleDeleteButtons.Clear();
 
             int indentedX = contentX + ScheduleNameIndent;
+            int checkStartX = indentedX;
             int buttonsRight = contentX + contentWidth;
             int stride = ScheduleRuleRowHeight + ScheduleItemGap;
 
@@ -254,7 +257,7 @@ namespace OutfitStudio
 
                 int checkY = rowY + (ScheduleRuleRowHeight - ScheduleCheckboxSize) / 2;
                 RuleCheckboxes.Add(new ClickableComponent(
-                    new Rectangle(indentedX, checkY, ScheduleCheckboxSize, ScheduleCheckboxSize),
+                    new Rectangle(checkStartX, checkY, ScheduleCheckboxSize, ScheduleCheckboxSize),
                     i.ToString()
                 ));
 
@@ -275,7 +278,7 @@ namespace OutfitStudio
                 ));
 
                 // Name area (checkbox + gap to edit button)
-                int nameX = indentedX + ScheduleCheckboxSize + RuleCheckboxToNameGap;
+                int nameX = checkStartX + ScheduleCheckboxSize + RuleCheckboxToNameGap;
                 int nameWidth = editX - ScheduleNameToInfoGap - nameX;
                 RuleNameAreas.Add(new ClickableComponent(
                     new Rectangle(nameX, rowY, nameWidth, ScheduleRuleRowHeight),
@@ -394,7 +397,7 @@ namespace OutfitStudio
             float nameHeight = Game1.smallFont.MeasureString(displayName).Y;
             int nameY = nameArea.bounds.Y + (int)((ScheduleRuleRowHeight - nameHeight) / 2);
 
-            // Checkbox aligned with name
+            // Checkbox first
             Rectangle sourceRect = isChecked ? UIHelpers.CheckedSourceRect : UIHelpers.UncheckedSourceRect;
             int checkDrawY = nameY + (int)((nameHeight - ScheduleCheckboxSize) / 2);
             b.Draw(Game1.mouseCursors,
@@ -496,7 +499,7 @@ namespace OutfitStudio
             int arrowH = (int)(UIHelpers.UpScrollArrowSourceRect.Height * ScheduleScrollArrowScale);
             int rightPaddingStart = contentX + contentWidth;
             int rightPaddingWidth = ScheduleBorderPadding + ScheduleScrollArrowRightPadding;
-            int arrowX = rightPaddingStart + (rightPaddingWidth - arrowW) / 2 - 14;
+            int arrowX = rightPaddingStart + (rightPaddingWidth - arrowW) / 2 - 10;
 
             if (ScrollOffset > 0)
             {

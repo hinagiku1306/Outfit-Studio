@@ -34,6 +34,8 @@ namespace OutfitStudio
         private HashSet<string> selectedFestivals = new(StringComparer.OrdinalIgnoreCase);
         private bool isWeddingDay;
 
+        private bool IsSpecialEventMode => selectedFestivals.Count > 0 || isWeddingDay;
+
         // State - other
         private bool tagsSelectAll;
         private HashSet<string> selectedTags = new(TranslationCache.TagComparer);
@@ -129,6 +131,13 @@ namespace OutfitStudio
                 selectedLocations = new HashSet<string>(editingRule.SelectedLocations, StringComparer.OrdinalIgnoreCase);
                 selectedFestivals = new HashSet<string>(editingRule.SelectedFestivals, StringComparer.OrdinalIgnoreCase);
                 isWeddingDay = editingRule.IsWeddingDay;
+                if (IsSpecialEventMode)
+                {
+                    selectedSeasons.Clear();
+                    selectedWeather.Clear();
+                    selectedAreas.Clear();
+                    selectedLocations.Clear();
+                }
                 tagsSelectAll = editingRule.TagsSelectAll;
                 selectedTags = new HashSet<string>(editingRule.SelectedTags, TranslationCache.TagComparer);
                 excludedSetIds = new List<string>(editingRule.ExcludedSetIds);
@@ -185,6 +194,21 @@ namespace OutfitStudio
                         string display = loc.DisplayName ?? loc.Name;
                         locationEntries.Add((loc.Name, display));
                     }
+
+                    // Disambiguate locations sharing the same display name (e.g. Farm / FarmHouse)
+                    var displayCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                    foreach (var entry in locationEntries)
+                    {
+                        displayCounts.TryGetValue(entry.displayName, out int count);
+                        displayCounts[entry.displayName] = count + 1;
+                    }
+                    for (int i = 0; i < locationEntries.Count; i++)
+                    {
+                        var (name, display) = locationEntries[i];
+                        if (displayCounts.TryGetValue(display, out int count) && count > 1)
+                            locationEntries[i] = (name, $"{display} ({name})");
+                    }
+
                     locationEntries.Sort((a, b) => string.Compare(a.displayName, b.displayName, StringComparison.OrdinalIgnoreCase));
                 }
             }
@@ -317,6 +341,7 @@ namespace OutfitStudio
             if (IsInWeddingRow(x, y))
             {
                 isWeddingDay = !isWeddingDay;
+                if (IsSpecialEventMode) ClearConditions();
                 if (playSound) Game1.playSound("drumkit6");
                 return;
             }
@@ -534,7 +559,8 @@ namespace OutfitStudio
             int totalOutfits = GetTotalOutfits();
             int remaining = GetRemaining();
             uiBuilder.DrawTotalOutfitsRow(b, totalOutfits, remaining);
-            uiBuilder.DrawConditionsHeader(b);
+            float conditionOpacity = IsSpecialEventMode ? 0.4f : 1f;
+            uiBuilder.DrawConditionsHeader(b, conditionOpacity);
 
             // Hover suppression behind open dropdown panels
             bool anyDropdownOpen = IsAnyDropdownOpen();
@@ -566,19 +592,19 @@ namespace OutfitStudio
 
             // Conditions row 1: Season | Weather
             UIHelpers.DrawDropdownButton(b, uiBuilder.SeasonsDropdownBar.bounds, seasonsSummary, seasonsDropdownOpen,
-                placeholder: seasonPlaceholder, clearButton: uiBuilder.SeasonsClearButton, hasValue: selectedSeasons.Count > 0);
+                placeholder: seasonPlaceholder, clearButton: uiBuilder.SeasonsClearButton, hasValue: selectedSeasons.Count > 0, opacity: conditionOpacity);
             UIHelpers.DrawDropdownButton(b, uiBuilder.WeatherDropdownBar.bounds, weatherSummary, weatherDropdownOpen,
-                placeholder: weatherPlaceholder, clearButton: uiBuilder.WeatherClearButton, hasValue: selectedWeather.Count > 0);
+                placeholder: weatherPlaceholder, clearButton: uiBuilder.WeatherClearButton, hasValue: selectedWeather.Count > 0, opacity: conditionOpacity);
 
             // Conditions row 2: Area | Location
             UIHelpers.DrawDropdownButton(b, uiBuilder.AreasDropdownBar.bounds, areasSummary, areasDropdownOpen,
-                placeholder: areaPlaceholder, clearButton: uiBuilder.AreasClearButton, hasValue: selectedAreas.Count > 0);
+                placeholder: areaPlaceholder, clearButton: uiBuilder.AreasClearButton, hasValue: selectedAreas.Count > 0, opacity: conditionOpacity);
 
             if (locationsDropdownOpen)
                 UIHelpers.DrawInputBar(b, uiBuilder.LocationsDropdownBar.bounds, searchText, true, placeholder: locationPlaceholder);
             else
                 UIHelpers.DrawDropdownButton(b, uiBuilder.LocationsDropdownBar.bounds, locationsSummary, false,
-                    placeholder: locationPlaceholder, clearButton: uiBuilder.LocationsClearButton, hasValue: selectedLocations.Count > 0);
+                    placeholder: locationPlaceholder, clearButton: uiBuilder.LocationsClearButton, hasValue: selectedLocations.Count > 0, opacity: conditionOpacity);
 
             // Special Events header
             uiBuilder.DrawSpecialEventsHeader(b);
@@ -762,29 +788,32 @@ namespace OutfitStudio
 
         private bool HandleClearButtonClick(int x, int y, bool playSound)
         {
-            if (selectedSeasons.Count > 0 && uiBuilder.SeasonsClearButton.containsPoint(x, y))
+            if (!IsSpecialEventMode)
             {
-                selectedSeasons.Clear();
-                if (playSound) Game1.playSound("coin");
-                return true;
-            }
-            if (selectedWeather.Count > 0 && uiBuilder.WeatherClearButton.containsPoint(x, y))
-            {
-                selectedWeather.Clear();
-                if (playSound) Game1.playSound("coin");
-                return true;
-            }
-            if (selectedAreas.Count > 0 && uiBuilder.AreasClearButton.containsPoint(x, y))
-            {
-                selectedAreas.Clear();
-                if (playSound) Game1.playSound("coin");
-                return true;
-            }
-            if (selectedLocations.Count > 0 && uiBuilder.LocationsClearButton.containsPoint(x, y))
-            {
-                selectedLocations.Clear();
-                if (playSound) Game1.playSound("coin");
-                return true;
+                if (selectedSeasons.Count > 0 && uiBuilder.SeasonsClearButton.containsPoint(x, y))
+                {
+                    selectedSeasons.Clear();
+                    if (playSound) Game1.playSound("coin");
+                    return true;
+                }
+                if (selectedWeather.Count > 0 && uiBuilder.WeatherClearButton.containsPoint(x, y))
+                {
+                    selectedWeather.Clear();
+                    if (playSound) Game1.playSound("coin");
+                    return true;
+                }
+                if (selectedAreas.Count > 0 && uiBuilder.AreasClearButton.containsPoint(x, y))
+                {
+                    selectedAreas.Clear();
+                    if (playSound) Game1.playSound("coin");
+                    return true;
+                }
+                if (selectedLocations.Count > 0 && uiBuilder.LocationsClearButton.containsPoint(x, y))
+                {
+                    selectedLocations.Clear();
+                    if (playSound) Game1.playSound("coin");
+                    return true;
+                }
             }
             if (selectedFestivals.Count > 0 && uiBuilder.FestivalsClearButton.containsPoint(x, y))
             {
@@ -799,23 +828,26 @@ namespace OutfitStudio
 
         private bool HandleDropdownBarClick(int x, int y, bool playSound)
         {
-            if (TryToggleDropdown(uiBuilder.SeasonsDropdownBar, ref seasonsDropdownOpen, x, y, playSound,
-                () => { seasonsScrollIndex = 0; RebuildVisibleOptions(uiBuilder.SeasonsDropdownBar, seasonOptionNames, seasonsScrollIndex, visibleSeasonsOptions); }))
-                return true;
+            if (!IsSpecialEventMode)
+            {
+                if (TryToggleDropdown(uiBuilder.SeasonsDropdownBar, ref seasonsDropdownOpen, x, y, playSound,
+                    () => { seasonsScrollIndex = 0; RebuildVisibleOptions(uiBuilder.SeasonsDropdownBar, seasonOptionNames, seasonsScrollIndex, visibleSeasonsOptions); }))
+                    return true;
 
-            if (TryToggleDropdown(uiBuilder.WeatherDropdownBar, ref weatherDropdownOpen, x, y, playSound,
-                () => { weatherScrollIndex = 0; RebuildVisibleOptions(uiBuilder.WeatherDropdownBar, weatherOptionNames, weatherScrollIndex, visibleWeatherOptions); }))
-                return true;
+                if (TryToggleDropdown(uiBuilder.WeatherDropdownBar, ref weatherDropdownOpen, x, y, playSound,
+                    () => { weatherScrollIndex = 0; RebuildVisibleOptions(uiBuilder.WeatherDropdownBar, weatherOptionNames, weatherScrollIndex, visibleWeatherOptions); }))
+                    return true;
 
-            if (TryToggleDropdown(uiBuilder.AreasDropdownBar, ref areasDropdownOpen, x, y, playSound,
-                () => { areasScrollIndex = 0; RebuildVisibleOptions(uiBuilder.AreasDropdownBar, areaOptionNames, areasScrollIndex, visibleAreasOptions); }))
-                return true;
+                if (TryToggleDropdown(uiBuilder.AreasDropdownBar, ref areasDropdownOpen, x, y, playSound,
+                    () => { areasScrollIndex = 0; RebuildVisibleOptions(uiBuilder.AreasDropdownBar, areaOptionNames, areasScrollIndex, visibleAreasOptions); }))
+                    return true;
 
-            if (locationsDropdownOpen && uiBuilder.LocationsDropdownBar.containsPoint(x, y))
-                return true;
-            if (TryToggleDropdown(uiBuilder.LocationsDropdownBar, ref locationsDropdownOpen, x, y, playSound,
-                () => { OpenSearchDropdown("locations"); }))
-                return true;
+                if (locationsDropdownOpen && uiBuilder.LocationsDropdownBar.containsPoint(x, y))
+                    return true;
+                if (TryToggleDropdown(uiBuilder.LocationsDropdownBar, ref locationsDropdownOpen, x, y, playSound,
+                    () => { OpenSearchDropdown("locations"); }))
+                    return true;
+            }
 
             if (festivalsDropdownOpen && uiBuilder.FestivalsDropdownBar.containsPoint(x, y))
                 return true;
@@ -953,6 +985,7 @@ namespace OutfitStudio
                 selectedFestivals.Remove(festivalId);
             else
                 selectedFestivals.Add(festivalId);
+            if (IsSpecialEventMode) ClearConditions();
         }
 
         // --- Dropdown helpers ---
@@ -1017,6 +1050,23 @@ namespace OutfitStudio
                 searchTextBox = null;
                 Game1.keyboardDispatcher.Subscriber = null;
             }
+        }
+
+        private void CloseConditionDropdowns()
+        {
+            seasonsDropdownOpen = false;
+            weatherDropdownOpen = false;
+            areasDropdownOpen = false;
+            locationsDropdownOpen = false;
+        }
+
+        private void ClearConditions()
+        {
+            selectedSeasons.Clear();
+            selectedWeather.Clear();
+            selectedAreas.Clear();
+            selectedLocations.Clear();
+            CloseConditionDropdowns();
         }
 
         private void OpenSearchDropdown(string dropdown)
