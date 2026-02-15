@@ -4,6 +4,7 @@ namespace OutfitStudio
 {
     public static class OutfitLayoutConstants
     {
+        // General Layout
         public const int BorderPaddingH = 50;
         public const int BorderPaddingRightExtra = 20;
         public const int BorderPaddingV = 40;
@@ -14,8 +15,10 @@ namespace OutfitStudio
         public const int ElementGap = 8;
         public const int ContentBoxPadding = 16;
 
+        // Tab Bar
         public const int TabSectionHeight = 48;
 
+        // Item Grid
         public const int DefaultVisibleRows = 4;
         public const int MinVisibleRows = 3;
         public const int MaxVisibleRows = 6;
@@ -28,6 +31,7 @@ namespace OutfitStudio
         public const int ItemSlotGap = 4;
         public const int DrawnItemSize = 64;
 
+        // Character Preview
         public const int LeftPanelWidth = 180;
         public const int PanelGap = 40;
         public const int CharacterPreviewWidth = (int)(128 * FarmerSpriteScale);
@@ -41,6 +45,7 @@ namespace OutfitStudio
         public const int FarmerSpriteHeight = 32;
         public const float FarmerSpriteLayerDepth = 0.8f;
 
+        // Buttons & Tabs
         public const int TabAndButtonWidth = 110;
         public const int TabAndButtonHeight = 60;
         public const int TabAndButtonGap = 8;
@@ -49,33 +54,35 @@ namespace OutfitStudio
         public const int TitleAreaHeight = 48;
         public const float TabOpacity = 0.2f;
 
+        // Direction Arrows
         public const int ArrowNativeWidth = 12;
         public const int ArrowNativeHeight = 11;
         public const float ArrowScale = 3.2f;
         public const int ArrowGap = 12;
 
+        // Scroll & Close
         public const int ScrollArrowButtonSize = 44;
         public const float GridScrollArrowScale = 2.5f;
         public const int GridScrollArrowGap = 8;
         public const int CloseButtonSize = 48;
         public const int CloseButtonEdgeMargin = 8;
 
+        // Hover & Effects
         public const float ButtonHoveringScale = 1.05f;
         public static readonly Color HoverEffectColor = Color.Wheat * 0.3f;
-
         public const float SavedMessageDurationMs = 1000f;
         public const int SavedMessageOffsetAbovePreview = 8;
-
         public const float BackgroundOverlayOpacity = 0.6f;
 
+        // Default "No Item" IDs
         public const string NoHatId = "-1";
         public const string NoShirtId = "-1";
         public const string NoPantsId = "-1";
 
+        // Filter, Search & Dropdowns
         public const int FilterSearchGap = 12;
         public const int FilterDropdownWidth = 200;
         public const int FilterTextPadding = 12;
-
         public const int ClearButtonSize = 24;
         public const int ClearButtonRightMargin = 12;
         public const int DropdownArrowPad = 8;
@@ -85,11 +92,14 @@ namespace OutfitStudio
         public const int DiceButtonSize = 40;
         public const int DiceButtonGap = 10;
 
+        // Lookup
         public const int LookupIconSize = 32;
         public const int LookupIconMargin = 4;
 
+        // Tooltip
         public const int TooltipPadding = 16;
 
+        // Wardrobe
         public const int WardrobePanelGap = 50;
         public const int WardrobeListItemHeight = 48;
         public const int WardrobePreviewSize = 256;
@@ -99,6 +109,7 @@ namespace OutfitStudio
         public const int WardrobeCheckboxSize = 29;
         public const int WardrobeDropdownMaxVisible = 5;
 
+        // Save Set Overlay
         public const int SaveSetOverlayWidth = 600;
         public const int SaveSetSectionPadding = 12;
         public const int SaveSetPreviewWidth = 140;
@@ -119,14 +130,15 @@ namespace OutfitStudio
         // Menu texture (0,256,60,60) has asymmetric borders: top=36px, bottom=40px.
         // This 2px offset compensates for the visual center shift.
         public const int TextureBoxVisualOffsetY = 2;
-
         public static readonly Rectangle MenuBoxSourceRect = new Rectangle(0, 256, 60, 60);
 
+        // Tag Editing
         public const int EditModeButtonSize = 28;
         public const int TagDeleteButtonSize = 20;
         public const float DisabledSectionOpacity = 0.5f;
         public const float MarkedForDeletionOpacity = 0.2f;
 
+        // Config Overlay
         public const int ConfigOverlayWidth = 650;
         public const int ConfigBorderPadding = 30;
         public const int ConfigRowHeight = 44;
@@ -156,6 +168,17 @@ namespace OutfitStudio
         public const int ConfigButtonBoxHeight = 70;
         public const int ConfigBoxGap = 10;
 
+        // Dye Color Panel
+        public const int DyeColorPanelWidth = 280;
+        public const int DyeColorPanelPadding = 30;
+        public const int DyeColorSliderTrackHeight = 4;
+        public const int DyeColorSliderRowHeight = 28;
+        public const int DyeColorSliderGap = 12;
+        public const int DyeColorGradientChunks = 24;
+
+        // ── v2.0.0 — Schedule ──
+
+        // Schedule Menu
         public const int ScheduleMenuWidth = 700;
         public const int ScheduleRuleRowHeight = 48;
         public const int ScheduleMaxVisibleRules = 4;
@@ -167,7 +190,7 @@ namespace OutfitStudio
         public const int ScheduleNameIndent = 20;
         public const int ScheduleSectionGap = 28;
         public const int ScheduleItemGap = 6;
-        public const int ScheduleMinVisibleRules = 4;
+        public const int ScheduleMinVisibleRules = 5;
         public const int ScheduleBottomButtonGap = 16;
         public const int ScheduleButtonBoxHeight = 70;
         public const int ScheduleBoxGap = 10;
@@ -186,6 +209,7 @@ namespace OutfitStudio
         public const int ScheduleDividerHeight = 2;
         public const int ScheduleRuleListBottomPad = 10;
 
+        // Schedule Edit Overlay
         public const int ScheduleEditWidth = 700;
         public const int ScheduleEditRowHeight = 48;
         public const int ScheduleEditLabelWidth = 110;
@@ -202,6 +226,7 @@ namespace OutfitStudio
         public const int ScheduleEditOptionsLabelToBarGap = 15;
         public const int ScheduleEditClearButtonLeftShift = 8;
 
+        // Set Preview Overlay
         public const int SetPreviewWidth = 750;
         public const int SetPreviewPanelGap = 30;
         public const int SetPreviewRowHeight = 44;
@@ -213,11 +238,27 @@ namespace OutfitStudio
         public const int SetPreviewTriggerLineHeight = 28;
         public const int SetPreviewDividerPadding = 4;
 
-        public const int DyeColorPanelWidth = 280;
-        public const int DyeColorPanelPadding = 30;
-        public const int DyeColorSliderTrackHeight = 4;
-        public const int DyeColorSliderRowHeight = 28;
-        public const int DyeColorSliderGap = 12;
-        public const int DyeColorGradientChunks = 24;
+        // Schedule Debug Log Overlay
+        public const int ScheduleDebugLogWidth = 700;
+        public const int ScheduleDebugCollapsedRowHeight = 78;
+        public const int ScheduleDebugExpandedSectionPad = 18;
+        public const int ScheduleDebugContextLineHeight = 31;
+        public const int ScheduleDebugSectionHeaderHeight = 35;
+        public const int ScheduleDebugSectionGap = 8;
+        public const int ScheduleDebugChevronSize = 20;
+        public const int ScheduleDebugChevronLeftMargin = 10;
+        public const int ScheduleDebugBadgeHeight = 22;
+        public const int ScheduleDebugMaxVisibleEntries = 5;
+        public const int ScheduleDebugMinExpandedRules = 5;
+        public const int ScheduleDebugRuleIndent = 20;
+        public const int ScheduleDebugBorderPadding = 40;
+        public const int ScheduleDebugItemGap = 10;
+        public const int ScheduleDebugTopPadding = 38;
+        public const int ScheduleDebugBottomPadding = 20;
+        public const int ScheduleDebugListToButtonGap = 30;
+        public const int ScheduleDebugLine2Indent = 30;
+        public const int ScheduleDebugTitleToInfoGap = 6;
+        public const int ScheduleDebugInfoToDividerGap = 8;
+        public const int ScheduleDebugButtonGap = 16;
     }
 }

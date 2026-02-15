@@ -204,7 +204,8 @@ namespace OutfitStudio
             base.receiveLeftClick(x, y, playSound);
 
             bool clickInPanel = dyeColorManager.IsOpen && dyeColorManager.Bounds.Contains(x, y);
-            bool clickOnFloatingButton = uiBuilder.GearButton.containsPoint(x, y) || uiBuilder.DyeColorButton.containsPoint(x, y);
+            bool clickOnFloatingButton = uiBuilder.GearButton.containsPoint(x, y) || uiBuilder.DyeColorButton.containsPoint(x, y)
+                || (ModEntry.Config.ShowScheduleDebugLog && uiBuilder.DebugLogButton.containsPoint(x, y));
             if (!isWithinBounds(x, y) && !clickInPanel && !clickOnFloatingButton && mod.GetConfig().CloseOnClickOutside)
             {
                 RevertAndClose();

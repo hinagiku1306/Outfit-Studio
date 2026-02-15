@@ -179,8 +179,7 @@ namespace OutfitStudio
             if (barBounds.IsEmpty)
                 return;
 
-            int relativeX = Math.Clamp(x - barBounds.X, 0, barBounds.Width);
-            int newValue = (int)((float)relativeX / barBounds.Width * 100f);
+            int newValue = CalculateSliderValue(x, barBounds.X, barBounds.Width);
 
             int currentValue = activeSliderIndex switch { 0 => hueValue, 1 => satValue, 2 => valValue, _ => -1 };
             if (newValue == currentValue)
@@ -324,27 +323,40 @@ namespace OutfitStudio
             );
             Utility.drawTextWithShadow(b, label, Game1.smallFont, labelPos, textTint);
 
-            int chunkWidth = barBounds.Width / DyeColorGradientChunks;
             for (int i = 0; i < DyeColorGradientChunks; i++)
             {
                 Color chunkColor = GetGradientChunkColor(sliderIndex, i) * (elementTint.A / 255f);
-                Rectangle chunkRect = new Rectangle(
-                    barBounds.X + i * chunkWidth,
-                    barBounds.Y,
-                    chunkWidth,
-                    barBounds.Height
-                );
+                var (chunkX, chunkW) = CalculateGradientChunk(barBounds.X, barBounds.Width, DyeColorGradientChunks, i);
+                Rectangle chunkRect = new Rectangle(chunkX, barBounds.Y, chunkW, barBounds.Height);
                 b.Draw(Game1.staminaRect, chunkRect, chunkColor);
             }
 
-            float normalizedValue = value / 100f;
-            int cursorX = barBounds.X + (int)(normalizedValue * barBounds.Width);
+            int cursorX = CalculateCursorX(value, barBounds.X, barBounds.Width);
             int cursorY = barBounds.Y + barBounds.Height / 2;
 
             Rectangle cursorSource = new Rectangle(64, 256, 32, 32);
             Vector2 cursorOrigin = new Vector2(16, 9);
             b.Draw(Game1.mouseCursors, new Vector2(cursorX, cursorY), cursorSource,
                 elementTint, 0f, cursorOrigin, 1f, SpriteEffects.None, 1f);
+        }
+
+        internal static (int x, int width) CalculateGradientChunk(int barX, int barWidth, int chunkCount, int chunkIndex)
+        {
+            float chunkWidth = (float)barWidth / chunkCount;
+            int x = barX + (int)(chunkIndex * chunkWidth);
+            int nextX = barX + (int)((chunkIndex + 1) * chunkWidth);
+            return (x, nextX - x);
+        }
+
+        internal static int CalculateSliderValue(int clickX, int barX, int barWidth)
+        {
+            int relativeX = Math.Clamp(clickX - barX, 0, barWidth);
+            return (int)((float)relativeX / barWidth * 100f);
+        }
+
+        internal static int CalculateCursorX(int value, int barX, int barWidth)
+        {
+            return barX + (int)(value / 100f * barWidth);
         }
 
         private Color GetGradientChunkColor(int sliderIndex, int chunkIndex)

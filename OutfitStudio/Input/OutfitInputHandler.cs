@@ -139,7 +139,8 @@ namespace OutfitStudio
                     uiBuilder.WardrobeButton.containsPoint(x, y) ||
                     uiBuilder.GearButton.containsPoint(x, y) ||
                     uiBuilder.ScheduleButton.containsPoint(x, y) ||
-                    uiBuilder.DyeColorButton.containsPoint(x, y))
+                    uiBuilder.DyeColorButton.containsPoint(x, y) ||
+                    uiBuilder.DebugLogButton.containsPoint(x, y))
                 {
                     dropdownManager.Close();
                     continuousScrollHandler.Reset();
@@ -279,6 +280,18 @@ namespace OutfitStudio
                 if (scheduleStore != null)
                 {
                     Game1.activeClickableMenu = new ScheduleMenu(Game1.activeClickableMenu, mod, outfitSetStore, scheduleStore);
+                    if (playSound) Game1.playSound("bigSelect");
+                }
+                return true;
+            }
+
+            // Type B swap: opens debug log overlay
+            if (ModEntry.Config.ShowScheduleDebugLog && uiBuilder.DebugLogButton.containsPoint(x, y))
+            {
+                var evalLog = mod.GetScheduleEvalLog();
+                if (evalLog != null)
+                {
+                    Game1.activeClickableMenu = new ScheduleDebugLogOverlay(Game1.activeClickableMenu, evalLog);
                     if (playSound) Game1.playSound("bigSelect");
                 }
                 return true;

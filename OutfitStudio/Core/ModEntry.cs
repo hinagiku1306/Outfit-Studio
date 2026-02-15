@@ -20,6 +20,7 @@ namespace OutfitStudio
         private OutfitSetStore? outfitSetStore;
         private ScheduleStore? scheduleStore;
         private ScheduleEngine? scheduleEngine;
+        private ScheduleEvalLog? scheduleEvalLog;
 
         public override void Entry(IModHelper helper)
         {
@@ -68,9 +69,10 @@ namespace OutfitStudio
             outfitSetStore.LoadGlobalData();
 
             scheduleStore = new ScheduleStore(Helper, outfitSetStore);
-            scheduleEngine = new ScheduleEngine(scheduleStore, outfitSetStore);
-            scheduleStore.OnRulesChanged = () => scheduleEngine.InvalidateContextCache();
-            outfitSetStore.OnSetsChanged = () => scheduleEngine.InvalidateContextCache();
+            scheduleEvalLog = new ScheduleEvalLog();
+            scheduleEngine = new ScheduleEngine(scheduleStore, outfitSetStore, scheduleEvalLog, () => Config.ConsistentTiebreaks, () => Config.LockManualOutfit);
+            scheduleStore.OnRulesChanged = (ruleId) => scheduleEngine.InvalidateForRule(ruleId);
+            outfitSetStore.OnSetsChanged = () => scheduleEngine.InvalidateForSetsChanged();
 
             var gmcmApi = Helper.ModRegistry.GetApi<IGenericModConfigMenuApi>("spacechase0.GenericModConfigMenu");
             if (gmcmApi != null)
@@ -238,6 +240,40 @@ namespace OutfitStudio
                     }
                 );
 
+                gmcmApi.AddSectionTitle(
+                    mod: ModManifest,
+                    text: () => TranslationCache.ConfigScheduleSection
+                );
+
+                gmcmApi.AddBoolOption(
+                    mod: ModManifest,
+                    name: () => TranslationCache.ConfigShowScheduleDebugLogName,
+                    tooltip: () => TranslationCache.ConfigShowScheduleDebugLogTooltip,
+                    getValue: () => config.ShowScheduleDebugLog,
+                    setValue: value => config.ShowScheduleDebugLog = value
+                );
+
+                gmcmApi.AddBoolOption(
+                    mod: ModManifest,
+                    name: () => TranslationCache.ConfigConsistentTiebreaksName,
+                    tooltip: () => TranslationCache.ConfigConsistentTiebreaksTooltip,
+                    getValue: () => config.ConsistentTiebreaks,
+                    setValue: value =>
+                    {
+                        bool changed = config.ConsistentTiebreaks != value;
+                        config.ConsistentTiebreaks = value;
+                        if (changed) scheduleEngine?.InvalidateContextCache();
+                    }
+                );
+
+                gmcmApi.AddBoolOption(
+                    mod: ModManifest,
+                    name: () => TranslationCache.ConfigLockManualOutfitName,
+                    tooltip: () => TranslationCache.ConfigLockManualOutfitTooltip,
+                    getValue: () => config.LockManualOutfit,
+                    setValue: value => config.LockManualOutfit = value
+                );
+
             }
         }
 
@@ -255,6 +291,7 @@ namespace OutfitStudio
         private void OnWarped(object? sender, WarpedEventArgs e)
         {
             if (!e.IsLocalPlayer) return;
+            if (e.NewLocation.Name == "Temp") return;
             scheduleEngine?.Evaluate(EvaluationTrigger.Warped);
         }
 
@@ -286,6 +323,8 @@ namespace OutfitStudio
         internal ScheduleStore? GetScheduleStore() => scheduleStore;
 
         internal ScheduleEngine? GetScheduleEngine() => scheduleEngine;
+
+        internal ScheduleEvalLog? GetScheduleEvalLog() => scheduleEvalLog;
 
         internal ModConfig GetConfig() => config;
 

@@ -21,7 +21,7 @@ namespace OutfitStudio.Services
             this.outfitSetStore = outfitSetStore;
         }
 
-        public Action? OnRulesChanged { get; set; }
+        public Action<string>? OnRulesChanged { get; set; }
 
         public bool IsEnabled
         {
@@ -36,7 +36,7 @@ namespace OutfitStudio.Services
             PruneOrphanedRotationStates();
             PruneStaleExcludedSetIds();
 
-            DebugLogger.Log($"Loaded {data.Rules.Count} schedule rules.", LogLevel.Debug);
+            DebugLogger.Log($"Loaded {data.Rules.Count} schedule rules.", LogLevel.Trace);
         }
 
         public void SaveLocalData()
@@ -63,7 +63,7 @@ namespace OutfitStudio.Services
         {
             data.Rules.Add(rule);
             SaveLocalData();
-            OnRulesChanged?.Invoke();
+            OnRulesChanged?.Invoke(rule.Id);
         }
 
         public void UpdateRule(ScheduleRule rule)
@@ -74,7 +74,7 @@ namespace OutfitStudio.Services
 
             data.Rules[index] = rule;
             SaveLocalData();
-            OnRulesChanged?.Invoke();
+            OnRulesChanged?.Invoke(rule.Id);
         }
 
         public void DeleteRule(string ruleId)
@@ -82,7 +82,7 @@ namespace OutfitStudio.Services
             data.Rules.RemoveAll(r => r.Id == ruleId);
             data.RotationStates.Remove(ruleId);
             SaveLocalData();
-            OnRulesChanged?.Invoke();
+            OnRulesChanged?.Invoke(ruleId);
         }
 
         public RotationState? GetRotationState(string ruleId)
@@ -111,7 +111,7 @@ namespace OutfitStudio.Services
             }
 
             if (orphanedKeys.Count > 0)
-                DebugLogger.Log($"Pruned {orphanedKeys.Count} orphaned rotation states.", LogLevel.Debug);
+                DebugLogger.Log($"Pruned {orphanedKeys.Count} orphaned rotation states.", LogLevel.Trace);
         }
 
         private void PruneStaleExcludedSetIds()
@@ -123,7 +123,7 @@ namespace OutfitStudio.Services
 
                 int removed = before - rule.ExcludedSetIds.Count;
                 if (removed > 0)
-                    DebugLogger.Log($"Pruned {removed} stale excluded set IDs from rule '{rule.Name}'.", LogLevel.Debug);
+                    DebugLogger.Log($"Pruned {removed} stale excluded set IDs from rule '{rule.Name}'.", LogLevel.Trace);
             }
         }
     }

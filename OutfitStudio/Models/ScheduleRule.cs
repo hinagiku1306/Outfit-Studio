@@ -33,6 +33,8 @@ namespace OutfitStudio.Models
         public int Priority { get; set; } = 2;
         public bool IsWeddingDay { get; set; }
         public bool AdvanceOnWarp { get; set; }
+
+        public bool IsSpecialEventRule => IsWeddingDay || FestivalsSelectAll || SelectedFestivals.Count > 0;
     }
 
     public class RotationState

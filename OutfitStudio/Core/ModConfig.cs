@@ -19,6 +19,9 @@ namespace OutfitStudio
         public bool ResetMatchAllOnOpen { get; set; } = false;
         public bool ResetShowInvalidOnOpen { get; set; } = false;
         public string DefaultSearchScope { get; set; } = "Set";
+        public bool ShowScheduleDebugLog { get; set; } = false;
+        public bool ConsistentTiebreaks { get; set; } = true;
+        public bool LockManualOutfit { get; set; } = true;
 
         public int VisibleRows { get; set; } = OutfitLayoutConstants.DefaultVisibleRows;
         public int VisibleColumns { get; set; } = OutfitLayoutConstants.DefaultVisibleColumns;
