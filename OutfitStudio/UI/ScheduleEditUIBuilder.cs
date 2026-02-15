@@ -210,7 +210,7 @@ namespace OutfitStudio
 
         private void CalculateTagsSetsCenteredLayout()
         {
-            string tagsLabel = TranslationCache.ScheduleEditTags;
+            string tagsLabel = TranslationCache.SaveSetTagsLabel;
             string setsLabel = TranslationCache.ScheduleEditSets;
 
             int tagsLabelW = (int)Game1.smallFont.MeasureString(tagsLabel).X;
@@ -357,7 +357,7 @@ namespace OutfitStudio
 
         public void DrawTagsRow(SpriteBatch b, int tagCount, bool isTagsOpen)
         {
-            string label = TranslationCache.ScheduleEditTags;
+            string label = TranslationCache.SaveSetTagsLabel;
             float textHeight = Game1.smallFont.MeasureString(label).Y;
             int textY = tagsRowY + (int)((ScheduleEditRowHeight - textHeight) / 2);
 

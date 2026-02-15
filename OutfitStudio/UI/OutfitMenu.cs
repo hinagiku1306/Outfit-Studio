@@ -40,8 +40,10 @@ namespace OutfitStudio
         {
             state.SaveAppliedOutfit();
             uiBuilder.MarkPreviewDirty();
-            if (set != null)
-                mod.GetScheduleEngine()?.SetManualOutfit(set.Id);
+            var snapshot = set != null
+                ? ManualOutfitSnapshot.FromOutfitSet(set)
+                : ManualOutfitSnapshot.FromCurrentPlayer();
+            mod.GetScheduleEngine()?.SetManualOutfit(snapshot);
         }
 
         public void HandleItemInfoToggle()
@@ -181,6 +183,7 @@ namespace OutfitStudio
         private void ApplyOutfit()
         {
             state.SaveAppliedOutfit();
+            mod.GetScheduleEngine()?.SetManualOutfit(ManualOutfitSnapshot.FromCurrentPlayer());
         }
 
         private OutfitCategoryManager.Category GetActiveColorCategory()

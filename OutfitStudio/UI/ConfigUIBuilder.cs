@@ -227,6 +227,12 @@ namespace OutfitStudio
                 SlotSizeSlider?.Value ?? DefaultSlotSize);
             currentY += ConfigRowHeight;
 
+            rowYList.Add(currentY);
+            labelsList.Add(TranslationCache.ConfigShowScheduleDebugLogName);
+            tooltipsList.Add(TranslationCache.ConfigShowScheduleDebugLogTooltip);
+            ShowScheduleDebugLogCheckbox = CreateCheckbox(currentY, "ShowScheduleDebugLog");
+            currentY += ConfigRowHeight;
+
             WardrobeHeaderY = currentY;
             currentY += ConfigSectionHeaderHeight;
 
@@ -268,12 +274,6 @@ namespace OutfitStudio
 
             ScheduleHeaderY = currentY;
             currentY += ConfigSectionHeaderHeight;
-
-            rowYList.Add(currentY);
-            labelsList.Add(TranslationCache.ConfigShowScheduleDebugLogName);
-            tooltipsList.Add(TranslationCache.ConfigShowScheduleDebugLogTooltip);
-            ShowScheduleDebugLogCheckbox = CreateCheckbox(currentY, "ShowScheduleDebugLog");
-            currentY += ConfigRowHeight;
 
             rowYList.Add(currentY);
             labelsList.Add(TranslationCache.ConfigConsistentTiebreaksName);

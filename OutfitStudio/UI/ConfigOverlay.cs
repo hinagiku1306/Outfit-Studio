@@ -374,6 +374,7 @@ namespace OutfitStudio
             uiBuilder.DrawSliderRow(b, TranslationCache.ConfigVisibleRowsName, uiBuilder.VisibleRowsSlider);
             uiBuilder.DrawSliderRow(b, TranslationCache.ConfigVisibleColumnsName, uiBuilder.VisibleColumnsSlider);
             uiBuilder.DrawSliderRow(b, TranslationCache.ConfigSlotSizeName, uiBuilder.SlotSizeSlider);
+            uiBuilder.DrawCheckboxRow(b, TranslationCache.ConfigShowScheduleDebugLogName, showScheduleDebugLog, uiBuilder.ShowScheduleDebugLogCheckbox);
 
             uiBuilder.DrawSectionHeader(b, uiBuilder.WardrobeHeaderY, TranslationCache.ConfigWardrobeMenuSection);
             uiBuilder.DrawCheckboxRow(b, TranslationCache.ConfigResetMatchAllOnOpenName, resetMatchAllOnOpen, uiBuilder.ResetMatchAllCheckbox);
@@ -381,7 +382,6 @@ namespace OutfitStudio
             uiBuilder.DrawSearchScopeRow(b, TranslationCache.ConfigDefaultSearchScopeName, defaultSearchScope, searchScopeDropdownOpen);
 
             uiBuilder.DrawSectionHeader(b, uiBuilder.ScheduleHeaderY, TranslationCache.ConfigScheduleSection);
-            uiBuilder.DrawCheckboxRow(b, TranslationCache.ConfigShowScheduleDebugLogName, showScheduleDebugLog, uiBuilder.ShowScheduleDebugLogCheckbox);
             uiBuilder.DrawCheckboxRow(b, TranslationCache.ConfigConsistentTiebreaksName, consistentTiebreaks, uiBuilder.ConsistentTiebreaksCheckbox);
             uiBuilder.DrawCheckboxRow(b, TranslationCache.ConfigLockManualOutfitName, lockManualOutfit, uiBuilder.LockManualOutfitCheckbox);
         }

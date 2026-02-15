@@ -305,10 +305,10 @@ namespace OutfitStudio
         {
             string? tooltip = null;
             int sectionX = contentX + ScheduleDebugRuleIndent;
-            int sectionWidth = contentWidth - ScheduleDebugRuleIndent * 2;
+            int sectionWidth = contentWidth - ScheduleDebugRuleIndent;
             int headerX = sectionX - SectionHeaderLeftExtend;
             int headerWidth = sectionWidth + SectionHeaderLeftExtend;
-            int lineMaxWidth = sectionWidth - 16;
+            int lineMaxWidth = sectionWidth - 8;
             int currentY = rowY + ScheduleDebugCollapsedRowHeight + ScheduleDebugExpandedSectionPad;
 
             // --- Context ---
@@ -321,23 +321,23 @@ namespace OutfitStudio
             string festivalText = entry.TodaysFestivalIds.Count > 0
                 ? string.Join(", ", entry.TodaysFestivalIds) : "\u2014";
             string weddingText = entry.IsWeddingDay
-                ? TranslationCache.ScheduleDebugYes : TranslationCache.ScheduleDebugNo;
+                ? TranslationCache.DeleteConfirmYes : TranslationCache.DeleteConfirmNo;
 
             string? ctxTip;
             ctxTip = DrawContextLine(b, sectionX, currentY, sectionWidth,
-                TranslationCache.ScheduleDebugLabelSeason, entry.Season,
-                TranslationCache.ScheduleDebugLabelWeather, entry.Weather, mouseX, mouseY);
+                TranslationCache.ScheduleEditSeason, entry.Season,
+                TranslationCache.ScheduleEditWeather, entry.Weather, mouseX, mouseY);
             if (ctxTip != null) tooltip = ctxTip;
             currentY += ScheduleDebugContextLineHeight;
 
             ctxTip = DrawContextLine(b, sectionX, currentY, sectionWidth,
-                TranslationCache.ScheduleDebugLabelLocation, entry.LocationName,
-                TranslationCache.ScheduleDebugLabelArea, areaText, mouseX, mouseY);
+                TranslationCache.ScheduleEditLocation, entry.LocationName,
+                TranslationCache.ScheduleEditArea, areaText, mouseX, mouseY);
             if (ctxTip != null) tooltip = ctxTip;
             currentY += ScheduleDebugContextLineHeight;
 
             ctxTip = DrawContextLine(b, sectionX, currentY, sectionWidth,
-                TranslationCache.ScheduleDebugLabelFestival, festivalText,
+                TranslationCache.ScheduleEditFestival, festivalText,
                 TranslationCache.ScheduleDebugLabelWedding, weddingText, mouseX, mouseY);
             if (ctxTip != null) tooltip = ctxTip;
             currentY += ScheduleDebugContextLineHeight + ScheduleDebugSectionGap;
@@ -411,7 +411,7 @@ namespace OutfitStudio
                     int matchedCount = 0;
                     foreach (var r in entry.RuleResults)
                         if (r.MatchResult == RuleMatchResult.Matched) matchedCount++;
-                    reasonValue = matchedCount > 1 ? TranslationCache.ScheduleDebugReasonPriority : "\u2014";
+                    reasonValue = matchedCount > 1 ? TranslationCache.ScheduleEditPriority : "\u2014";
                 }
 
                 Utility.drawTextWithShadow(b, reasonLabel, Game1.smallFont,
@@ -597,7 +597,7 @@ namespace OutfitStudio
             string detail = TranslationCache.ScheduleDebugEnabledOfTotal
                 .Replace("{{enabled}}", enabled.ToString())
                 .Replace("{{total}}", total.ToString());
-            string text = $"{TranslationCache.ScheduleDebugRules} ({detail})";
+            string text = $"{TranslationCache.ScheduleDebugSchedules} ({detail})";
 
             Utility.drawTextWithShadow(b, text, Game1.smallFont,
                 pos + new Vector2(-1, 0), Game1.textColor * 0.8f);
@@ -721,13 +721,13 @@ namespace OutfitStudio
         {
             return result switch
             {
-                RuleMatchResult.FailSeason => TranslationCache.ScheduleDebugFailSeason,
-                RuleMatchResult.FailFestival => TranslationCache.ScheduleDebugFailFestival,
+                RuleMatchResult.FailSeason => TranslationCache.ScheduleEditSeason,
+                RuleMatchResult.FailFestival => TranslationCache.ScheduleEditFestival,
                 RuleMatchResult.FailFestivalLocation => TranslationCache.ScheduleDebugFailFestivalLocation,
-                RuleMatchResult.FailWeather => TranslationCache.ScheduleDebugFailWeather,
-                RuleMatchResult.FailLocation => TranslationCache.ScheduleDebugFailLocation,
-                RuleMatchResult.FailArea => TranslationCache.ScheduleDebugFailArea,
-                RuleMatchResult.FailWedding => TranslationCache.ScheduleDebugFailWedding,
+                RuleMatchResult.FailWeather => TranslationCache.ScheduleEditWeather,
+                RuleMatchResult.FailLocation => TranslationCache.ScheduleEditLocation,
+                RuleMatchResult.FailArea => TranslationCache.ScheduleEditArea,
+                RuleMatchResult.FailWedding => TranslationCache.ScheduleDebugLabelWedding,
                 RuleMatchResult.EmptyPool => TranslationCache.ScheduleDebugFailEmptyPool,
                 _ => ""
             };
@@ -737,9 +737,9 @@ namespace OutfitStudio
         {
             return priority switch
             {
-                >= 3 => TranslationCache.ScheduleDebugPriorityHigh,
-                2 => TranslationCache.ScheduleDebugPriorityMedium,
-                _ => TranslationCache.ScheduleDebugPriorityLow
+                >= 3 => TranslationCache.ScheduleEditPriorityHigh,
+                2 => TranslationCache.ScheduleEditPriorityMedium,
+                _ => TranslationCache.ScheduleEditPriorityLow
             };
         }
 

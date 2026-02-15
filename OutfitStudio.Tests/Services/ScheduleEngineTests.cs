@@ -1518,34 +1518,37 @@ namespace OutfitStudio.Tests.Services
 
     public class ManualOverrideTests
     {
+        private static ManualOutfitSnapshot Snap(string label) =>
+            new(label, label, label, null, null, label, $"Set {label}");
+
         [Fact]
-        // Expected: Lock ON — last manual outfit wins regardless of signature
+        // Expected: Lock ON — last manual snapshot wins regardless of signature
         public void LockOn_LastManualWins()
         {
             var engine = new ScheduleEngine(() => true, () => true);
             engine.SetLastContextSignature("sig1");
-            engine.SetManualOutfit("A");
+            engine.SetManualOutfit(Snap("A"));
             engine.SetLastContextSignature("sig2");
-            engine.SetManualOutfit("B");
+            engine.SetManualOutfit(Snap("B"));
 
-            Assert.Equal("B", engine.ResolveManualOutfitId("sig1"));
-            Assert.Equal("B", engine.ResolveManualOutfitId("sig2"));
-            Assert.Equal("B", engine.ResolveManualOutfitId("sig3"));
+            Assert.Equal(Snap("B"), engine.ResolveManualSnapshot("sig1"));
+            Assert.Equal(Snap("B"), engine.ResolveManualSnapshot("sig2"));
+            Assert.Equal(Snap("B"), engine.ResolveManualSnapshot("sig3"));
         }
 
         [Fact]
-        // Expected: Lock OFF — per-context memory, each signature remembers its own outfit
+        // Expected: Lock OFF — per-context memory, each signature remembers its own snapshot
         public void LockOff_PerContextMemory()
         {
             var engine = new ScheduleEngine(() => true, () => false);
             engine.SetLastContextSignature("sig1");
-            engine.SetManualOutfit("A");
+            engine.SetManualOutfit(Snap("A"));
             engine.SetLastContextSignature("sig2");
-            engine.SetManualOutfit("B");
+            engine.SetManualOutfit(Snap("B"));
 
-            Assert.Equal("A", engine.ResolveManualOutfitId("sig1"));
-            Assert.Equal("B", engine.ResolveManualOutfitId("sig2"));
-            Assert.Null(engine.ResolveManualOutfitId("sig3"));
+            Assert.Equal(Snap("A"), engine.ResolveManualSnapshot("sig1"));
+            Assert.Equal(Snap("B"), engine.ResolveManualSnapshot("sig2"));
+            Assert.Null(engine.ResolveManualSnapshot("sig3"));
         }
 
         [Fact]
@@ -1556,37 +1559,37 @@ namespace OutfitStudio.Tests.Services
             var engine = new ScheduleEngine(() => true, () => lockOn);
 
             engine.SetLastContextSignature("sig1");
-            engine.SetManualOutfit("A");
+            engine.SetManualOutfit(Snap("A"));
             engine.SetLastContextSignature("sig2");
-            engine.SetManualOutfit("B");
+            engine.SetManualOutfit(Snap("B"));
 
             // While lock ON, any sig returns last manual
-            Assert.Equal("B", engine.ResolveManualOutfitId("sig1"));
+            Assert.Equal(Snap("B"), engine.ResolveManualSnapshot("sig1"));
 
             // Toggle OFF — per-context takes over
             lockOn = false;
-            Assert.Equal("A", engine.ResolveManualOutfitId("sig1"));
-            Assert.Equal("B", engine.ResolveManualOutfitId("sig2"));
+            Assert.Equal(Snap("A"), engine.ResolveManualSnapshot("sig1"));
+            Assert.Equal(Snap("B"), engine.ResolveManualSnapshot("sig2"));
         }
 
         [Fact]
-        // Expected: Toggle Lock OFF → ON uses the last applied manual outfit
+        // Expected: Toggle Lock OFF → ON uses the last applied manual snapshot
         public void ToggleLockOffToOn_UsesLastApplied()
         {
             bool lockOn = false;
             var engine = new ScheduleEngine(() => true, () => lockOn);
 
             engine.SetLastContextSignature("sig1");
-            engine.SetManualOutfit("A");
+            engine.SetManualOutfit(Snap("A"));
             engine.SetLastContextSignature("sig2");
-            engine.SetManualOutfit("B");
+            engine.SetManualOutfit(Snap("B"));
 
             // Lock OFF: sig3 has no override
-            Assert.Null(engine.ResolveManualOutfitId("sig3"));
+            Assert.Null(engine.ResolveManualSnapshot("sig3"));
 
             // Toggle ON: last manual was B
             lockOn = true;
-            Assert.Equal("B", engine.ResolveManualOutfitId("sig3"));
+            Assert.Equal(Snap("B"), engine.ResolveManualSnapshot("sig3"));
         }
 
         [Fact]
@@ -1595,13 +1598,13 @@ namespace OutfitStudio.Tests.Services
         {
             var engine = new ScheduleEngine(() => true, () => true);
             engine.SetLastContextSignature("sig1");
-            engine.SetManualOutfit("A");
+            engine.SetManualOutfit(Snap("A"));
 
-            Assert.Equal("A", engine.ResolveManualOutfitId("sig1"));
+            Assert.Equal(Snap("A"), engine.ResolveManualSnapshot("sig1"));
 
             engine.ResetForNewDay();
 
-            Assert.Null(engine.ResolveManualOutfitId("sig1"));
+            Assert.Null(engine.ResolveManualSnapshot("sig1"));
         }
 
         [Fact]
@@ -1609,10 +1612,10 @@ namespace OutfitStudio.Tests.Services
         public void NoManualSet_ReturnsNull()
         {
             var engine = new ScheduleEngine(() => true, () => true);
-            Assert.Null(engine.ResolveManualOutfitId("sig1"));
+            Assert.Null(engine.ResolveManualSnapshot("sig1"));
 
             var engineOff = new ScheduleEngine(() => true, () => false);
-            Assert.Null(engineOff.ResolveManualOutfitId("sig1"));
+            Assert.Null(engineOff.ResolveManualSnapshot("sig1"));
         }
 
         [Fact]
@@ -1621,11 +1624,38 @@ namespace OutfitStudio.Tests.Services
         {
             var engine = new ScheduleEngine(() => true, () => false);
             // No SetLastContextSignature called
-            engine.SetManualOutfit("A");
+            engine.SetManualOutfit(Snap("A"));
 
-            // Lock ON: global is set
-            Assert.Null(engine.ResolveManualOutfitId("sig1"));
-            // No per-context entry was written since lastContextSignature was null
+            // Lock OFF: no per-context entry was written since lastContextSignature was null
+            Assert.Null(engine.ResolveManualSnapshot("sig1"));
+        }
+
+        [Fact]
+        // Expected: Snapshot without SourceSetId (individual items) works in cache
+        public void IndividualItems_NoSourceSetId_WorksInCache()
+        {
+            var engine = new ScheduleEngine(() => true, () => false);
+            var itemSnap = new ManualOutfitSnapshot("shirt1", "pants1", "hat1", "255,0,0,255", null);
+
+            engine.SetLastContextSignature("sig1");
+            engine.SetManualOutfit(itemSnap);
+
+            var resolved = engine.ResolveManualSnapshot("sig1");
+            Assert.NotNull(resolved);
+            Assert.Null(resolved!.SourceSetId);
+            Assert.Equal("shirt1", resolved.ShirtId);
+        }
+
+        [Fact]
+        // Expected: EquipmentEquals compares only equipment fields, ignoring source metadata
+        public void EquipmentEquals_IgnoresSourceMetadata()
+        {
+            var fromSet = new ManualOutfitSnapshot("s1", "p1", "h1", "c1", "c2", "set-id", "My Set");
+            var fromItems = new ManualOutfitSnapshot("s1", "p1", "h1", "c1", "c2");
+
+            Assert.True(fromSet.EquipmentEquals(fromItems));
+            Assert.True(fromItems.EquipmentEquals(fromSet));
+            Assert.NotEqual(fromSet, fromItems); // record equality includes all fields
         }
     }
 

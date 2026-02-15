@@ -225,8 +225,8 @@ namespace OutfitStudio
             if (uiBuilder.ApplyButton.containsPoint(x, y))
             {
                 onApplyOutfit();
-                uiBuilder.ShowAppliedMessage();
                 if (playSound) Game1.playSound("coin");
+                Game1.exitActiveMenu();
                 return true;
             }
 

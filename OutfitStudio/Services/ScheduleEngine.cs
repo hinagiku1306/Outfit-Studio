@@ -10,6 +10,48 @@ namespace OutfitStudio.Services
 {
     public enum EvaluationTrigger { DayStarted, Warped }
 
+    public record ManualOutfitSnapshot(
+        string? ShirtId,
+        string? PantsId,
+        string? HatId,
+        string? ShirtColor,
+        string? PantsColor,
+        string? SourceSetId = null,
+        string? SourceSetName = null)
+    {
+        internal static ManualOutfitSnapshot FromCurrentPlayer()
+        {
+            return new ManualOutfitSnapshot(
+                OutfitState.GetClothingId(Game1.player.shirtItem.Value),
+                OutfitState.GetClothingId(Game1.player.pantsItem.Value),
+                OutfitState.GetHatIdFromItem(Game1.player.hat.Value),
+                Game1.player.shirtItem.Value != null ? ColorHelper.ToColorString(Game1.player.GetShirtColor()) : null,
+                ColorHelper.ToColorString(Game1.player.GetPantsColor()),
+                SourceSetId: null,
+                SourceSetName: null);
+        }
+
+        internal static ManualOutfitSnapshot FromOutfitSet(OutfitSet set)
+        {
+            return new ManualOutfitSnapshot(
+                set.ShirtId, set.PantsId, set.HatId,
+                set.ShirtColor, set.PantsColor,
+                set.Id, set.Name);
+        }
+
+        internal bool EquipmentEquals(ManualOutfitSnapshot other) =>
+            ShirtId == other.ShirtId
+            && PantsId == other.PantsId
+            && HatId == other.HatId
+            && ShirtColor == other.ShirtColor
+            && PantsColor == other.PantsColor;
+
+        internal bool MatchesCurrentPlayer()
+        {
+            return EquipmentEquals(FromCurrentPlayer());
+        }
+    }
+
     internal record EvaluationContext(
         string CurrentSeason,
         HashSet<string> TodaysFestivalIds,
@@ -60,8 +102,8 @@ namespace OutfitStudio.Services
         internal void SeedContextCache(string signature, List<string> ruleIds, int priority) =>
             contextCache[signature] = new CachedContext(ruleIds, priority, IsNoMatch: false);
         private string? lastContextSignature;
-        private string? lastManualOutfitId;
-        private readonly Dictionary<string, string> manualContextOutfits = new();
+        private ManualOutfitSnapshot? lastManualSnapshot;
+        private readonly Dictionary<string, ManualOutfitSnapshot> manualContextOutfits = new();
 
         public ScheduleEngine(ScheduleStore scheduleStore, OutfitSetStore outfitSetStore)
             : this(scheduleStore, outfitSetStore, null)
@@ -121,7 +163,7 @@ namespace OutfitStudio.Services
         public void ResetForNewDay()
         {
             lastAppliedOutfitId = null;
-            lastManualOutfitId = null;
+            lastManualSnapshot = null;
             manualContextOutfits.Clear();
             contextCache.Clear();
             ruleDayCache.Clear();
@@ -129,12 +171,12 @@ namespace OutfitStudio.Services
             evalLog?.Clear();
         }
 
-        public void SetManualOutfit(string outfitId)
+        public void SetManualOutfit(ManualOutfitSnapshot snapshot)
         {
-            lastManualOutfitId = outfitId;
+            lastManualSnapshot = snapshot;
             if (lastContextSignature != null)
-                manualContextOutfits[lastContextSignature] = outfitId;
-            lastAppliedOutfitId = outfitId;
+                manualContextOutfits[lastContextSignature] = snapshot;
+            lastAppliedOutfitId = snapshot.SourceSetId;
         }
 
         internal void SetLastContextSignature(string signature)
@@ -144,15 +186,22 @@ namespace OutfitStudio.Services
 
         internal bool TryApplyManualOverride(string signature, ScheduleEvalEntry? logEntry)
         {
-            var targetOutfitId = ResolveManualOutfitId(signature);
-            if (targetOutfitId == null)
+            var snapshot = ResolveManualSnapshot(signature);
+            if (snapshot == null)
                 return false;
 
-            var manualSet = outfitSetStore.GetById(targetOutfitId);
-            if (manualSet != null && manualSet.Id != lastAppliedOutfitId)
+            if (!snapshot.MatchesCurrentPlayer())
             {
-                outfitSetStore.ApplySet(manualSet);
-                lastAppliedOutfitId = manualSet.Id;
+                var tempSet = new OutfitSet
+                {
+                    ShirtId = snapshot.ShirtId,
+                    PantsId = snapshot.PantsId,
+                    HatId = snapshot.HatId,
+                    ShirtColor = snapshot.ShirtColor,
+                    PantsColor = snapshot.PantsColor
+                };
+                outfitSetStore.ApplySet(tempSet);
+                lastAppliedOutfitId = snapshot.SourceSetId;
             }
 
             if (logEntry != null)
@@ -161,13 +210,13 @@ namespace OutfitStudio.Services
             return true;
         }
 
-        internal string? ResolveManualOutfitId(string signature)
+        internal ManualOutfitSnapshot? ResolveManualSnapshot(string signature)
         {
             if (getLockManualOutfit())
-                return lastManualOutfitId;
+                return lastManualSnapshot;
 
-            manualContextOutfits.TryGetValue(signature, out var outfitId);
-            return outfitId;
+            manualContextOutfits.TryGetValue(signature, out var snapshot);
+            return snapshot;
         }
 
         internal static string GetCurrentWeather()
@@ -223,9 +272,10 @@ namespace OutfitStudio.Services
                 logEntry.TodaysFestivalIds = ctx.TodaysFestivalIds
                     .Select(id => ResolveFestivalDisplayName(id, cachedActiveFestivals, passiveNames))
                     .ToList();
-                logEntry.ManualOverrideOutfitId = lastManualOutfitId;
-                if (lastManualOutfitId != null)
-                    logEntry.ManualOverrideOutfitName = outfitSetStore.GetById(lastManualOutfitId)?.Name;
+                logEntry.ManualOverrideOutfitId = lastManualSnapshot?.SourceSetId;
+                if (lastManualSnapshot != null)
+                    logEntry.ManualOverrideOutfitName = lastManualSnapshot.SourceSetName
+                        ?? TranslationCache.ScheduleManualItems;
 
                 var allRules = scheduleStore.GetRules();
                 logEntry.TotalRules = allRules.Count;
@@ -233,8 +283,9 @@ namespace OutfitStudio.Services
             }
 
             DebugLogger.Trace("");
-            DebugLogger.Trace($"[Schedule] ══ {trigger} → {ctx.CurrentLocationName} ══");
-            DebugLogger.Trace($"[Schedule]   {ctx.CurrentSeason} | {ctx.CurrentWeather} | {(ctx.IsOutdoors ? "Outdoors" : "Indoors")}{(ctx.IsActiveFestival ? " | Festival" : "")}{(ctx.IsAtPassiveFestivalLocation ? " | PassiveFestival" : "")}{(ctx.IsWeddingDay ? " | Wedding" : "")}");
+            DebugLogger.Trace($"[Schedule] ══ {trigger} | {ctx.CurrentLocationName} ══");
+            DebugLogger.Trace($"[Schedule]   Season: {ctx.CurrentSeason} | Weather: {ctx.CurrentWeather}");
+            DebugLogger.Trace($"[Schedule]   Location: {ctx.CurrentLocationName} | Area: {(ctx.IsOutdoors ? "Outdoors" : "Indoors")}{(ctx.IsActiveFestival ? " | Festival: Active" : "")}{(ctx.IsAtPassiveFestivalLocation ? " | Festival: Passive" : "")}{(ctx.IsWeddingDay ? " | Wedding: Yes" : "")}");
 
             if (TryApplyManualOverride(signature, logEntry))
                 return;
@@ -243,7 +294,7 @@ namespace OutfitStudio.Services
             {
                 if (cached.IsNoMatch)
                 {
-                    DebugLogger.Trace("[Schedule]   Cache: no prior match → manual fallback");
+                    DebugLogger.Trace("[Schedule]   Result: — (no match, cached)");
                     if (logEntry != null)
                         logEntry.CacheOutcome = EvalCacheOutcome.NoMatch;
                     return;
@@ -277,7 +328,7 @@ namespace OutfitStudio.Services
 
                 if (cachedRule == null || !cachedRule.IsEnabled)
                 {
-                    DebugLogger.Trace("[Schedule]   Cache evicted (rule gone/disabled) → re-evaluating");
+                    DebugLogger.Trace("[Schedule]   Cache: evicted (rule removed or disabled)");
                     contextCache.Remove(signature);
                 }
                 else
@@ -312,7 +363,7 @@ namespace OutfitStudio.Services
                         var pool = ResolvePool(cachedRule, sets);
                         if (pool.Count == 0)
                         {
-                            DebugLogger.Trace("[Schedule]   Cache hit → AdvanceOnWarp pool empty → manual fallback");
+                            DebugLogger.Trace("[Schedule]   Result: — (pool empty)");
                             contextCache.Remove(signature);
                             if (logEntry != null)
                                 logEntry.CacheOutcome = EvalCacheOutcome.NoMatch;
@@ -336,7 +387,7 @@ namespace OutfitStudio.Services
                             logEntry.WasReshuffled = wasReshuffled;
                         }
 
-                        DebugLogger.Trace($"[Schedule]   Cache hit → AdvanceOnWarp → new outfit '{cachedSet.Name}'");
+                        DebugLogger.Trace($"[Schedule]   Outfit: \"{cachedSet.Name}\" [Applied, AdvanceOnWarp]");
                     }
                     else if (!cachedRule.AdvanceOnWarp && ruleDayCache.TryGetValue(cachedRule.Id, out var cachedDayId))
                     {
@@ -344,13 +395,13 @@ namespace OutfitStudio.Services
                         if (cachedSet == null)
                         {
                             ruleDayCache.Remove(cachedRule.Id);
-                            DebugLogger.Trace("[Schedule]   Cache hit → day cache stale (outfit deleted)");
+                            DebugLogger.Trace("[Schedule]   Cache: day cache stale (outfit deleted)");
                         }
                         else
                         {
                             if (logEntry != null)
                                 logEntry.UsedDayCache = true;
-                            DebugLogger.Trace("[Schedule]   Cache hit → day cache reuse");
+                            DebugLogger.Trace("[Schedule]   Outfit: reused from day cache");
                         }
                     }
 
@@ -368,7 +419,7 @@ namespace OutfitStudio.Services
                                 logEntry.UsedDayCache = true;
                                 logEntry.WinnerPoolSize = pool.Count;
                             }
-                            DebugLogger.Trace("[Schedule]   Cache hit → day cache seeded from current outfit");
+                            DebugLogger.Trace("[Schedule]   Outfit: seeded day cache from current");
                         }
                     }
 
@@ -378,7 +429,7 @@ namespace OutfitStudio.Services
                         var pool = ResolvePool(cachedRule, sets);
                         if (pool.Count == 0)
                         {
-                            DebugLogger.Trace("[Schedule]   Cache hit → pool empty → manual fallback");
+                            DebugLogger.Trace("[Schedule]   Result: — (pool empty)");
                             contextCache.Remove(signature);
                             if (logEntry != null)
                                 logEntry.CacheOutcome = EvalCacheOutcome.NoMatch;
@@ -404,7 +455,7 @@ namespace OutfitStudio.Services
                         if (!cachedRule.AdvanceOnWarp)
                             ruleDayCache[cachedRule.Id] = cachedSet.Id;
 
-                        DebugLogger.Trace($"[Schedule]   Cache hit → first time rule → '{cachedSet.Name}'");
+                        DebugLogger.Trace($"[Schedule]   Outfit: \"{cachedSet.Name}\" [Applied]");
                     }
 
                     if (logEntry != null)
@@ -449,7 +500,7 @@ namespace OutfitStudio.Services
                             logEntry.ChosenOutfitName = cachedSet.Name;
                             logEntry.WasAlreadyApplied = true;
                         }
-                        DebugLogger.Trace("[Schedule]   Cache hit → already applied");
+                        DebugLogger.Trace("[Schedule]   Status: No change");
                     }
 
                     if (changed)
@@ -461,11 +512,11 @@ namespace OutfitStudio.Services
 
             var rules = scheduleStore.GetRules();
             var enabledRules = rules.Where(r => r.IsEnabled).ToList();
-            DebugLogger.Trace($"[Schedule]   Rules: {enabledRules.Count}/{rules.Count} enabled");
+            DebugLogger.Trace($"[Schedule]   Rules ({enabledRules.Count}/{rules.Count}):");
 
             if (enabledRules.Count == 0)
             {
-                DebugLogger.Trace("[Schedule]   No enabled rules → manual fallback");
+                DebugLogger.Trace("[Schedule]   Result: — (no enabled rules)");
                 contextCache[signature] = new CachedContext(new List<string>(), 0, IsNoMatch: true);
                 if (logEntry != null)
                     logEntry.CacheOutcome = EvalCacheOutcome.NoMatch;
@@ -492,7 +543,7 @@ namespace OutfitStudio.Services
 
                 if (!matched)
                 {
-                    ScheduleDebug.Trace($"[Schedule]     '{rule.Name}' → no match");
+                    ScheduleDebug.Trace($"[Schedule]     x \"{rule.Name}\"");
                     if (ruleEntry != null) logEntry!.RuleResults.Add(ruleEntry);
                     continue;
                 }
@@ -503,19 +554,19 @@ namespace OutfitStudio.Services
                 if (pool.Count == 0)
                 {
                     if (ruleEntry != null) ruleEntry.MatchResult = RuleMatchResult.EmptyPool;
-                    ScheduleDebug.Trace($"[Schedule]     '{rule.Name}' → matched, 0 sets");
+                    ScheduleDebug.Trace($"[Schedule]     x \"{rule.Name}\" — Empty pool");
                     if (ruleEntry != null) logEntry!.RuleResults.Add(ruleEntry);
                     continue;
                 }
 
-                DebugLogger.Trace($"[Schedule]     '{rule.Name}' → {pool.Count} sets ({GetPriorityLabel(rule.Priority)})");
+                DebugLogger.Trace($"[Schedule]     + \"{rule.Name}\" ({GetPriorityLabel(rule.Priority)}, {pool.Count} sets)");
                 candidates.Add((rule, pool));
                 if (ruleEntry != null) logEntry!.RuleResults.Add(ruleEntry);
             }
 
             if (candidates.Count == 0)
             {
-                DebugLogger.Trace("[Schedule]   No rules matched → manual fallback");
+                DebugLogger.Trace("[Schedule]   Result: — (no rules matched)");
                 contextCache[signature] = new CachedContext(new List<string>(), 0, IsNoMatch: true);
                 if (logEntry != null)
                     logEntry.CacheOutcome = EvalCacheOutcome.NoMatch;
@@ -527,7 +578,7 @@ namespace OutfitStudio.Services
             bool specialEventAutoWin = specialCandidates.Count > 0 && candidates.Count > specialCandidates.Count;
 
             var (winnerRule, winnerPool, usedConsistentCache) = SelectWinnerConsistent(effectiveCandidates, random);
-            DebugLogger.Trace($"[Schedule]   WINNER: '{winnerRule.Name}' {GetPriorityLabel(winnerRule.Priority)}{(effectiveCandidates.Count > 1 ? $" (of {effectiveCandidates.Count})" : "")}{(specialEventAutoWin ? " [special event auto-win]" : "")}");
+            DebugLogger.Trace($"[Schedule]   Selected: \"{winnerRule.Name}\" ({GetPriorityLabel(winnerRule.Priority)}){(effectiveCandidates.Count > 1 ? $" [{effectiveCandidates.Count} candidates]" : "")}{(specialEventAutoWin ? " [special event]" : "")}");
 
             if (logEntry != null)
             {
@@ -549,7 +600,7 @@ namespace OutfitStudio.Services
 
             if (!winnerRule.AdvanceOnWarp && ruleDayCache.TryGetValue(winnerRule.Id, out var dayOutfitId))
             {
-                DebugLogger.Trace("[Schedule]   Day cache → reusing previous outfit");
+                DebugLogger.Trace("[Schedule]   Outfit: reused from day cache");
                 chosenSet = outfitSetStore.GetById(dayOutfitId);
                 if (logEntry != null)
                     logEntry.UsedDayCache = true;
@@ -564,7 +615,7 @@ namespace OutfitStudio.Services
                     ruleDayCache[winnerRule.Id] = reuse.Id;
                     if (logEntry != null)
                         logEntry.UsedDayCache = true;
-                    DebugLogger.Trace("[Schedule]   Day cache → seeded from current outfit");
+                    DebugLogger.Trace("[Schedule]   Outfit: seeded day cache from current");
                 }
             }
 
@@ -572,7 +623,7 @@ namespace OutfitStudio.Services
             {
                 state = scheduleStore.GetRotationState(winnerRule.Id) ?? new RotationState { RuleId = winnerRule.Id };
                 string lastUsedName = state.LastUsedId != null ? (outfitSetStore.GetById(state.LastUsedId)?.Name ?? "?") : "none";
-                DebugLogger.Trace($"[Schedule]   Rotation: {state.Queue.Count} queued, last='{lastUsedName}'");
+                DebugLogger.Trace($"[Schedule]   Rotation: {state.Queue.Count} queued, last=\"{lastUsedName}\"");
 
                 if (logEntry != null)
                 {
@@ -615,8 +666,8 @@ namespace OutfitStudio.Services
                 lastAppliedOutfitId = chosenSet.Id;
                 stateChanged = true;
 
-                string appliedSuffix = state != null ? $" ({state.Queue.Count} left)" : "";
-                DebugLogger.Trace($"[Schedule]   >> Applied '{chosenSet.Name}'{appliedSuffix}");
+                string rotationInfo = state != null ? $" [Rotation: {state.Queue.Count} remaining]" : "";
+                DebugLogger.Trace($"[Schedule]   Outfit: \"{chosenSet.Name}\" [Applied]{rotationInfo}");
 
                 if (logEntry != null)
                 {
@@ -626,7 +677,7 @@ namespace OutfitStudio.Services
             }
             else
             {
-                DebugLogger.Trace($"[Schedule]   Already wearing '{chosenSet.Name}'");
+                DebugLogger.Trace($"[Schedule]   Status: No change (\"{chosenSet.Name}\")");
 
                 if (logEntry != null)
                 {
@@ -892,7 +943,7 @@ namespace OutfitStudio.Services
 
             if (pool.Count == 1)
             {
-                ScheduleDebug.Debug($"[Schedule]   Single set → '{pool[0].Name}'");
+                ScheduleDebug.Debug($"[Schedule]   Single set: \"{pool[0].Name}\"");
                 state.Queue.Clear();
                 state.LastUsedId = pool[0].Id;
                 return pool[0];
@@ -1024,7 +1075,7 @@ namespace OutfitStudio.Services
             cachedActiveFestivals = DataLoader.Festivals_FestivalDates(Game1.content);
             cachedPassiveFestivals = DataLoader.PassiveFestivals(Game1.content);
 
-            DebugLogger.Trace($"[Schedule] Loaded {cachedActiveFestivals.Count} active + {cachedPassiveFestivals.Count} passive festivals");
+            DebugLogger.Trace($"[Schedule]   Festival data: {cachedActiveFestivals.Count} active + {cachedPassiveFestivals.Count} passive");
         }
     }
 }
