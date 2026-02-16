@@ -37,19 +37,18 @@ namespace OutfitStudio
         private bool IsSpecialEventMode => selectedFestivals.Count > 0 || isWeddingDay;
 
         // State - other
-        private bool tagsSelectAll;
-        private HashSet<string> selectedTags = new(TranslationCache.TagComparer);
-        private List<string> excludedSetIds = new();
-        private int priority = 2;
+        private List<string> selectedSetIds = new();
+        private readonly List<string>? originalSetIds;
+        private int priority;
         private bool advanceOnWarp;
 
         // Priority dropdown
         private bool priorityDropdownOpen;
         private List<ClickableComponent> priorityOptions = new();
 
-        // Rotate dropdown
-        private bool rotateDropdownOpen;
-        private List<ClickableComponent> rotateOptions = new();
+        // Rotation dropdown
+        private bool rotationDropdownOpen;
+        private List<ClickableComponent> rotationOptions = new();
 
         // Dropdown data
         private List<string> seasonOptionNames = new();
@@ -89,17 +88,8 @@ namespace OutfitStudio
         private List<(string name, string displayName)> filteredLocationEntries = new();
         private List<string> filteredLocationOptionNames = new();
 
-        // State - included sets
-        private List<string> includedSetIds = new();
-
-        // Tag picker (select-only, opens to the left)
-        private readonly TagPickerManager tagPicker;
-
-        // Set picker (opens to the right)
-        private readonly ScheduleSetPickerPanel setPicker;
-
         // Child overlay
-        private SetPreviewOverlay? previewOverlay;
+        private ScheduleOutfitOverlay? previewOverlay;
 
         private readonly ContinuousScrollHandler scrollHandler = new();
 
@@ -117,11 +107,12 @@ namespace OutfitStudio
             this.editingRule = editingRule;
             this.onSaveComplete = onSaveComplete;
 
-            uiBuilder = new ScheduleEditUIBuilder();
-            tagPicker = new TagPickerManager(outfitSetStore, selectOnly: true);
-            setPicker = new ScheduleSetPickerPanel(outfitSetStore, OnSetPickerChanged);
+            uiBuilder = new ScheduleEditUIBuilder { IsEditing = IsEditing };
 
             LoadDropdownData();
+
+            priority = ModEntry.Config.DefaultPriority;
+            advanceOnWarp = ModEntry.Config.DefaultAdvanceOnWarp;
 
             if (editingRule != null)
             {
@@ -138,10 +129,8 @@ namespace OutfitStudio
                     selectedAreas.Clear();
                     selectedLocations.Clear();
                 }
-                tagsSelectAll = editingRule.TagsSelectAll;
-                selectedTags = new HashSet<string>(editingRule.SelectedTags, TranslationCache.TagComparer);
-                excludedSetIds = new List<string>(editingRule.ExcludedSetIds);
-                includedSetIds = new List<string>(editingRule.IncludedSetIds);
+                selectedSetIds = new List<string>(editingRule.SelectedSetIds);
+                originalSetIds = new List<string>(editingRule.SelectedSetIds);
                 priority = editingRule.Priority;
                 advanceOnWarp = editingRule.AdvanceOnWarp;
             }
@@ -150,14 +139,12 @@ namespace OutfitStudio
 
             uiBuilder.Recalculate();
             uiBuilder.BuildPriorityOptions(priorityOptions);
-            uiBuilder.BuildRotateOptions(rotateOptions);
+            uiBuilder.BuildRotationOptions(rotationOptions);
             width = uiBuilder.Width;
             height = uiBuilder.Height;
             xPositionOnScreen = uiBuilder.X;
             yPositionOnScreen = uiBuilder.Y;
 
-            if (ModEntry.Config.AutoOpenTagMenu)
-                OpenTagPicker();
         }
 
         private void LoadDropdownData()
@@ -191,7 +178,7 @@ namespace OutfitStudio
                     {
                         if (string.IsNullOrEmpty(loc?.Name) || !seen.Add(loc.Name))
                             continue;
-                        string display = loc.DisplayName ?? loc.Name;
+                        string display = UIHelpers.ResolveDisplayName(loc.DisplayName, loc.Name);
                         locationEntries.Add((loc.Name, display));
                     }
 
@@ -223,16 +210,17 @@ namespace OutfitStudio
                 var activeFestivals = DataLoader.Festivals_FestivalDates(Game1.content);
                 foreach (var (key, name) in activeFestivals)
                 {
-                    if (!string.IsNullOrEmpty(name) && !name.StartsWith("LocalizedString"))
-                        festivalEntries.Add((key, name));
+                    if (string.IsNullOrEmpty(name))
+                        continue;
+                    string display = UIHelpers.ResolveDisplayName(TokenParser.ParseText(name), name);
+                    festivalEntries.Add((key, display));
                 }
 
                 var passiveFestivals = DataLoader.PassiveFestivals(Game1.content);
                 foreach (var (key, data) in passiveFestivals)
                 {
-                    string parsed = TokenParser.ParseText(data.DisplayName);
-                    if (!string.IsNullOrEmpty(parsed))
-                        festivalEntries.Add((key, parsed));
+                    string display = UIHelpers.ResolveDisplayName(TokenParser.ParseText(data.DisplayName), key);
+                    festivalEntries.Add((key, display));
                 }
 
                 festivalEntries.Sort((a, b) => string.Compare(a.displayName, b.displayName, StringComparison.OrdinalIgnoreCase));
@@ -257,41 +245,6 @@ namespace OutfitStudio
                 return;
             }
 
-            // Toggle off pickers when clicking their own [+] button
-            if (tagPicker.IsOpen && uiBuilder.TagsAddButton.containsPoint(x, y))
-            {
-                tagPicker.Close();
-                if (playSound) Game1.playSound("smallSelect");
-                return;
-            }
-            if (setPicker.IsOpen && uiBuilder.SetsAddButton.containsPoint(x, y))
-            {
-                setPicker.Close();
-                if (playSound) Game1.playSound("smallSelect");
-                return;
-            }
-
-            // Forward to tag picker
-            if (tagPicker.IsOpen)
-            {
-                bool consumed;
-                tagPicker.HandleClick(x, y, out consumed);
-                if (consumed)
-                    return;
-                // Click was outside picker — close it and continue
-                tagPicker.Close();
-            }
-
-            // Forward to set picker
-            if (setPicker.IsOpen)
-            {
-                bool consumed;
-                setPicker.HandleClick(x, y, out consumed);
-                if (consumed)
-                    return;
-                setPicker.Close();
-            }
-
             // Close X button
             if (uiBuilder.CloseButton.containsPoint(x, y))
             {
@@ -301,7 +254,7 @@ namespace OutfitStudio
             }
 
             // Click outside
-            if (!isWithinBounds(x, y) && !IsInAnyDropdownPanel(x, y) && !IsInAnyPicker(x, y) && ModEntry.Config.CloseOnClickOutside)
+            if (!isWithinBounds(x, y) && !IsInAnyDropdownPanel(x, y) && ModEntry.Config.CloseOnClickOutside)
             {
                 CloseOverlay();
                 if (playSound) Game1.playSound("bigDeSelect");
@@ -342,23 +295,8 @@ namespace OutfitStudio
             {
                 isWeddingDay = !isWeddingDay;
                 if (IsSpecialEventMode) ClearConditions();
+                InvalidatePoolCache();
                 if (playSound) Game1.playSound("drumkit6");
-                return;
-            }
-
-            // Tags [+] button
-            if (uiBuilder.TagsAddButton.containsPoint(x, y))
-            {
-                OpenTagPicker();
-                if (playSound) Game1.playSound("smallSelect");
-                return;
-            }
-
-            // Sets [+] button
-            if (uiBuilder.SetsAddButton.containsPoint(x, y))
-            {
-                OpenSetPicker();
-                if (playSound) Game1.playSound("smallSelect");
                 return;
             }
 
@@ -368,8 +306,8 @@ namespace OutfitStudio
 
         private bool IsInWeddingRow(int x, int y)
         {
-            int rowY = uiBuilder.WeddingCheckbox.bounds.Y - (TabAndButtonHeight - ScheduleCheckboxSize) / 2;
-            return y >= rowY && y < rowY + TabAndButtonHeight
+            return y >= uiBuilder.WeddingCheckbox.bounds.Y
+                && y < uiBuilder.WeddingCheckbox.bounds.Y + ScheduleCheckboxSize
                 && x >= uiBuilder.RightColBarX;
         }
 
@@ -388,12 +326,6 @@ namespace OutfitStudio
                 previewOverlay.receiveKeyPress(key);
                 if (previewOverlay.readyToClose())
                     previewOverlay = null;
-                return;
-            }
-
-            if (tagPicker.IsOpen)
-            {
-                tagPicker.HandleKeyPress(key);
                 return;
             }
 
@@ -418,23 +350,10 @@ namespace OutfitStudio
                     return;
                 }
 
-                if (setPicker.IsOpen)
-                {
-                    if (setPicker.HandleKeyPress(key))
-                        Game1.playSound("shiny4");
-                    return;
-                }
             }
 
             if (key == Keys.Escape)
             {
-                if (setPicker.IsOpen)
-                {
-                    setPicker.Close();
-                    Game1.playSound("bigDeSelect");
-                    return;
-                }
-
                 if (IsAnyDropdownOpen())
                 {
                     CloseAllDropdowns();
@@ -456,18 +375,6 @@ namespace OutfitStudio
             if (previewOverlay != null)
             {
                 previewOverlay.receiveScrollWheelAction(direction);
-                return;
-            }
-
-            if (tagPicker.IsOpen)
-            {
-                tagPicker.HandleScrollWheel(direction);
-                return;
-            }
-
-            if (setPicker.IsOpen)
-            {
-                setPicker.HandleScrollWheel(direction);
                 return;
             }
 
@@ -501,7 +408,6 @@ namespace OutfitStudio
         public override void update(GameTime time)
         {
             base.update(time);
-            tagPicker.Update();
             previewOverlay?.update(time);
 
             if (searchTextBox != null && activeSearchDropdown != "")
@@ -516,9 +422,8 @@ namespace OutfitStudio
             }
 
             bool dropdownActive = IsAnyTriggerDropdownOpen();
-            setPicker.Update(time, isScrollActive: !dropdownActive && !tagPicker.IsOpen && previewOverlay == null);
 
-            if (ModEntry.Config.ArrowKeyScrolling && dropdownActive && previewOverlay == null && !tagPicker.IsOpen)
+            if (ModEntry.Config.ArrowKeyScrolling && dropdownActive && previewOverlay == null)
             {
                 int scrollAmount = scrollHandler.Update(time, ScheduleEditDropdownMaxVisible, out bool shouldPlaySound);
                 if (scrollAmount != 0 && ApplyOpenDropdownScroll(scrollAmount) && shouldPlaySound)
@@ -556,11 +461,15 @@ namespace OutfitStudio
             UIHelpers.DrawTextureBox(b, uiBuilder.ContentBoxBounds.X, uiBuilder.ContentBoxBounds.Y,
                 uiBuilder.ContentBoxBounds.Width, uiBuilder.ContentBoxBounds.Height, Color.White);
 
-            int totalOutfits = GetTotalOutfits();
-            int remaining = GetRemaining();
-            uiBuilder.DrawTotalOutfitsRow(b, totalOutfits, remaining);
-            float conditionOpacity = IsSpecialEventMode ? 0.4f : 1f;
-            uiBuilder.DrawConditionsHeader(b, conditionOpacity);
+            {
+                int totalOutfits = selectedSetIds.Count;
+                int remaining = IsEditing ? GetRemaining() : 0;
+                uiBuilder.DrawTotalOutfitsRow(b, totalOutfits, remaining, showRemaining: IsEditing);
+            }
+            string? nameTooltip = uiBuilder.DrawNameRow(b, GenerateRuleName());
+
+            float conditionsOpacity = IsSpecialEventMode ? ScheduleEditInactiveOpacity : 1f;
+            uiBuilder.DrawConditionsHeader(b, conditionsOpacity);
 
             // Hover suppression behind open dropdown panels
             bool anyDropdownOpen = IsAnyDropdownOpen();
@@ -571,74 +480,81 @@ namespace OutfitStudio
                     UIHelpers.SuppressHover = true;
             }
 
-            // Ordered summary text
-            string seasonPlaceholder = $"{TranslationCache.ScheduleEditSeason} ({TranslationCache.ScheduleEditAny})";
-            string weatherPlaceholder = $"{TranslationCache.ScheduleEditWeather} ({TranslationCache.ScheduleEditAny})";
-            string areaPlaceholder = $"{TranslationCache.ScheduleEditArea} ({TranslationCache.ScheduleEditAny})";
-            string locationPlaceholder = $"{TranslationCache.ScheduleEditLocation} ({TranslationCache.ScheduleEditAny})";
-            string festivalPlaceholder = $"{TranslationCache.ScheduleEditFestival} ({TranslationCache.ScheduleEditAny})";
+            // Ordered summary text (show first matching option in dropdown order)
+            string seasonPlaceholder = TranslationCache.ScheduleEditSeason;
+            string weatherPlaceholder = TranslationCache.ScheduleEditWeather;
+            string areaPlaceholder = TranslationCache.ScheduleEditArea;
+            string locationPlaceholder = TranslationCache.ScheduleEditLocation;
+            string festivalPlaceholder = TranslationCache.ScheduleEditFestival;
 
-            var orderedSeasons = SeasonValues.Where(s => selectedSeasons.Contains(s)).ToList();
-            var orderedWeather = weatherEntries.Where(e => selectedWeather.Contains(e.id)).Select(e => e.displayName).ToList();
-            var orderedAreas = AreaValues.Where(a => selectedAreas.Contains(a)).Select(GetAreaDisplayName).ToList();
-            var orderedLocations = locationEntries.Where(e => selectedLocations.Contains(e.name)).Select(e => e.displayName).ToList();
-            var orderedFestivals = festivalEntries.Where(e => selectedFestivals.Contains(e.id)).Select(e => e.displayName).ToList();
+            int seasonMaxW = uiBuilder.SeasonsDropdownBar.bounds.Width - FilterTextPadding * 2 - ClearButtonSize - ClearButtonRightMargin;
+            string seasonFirst = SeasonValues.FirstOrDefault(s => selectedSeasons.Contains(s)) ?? "";
+            string seasonsSummary = UIHelpers.BuildCountSummary(seasonFirst, selectedSeasons.Count, seasonMaxW);
 
-            string seasonsSummary = GetSummaryText(orderedSeasons, uiBuilder.SeasonsDropdownBar);
-            string weatherSummary = GetSummaryText(orderedWeather, uiBuilder.WeatherDropdownBar);
-            string areasSummary = GetSummaryText(orderedAreas, uiBuilder.AreasDropdownBar);
-            string locationsSummary = GetSummaryText(orderedLocations, uiBuilder.LocationsDropdownBar);
-            string festivalsSummary = GetSummaryText(orderedFestivals, uiBuilder.FestivalsDropdownBar);
+            int weatherMaxW = uiBuilder.WeatherDropdownBar.bounds.Width - FilterTextPadding * 2 - ClearButtonSize - ClearButtonRightMargin;
+            var weatherMatch = weatherEntries.FirstOrDefault(e => selectedWeather.Contains(e.id));
+            string weatherSummary = UIHelpers.BuildCountSummary(weatherMatch.displayName ?? "", selectedWeather.Count, weatherMaxW);
 
-            // Conditions row 1: Season | Weather
+            int areaMaxW = uiBuilder.AreasDropdownBar.bounds.Width - FilterTextPadding * 2 - ClearButtonSize - ClearButtonRightMargin;
+            int areaIdx = Array.FindIndex(AreaValues, a => selectedAreas.Contains(a));
+            string areaFirst = areaIdx >= 0 ? areaOptionNames[areaIdx] : "";
+            string areasSummary = UIHelpers.BuildCountSummary(areaFirst, selectedAreas.Count, areaMaxW);
+
+            int locationMaxW = uiBuilder.LocationsDropdownBar.bounds.Width - FilterTextPadding * 2 - ClearButtonSize - ClearButtonRightMargin;
+            var locationMatch = locationEntries.FirstOrDefault(e => selectedLocations.Contains(e.name));
+            string locationsSummary = UIHelpers.BuildCountSummary(locationMatch.displayName ?? "", selectedLocations.Count, locationMaxW);
+
+            int festivalMaxW = uiBuilder.FestivalsDropdownBar.bounds.Width - FilterTextPadding * 2 - ClearButtonSize - ClearButtonRightMargin;
+            var festivalMatch = festivalEntries.FirstOrDefault(e => selectedFestivals.Contains(e.id));
+            string festivalsSummary = UIHelpers.BuildCountSummary(festivalMatch.displayName ?? "", selectedFestivals.Count, festivalMaxW);
+
+            // Conditions row 1: Season | Weather | Area
             UIHelpers.DrawDropdownButton(b, uiBuilder.SeasonsDropdownBar.bounds, seasonsSummary, seasonsDropdownOpen,
-                placeholder: seasonPlaceholder, clearButton: uiBuilder.SeasonsClearButton, hasValue: selectedSeasons.Count > 0, opacity: conditionOpacity);
+                placeholder: seasonPlaceholder, clearButton: uiBuilder.SeasonsClearButton, hasValue: selectedSeasons.Count > 0,
+                shadowOffset: 3, shadowOpacity: 0.2f, opacity: conditionsOpacity);
             UIHelpers.DrawDropdownButton(b, uiBuilder.WeatherDropdownBar.bounds, weatherSummary, weatherDropdownOpen,
-                placeholder: weatherPlaceholder, clearButton: uiBuilder.WeatherClearButton, hasValue: selectedWeather.Count > 0, opacity: conditionOpacity);
-
-            // Conditions row 2: Area | Location
+                placeholder: weatherPlaceholder, clearButton: uiBuilder.WeatherClearButton, hasValue: selectedWeather.Count > 0,
+                shadowOffset: 3, shadowOpacity: 0.2f, opacity: conditionsOpacity);
             UIHelpers.DrawDropdownButton(b, uiBuilder.AreasDropdownBar.bounds, areasSummary, areasDropdownOpen,
-                placeholder: areaPlaceholder, clearButton: uiBuilder.AreasClearButton, hasValue: selectedAreas.Count > 0, opacity: conditionOpacity);
+                placeholder: areaPlaceholder, clearButton: uiBuilder.AreasClearButton, hasValue: selectedAreas.Count > 0,
+                shadowOffset: 3, shadowOpacity: 0.2f, opacity: conditionsOpacity);
 
+            // Conditions row 2: Location
             if (locationsDropdownOpen)
-                UIHelpers.DrawInputBar(b, uiBuilder.LocationsDropdownBar.bounds, searchText, true, placeholder: locationPlaceholder);
+                UIHelpers.DrawInputBar(b, uiBuilder.LocationsDropdownBar.bounds, searchText, true, placeholder: locationPlaceholder,
+                    shadowOffset: 3, shadowOpacity: 0.2f);
             else
                 UIHelpers.DrawDropdownButton(b, uiBuilder.LocationsDropdownBar.bounds, locationsSummary, false,
-                    placeholder: locationPlaceholder, clearButton: uiBuilder.LocationsClearButton, hasValue: selectedLocations.Count > 0, opacity: conditionOpacity);
+                    placeholder: locationPlaceholder, clearButton: uiBuilder.LocationsClearButton, hasValue: selectedLocations.Count > 0,
+                    shadowOffset: 3, shadowOpacity: 0.2f, opacity: conditionsOpacity);
 
             // Special Events header
             uiBuilder.DrawSpecialEventsHeader(b);
 
-            // Special Events row: Festival | Wedding
-            if (festivalsDropdownOpen)
-                UIHelpers.DrawInputBar(b, uiBuilder.FestivalsDropdownBar.bounds, searchText, true, placeholder: festivalPlaceholder);
-            else
-                UIHelpers.DrawDropdownButton(b, uiBuilder.FestivalsDropdownBar.bounds, festivalsSummary, false,
-                    placeholder: festivalPlaceholder, clearButton: uiBuilder.FestivalsClearButton, hasValue: selectedFestivals.Count > 0);
-
+            // Wedding row
             uiBuilder.DrawWeddingRow(b, isWeddingDay);
 
-            // Tags/Sets rows
-            uiBuilder.DrawTagsRow(b, tagsSelectAll ? outfitSetStore.GetAllTags().Count : selectedTags.Count, tagPicker.IsOpen);
-            uiBuilder.DrawSetsRow(b, includedSetIds.Count, setPicker.IsOpen);
+            // Festival row
+            if (festivalsDropdownOpen)
+                UIHelpers.DrawInputBar(b, uiBuilder.FestivalsDropdownBar.bounds, searchText, true, placeholder: festivalPlaceholder,
+                    shadowOffset: 3, shadowOpacity: 0.2f);
+            else
+                UIHelpers.DrawDropdownButton(b, uiBuilder.FestivalsDropdownBar.bounds, festivalsSummary, false,
+                    placeholder: festivalPlaceholder, clearButton: uiBuilder.FestivalsClearButton, hasValue: selectedFestivals.Count > 0,
+                    shadowOffset: 3, shadowOpacity: 0.2f);
 
-            // Priority (right-aligned label)
-            string priorityText = GetPriorityDisplayName(priority);
-            string priorityLabel = TranslationCache.ScheduleEditPriority;
-            int priorityLabelW = (int)Game1.smallFont.MeasureString(priorityLabel).X;
-            int priorityLabelX = uiBuilder.OptionsLabelRightX - priorityLabelW;
-            UIHelpers.DrawDropdownButton(b, uiBuilder.PriorityDropdownBar.bounds, priorityText, priorityDropdownOpen,
-                label: priorityLabel, labelX: priorityLabelX);
+            // Behavior section
+            uiBuilder.DrawBehaviorHeader(b);
 
-            // Rotate (right-aligned label)
-            string rotateText = advanceOnWarp
+            string priorityText = IsSpecialEventMode
+                ? TranslationCache.ScheduleEditPrioritySpecial
+                : GetPriorityDisplayName(priority);
+            uiBuilder.DrawPriorityRow(b, priorityText, priorityDropdownOpen, isSpecial: IsSpecialEventMode);
+
+            string rotationText = advanceOnWarp
                 ? TranslationCache.ScheduleEditRotateOnLocationChange
                 : TranslationCache.ScheduleEditRotateOnceADay;
-            string rotateLabel = TranslationCache.ScheduleEditRotate;
-            int rotateLabelW = (int)Game1.smallFont.MeasureString(rotateLabel).X;
-            int rotateLabelX = uiBuilder.OptionsLabelRightX - rotateLabelW;
-            UIHelpers.DrawDropdownButton(b, uiBuilder.RotateDropdownBar.bounds, rotateText, rotateDropdownOpen,
-                label: rotateLabel, labelX: rotateLabelX);
+            uiBuilder.DrawRotationRow(b, rotationText, rotationDropdownOpen);
 
             uiBuilder.DrawBottomButtons(b);
             uiBuilder.DrawCloseButton(b);
@@ -652,44 +568,45 @@ namespace OutfitStudio
             if (seasonsDropdownOpen)
                 dropdownTooltip = UIHelpers.DrawMultiSelectDropdownOptions(b, uiBuilder.SeasonsDropdownBar.bounds,
                     visibleSeasonsOptions, seasonsScrollIndex, ScheduleEditDropdownMaxVisible,
-                    isChecked: opt => selectedSeasons.Contains(opt.name), panelPaddingV: ScheduleEditDropdownPanelPadding);
+                    isChecked: opt => selectedSeasons.Contains(opt.name), panelPaddingV: ScheduleEditDropdownPanelPadding,
+                    totalItemCount: seasonOptionNames.Count, arrowYNudge: 4, arrowXNudge: 2);
             else if (weatherDropdownOpen)
                 dropdownTooltip = UIHelpers.DrawMultiSelectDropdownOptions(b, uiBuilder.WeatherDropdownBar.bounds,
                     visibleWeatherOptions, weatherScrollIndex, ScheduleEditDropdownMaxVisible,
                     isChecked: opt => weatherEntries.Exists(e => e.displayName == opt.name && selectedWeather.Contains(e.id)),
-                    panelPaddingV: ScheduleEditDropdownPanelPadding);
+                    panelPaddingV: ScheduleEditDropdownPanelPadding,
+                    totalItemCount: weatherOptionNames.Count, arrowYNudge: 4, arrowXNudge: 2);
             else if (areasDropdownOpen)
                 dropdownTooltip = UIHelpers.DrawMultiSelectDropdownOptions(b, uiBuilder.AreasDropdownBar.bounds,
                     visibleAreasOptions, areasScrollIndex, ScheduleEditDropdownMaxVisible,
                     isChecked: opt => { int idx = areaOptionNames.IndexOf(opt.name); return idx >= 0 && selectedAreas.Contains(AreaValues[idx]); },
-                    panelPaddingV: ScheduleEditDropdownPanelPadding);
+                    panelPaddingV: ScheduleEditDropdownPanelPadding,
+                    totalItemCount: areaOptionNames.Count, arrowYNudge: 4, arrowXNudge: 2);
             else if (locationsDropdownOpen)
                 dropdownTooltip = UIHelpers.DrawMultiSelectDropdownOptions(b, uiBuilder.LocationsDropdownBar.bounds,
                     visibleLocationsOptions, locationsScrollIndex, ScheduleEditDropdownMaxVisible,
                     isChecked: opt => filteredLocationEntries.Exists(e => e.displayName == opt.name && selectedLocations.Contains(e.name)),
-                    panelPaddingV: ScheduleEditDropdownPanelPadding);
+                    panelPaddingV: ScheduleEditDropdownPanelPadding,
+                    totalItemCount: filteredLocationOptionNames.Count, arrowYNudge: 4, arrowXNudge: 2);
             else if (festivalsDropdownOpen)
                 dropdownTooltip = UIHelpers.DrawMultiSelectDropdownOptions(b, uiBuilder.FestivalsDropdownBar.bounds,
                     visibleFestivalsOptions, festivalsScrollIndex, ScheduleEditDropdownMaxVisible,
                     isChecked: opt => filteredFestivalEntries.Exists(e => e.displayName == opt.name && selectedFestivals.Contains(e.id)),
-                    panelPaddingV: ScheduleEditDropdownPanelPadding);
+                    panelPaddingV: ScheduleEditDropdownPanelPadding,
+                    totalItemCount: filteredFestivalOptionNames.Count, arrowYNudge: 4, arrowXNudge: 2);
             else if (priorityDropdownOpen)
-                UIHelpers.DrawDropdownOptions(b, uiBuilder.PriorityDropdownBar.bounds, priorityOptions, 0, priorityOptions.Count,
-                    isSelected: opt => opt.name == priorityText, panelPaddingV: ScheduleEditDropdownPanelPadding);
-            else if (rotateDropdownOpen)
-                UIHelpers.DrawDropdownOptions(b, uiBuilder.RotateDropdownBar.bounds, rotateOptions, 0, rotateOptions.Count,
-                    isSelected: opt => opt.name == rotateText, panelPaddingV: ScheduleEditDropdownPanelPadding);
+                UIHelpers.DrawDropdownOptions(b, uiBuilder.PriorityPanelAnchor, priorityOptions, 0, priorityOptions.Count,
+                    isSelected: opt => opt.name == priorityText, panelPaddingV: ScheduleEditDropdownPanelPadding, arrowYNudge: 4, arrowXNudge: 2);
+            else if (rotationDropdownOpen)
+                UIHelpers.DrawDropdownOptions(b, uiBuilder.RotationPanelAnchor, rotationOptions, 0, rotationOptions.Count,
+                    isSelected: opt => opt.name == rotationText, panelPaddingV: ScheduleEditDropdownPanelPadding, arrowYNudge: 4, arrowXNudge: 2);
 
-            // Tooltip (dropdown takes priority over bar hover)
-            string? tooltip = dropdownTooltip ?? barTooltip;
+            // Tooltip (dropdown > bar > name row)
+            string? tooltip = dropdownTooltip ?? barTooltip ?? nameTooltip;
             if (tooltip != null && ModEntry.Config.ShowTooltip)
             {
                 UIHelpers.DrawWrappedTooltip(b, tooltip);
             }
-
-            // Draw side panels
-            tagPicker.Draw(b);
-            setPicker.Draw(b);
 
             UIHelpers.SuppressHover = false;
             if (previewOverlay != null)
@@ -711,28 +628,16 @@ namespace OutfitStudio
             yPositionOnScreen = uiBuilder.Y;
 
             RebuildAllOpenDropdowns();
+            UpdateSearchTextBoxWidth();
             if (priorityDropdownOpen)
                 uiBuilder.BuildPriorityOptions(priorityOptions);
-            if (rotateDropdownOpen)
-                uiBuilder.BuildRotateOptions(rotateOptions);
-
-            if (tagPicker.IsOpen)
-                tagPicker.UpdateParentBounds(uiBuilder.ContentBoxBounds);
-            if (setPicker.IsOpen)
-                setPicker.UpdateParentBounds(uiBuilder.ContentBoxBounds);
+            if (rotationDropdownOpen)
+                uiBuilder.BuildRotationOptions(rotationOptions);
 
             previewOverlay?.gameWindowSizeChanged(oldBounds, newBounds);
         }
 
-        // --- Summary text ---
-
-        private string GetSummaryText(List<string> displayNames, ClickableComponent bar)
-        {
-            if (displayNames.Count == 0) return "";
-            int maxWidth = bar.bounds.Width - 40 - ClearButtonSize;
-            return UIHelpers.FormatTagsWithCount(displayNames, "", maxWidth,
-                s => Game1.smallFont.MeasureString(s).X, "");
-        }
+        // --- Display name helpers ---
 
         private string GetWeatherDisplayName(string value)
         {
@@ -770,15 +675,15 @@ namespace OutfitStudio
             if (IsAnyDropdownOpen()) return null;
             int mx = Game1.getMouseX(), my = Game1.getMouseY();
 
-            if (uiBuilder.SeasonsDropdownBar.containsPoint(mx, my) && selectedSeasons.Count > 1)
-                return string.Join(", ", selectedSeasons);
-            if (uiBuilder.WeatherDropdownBar.containsPoint(mx, my) && selectedWeather.Count > 1)
-                return string.Join(", ", selectedWeather.Select(GetWeatherDisplayName));
-            if (uiBuilder.AreasDropdownBar.containsPoint(mx, my) && selectedAreas.Count > 1)
-                return string.Join(", ", selectedAreas.Select(GetAreaDisplayName));
-            if (uiBuilder.LocationsDropdownBar.containsPoint(mx, my) && selectedLocations.Count > 1)
+            if (uiBuilder.SeasonsDropdownBar.containsPoint(mx, my) && selectedSeasons.Count > 0)
+                return string.Join(", ", SeasonValues.Where(s => selectedSeasons.Contains(s)));
+            if (uiBuilder.WeatherDropdownBar.containsPoint(mx, my) && selectedWeather.Count > 0)
+                return string.Join(", ", weatherEntries.Where(e => selectedWeather.Contains(e.id)).Select(e => e.displayName));
+            if (uiBuilder.AreasDropdownBar.containsPoint(mx, my) && selectedAreas.Count > 0)
+                return string.Join(", ", AreaValues.Where(a => selectedAreas.Contains(a)).Select(GetAreaDisplayName));
+            if (uiBuilder.LocationsDropdownBar.containsPoint(mx, my) && selectedLocations.Count > 0)
                 return string.Join(", ", GetSelectedLocationNames());
-            if (uiBuilder.FestivalsDropdownBar.containsPoint(mx, my) && selectedFestivals.Count > 1)
+            if (uiBuilder.FestivalsDropdownBar.containsPoint(mx, my) && selectedFestivals.Count > 0)
                 return string.Join(", ", GetSelectedFestivalNames());
 
             return null;
@@ -842,25 +747,21 @@ namespace OutfitStudio
                     () => { areasScrollIndex = 0; RebuildVisibleOptions(uiBuilder.AreasDropdownBar, areaOptionNames, areasScrollIndex, visibleAreasOptions); }))
                     return true;
 
-                if (locationsDropdownOpen && uiBuilder.LocationsDropdownBar.containsPoint(x, y))
-                    return true;
                 if (TryToggleDropdown(uiBuilder.LocationsDropdownBar, ref locationsDropdownOpen, x, y, playSound,
                     () => { OpenSearchDropdown("locations"); }))
                     return true;
             }
 
-            if (festivalsDropdownOpen && uiBuilder.FestivalsDropdownBar.containsPoint(x, y))
-                return true;
             if (TryToggleDropdown(uiBuilder.FestivalsDropdownBar, ref festivalsDropdownOpen, x, y, playSound,
                 () => { OpenSearchDropdown("festivals"); }))
                 return true;
 
-            if (TryToggleDropdown(uiBuilder.PriorityDropdownBar, ref priorityDropdownOpen, x, y, playSound,
+            if (!IsSpecialEventMode && TryToggleDropdown(uiBuilder.PriorityClickArea, ref priorityDropdownOpen, x, y, playSound,
                 () => uiBuilder.BuildPriorityOptions(priorityOptions)))
                 return true;
 
-            if (TryToggleDropdown(uiBuilder.RotateDropdownBar, ref rotateDropdownOpen, x, y, playSound,
-                () => uiBuilder.BuildRotateOptions(rotateOptions)))
+            if (TryToggleDropdown(uiBuilder.RotationClickArea, ref rotationDropdownOpen, x, y, playSound,
+                () => uiBuilder.BuildRotationOptions(rotationOptions)))
                 return true;
 
             return false;
@@ -910,14 +811,14 @@ namespace OutfitStudio
                 }
                 return false;
             }
-            if (rotateDropdownOpen)
+            if (rotationDropdownOpen)
             {
-                for (int i = 0; i < rotateOptions.Count; i++)
+                for (int i = 0; i < rotationOptions.Count; i++)
                 {
-                    if (rotateOptions[i].containsPoint(x, y))
+                    if (rotationOptions[i].containsPoint(x, y))
                     {
                         advanceOnWarp = (i == 0);
-                        rotateDropdownOpen = false;
+                        rotationDropdownOpen = false;
                         if (playSound) Game1.playSound("drumkit6");
                         return true;
                     }
@@ -993,7 +894,7 @@ namespace OutfitStudio
         private bool IsAnyDropdownOpen()
         {
             return seasonsDropdownOpen || weatherDropdownOpen || areasDropdownOpen
-                || locationsDropdownOpen || festivalsDropdownOpen || priorityDropdownOpen || rotateDropdownOpen;
+                || locationsDropdownOpen || festivalsDropdownOpen || priorityDropdownOpen || rotationDropdownOpen;
         }
 
         private bool IsAnyTriggerDropdownOpen()
@@ -1041,7 +942,7 @@ namespace OutfitStudio
             locationsDropdownOpen = false;
             festivalsDropdownOpen = false;
             priorityDropdownOpen = false;
-            rotateDropdownOpen = false;
+            rotationDropdownOpen = false;
 
             if (activeSearchDropdown != "")
             {
@@ -1072,12 +973,26 @@ namespace OutfitStudio
         private void OpenSearchDropdown(string dropdown)
         {
             searchText = "";
+            activeSearchDropdown = dropdown;
+
+            var bar = dropdown == "locations" ? uiBuilder.LocationsDropdownBar : uiBuilder.FestivalsDropdownBar;
+            int maxTextWidth = UIHelpers.CalculateInputBarMaxTextWidth(bar.bounds.Width, hasClearButton: false);
+
             searchTextBox = new TextBox(null, null, Game1.smallFont, Game1.textColor);
+            searchTextBox.Width = maxTextWidth + 21;
             searchTextBox.Text = "";
             searchTextBox.Selected = true;
             Game1.keyboardDispatcher.Subscriber = searchTextBox;
-            activeSearchDropdown = dropdown;
+
             RebuildFilteredOptions();
+        }
+
+        private void UpdateSearchTextBoxWidth()
+        {
+            if (searchTextBox == null || activeSearchDropdown == "")
+                return;
+            var bar = activeSearchDropdown == "locations" ? uiBuilder.LocationsDropdownBar : uiBuilder.FestivalsDropdownBar;
+            searchTextBox.Width = UIHelpers.CalculateInputBarMaxTextWidth(bar.bounds.Width, hasClearButton: false) + 21;
         }
 
         private void RebuildFilteredOptions()
@@ -1116,7 +1031,7 @@ namespace OutfitStudio
                 return true;
             if (priorityDropdownOpen && uiBuilder.GetPriorityDropdownPanelBounds(priorityOptions.Count).Contains(x, y))
                 return true;
-            if (rotateDropdownOpen && uiBuilder.GetRotateDropdownPanelBounds(rotateOptions.Count).Contains(x, y))
+            if (rotationDropdownOpen && uiBuilder.GetRotationDropdownPanelBounds(rotationOptions.Count).Contains(x, y))
                 return true;
             return false;
         }
@@ -1150,9 +1065,16 @@ namespace OutfitStudio
 
         private bool HandleBottomButtonClick(int x, int y, bool playSound)
         {
-            if (uiBuilder.PreviewButton.containsPoint(x, y))
+            if (uiBuilder.OutfitsAddButton.containsPoint(x, y))
             {
                 OpenPreviewOverlay();
+                if (playSound) Game1.playSound("bigSelect");
+                return true;
+            }
+
+            if (uiBuilder.SaveButton.containsPoint(x, y))
+            {
+                HandleSave();
                 if (playSound) Game1.playSound("bigSelect");
                 return true;
             }
@@ -1167,7 +1089,7 @@ namespace OutfitStudio
             return false;
         }
 
-        // --- Save (called from SetPreviewOverlay in Phase 5) ---
+        // --- Save ---
 
         private void HandleSave()
         {
@@ -1194,16 +1116,13 @@ namespace OutfitStudio
             rule.FestivalsSelectAll = false;
             rule.SelectedFestivals = new List<string>(selectedFestivals);
             rule.IsWeddingDay = isWeddingDay;
-            rule.TagsSelectAll = tagsSelectAll;
-            rule.SelectedTags = new List<string>(selectedTags);
-            rule.IncludedSetIds = new List<string>(includedSetIds);
-            rule.ExcludedSetIds = new List<string>(excludedSetIds);
+            rule.SelectedSetIds = new List<string>(selectedSetIds);
             rule.Priority = priority;
             rule.AdvanceOnWarp = advanceOnWarp;
 
             if (editingRule != null)
             {
-                scheduleStore.UpdateRule(rule);
+                scheduleStore.UpdateRule(rule, originalSetIds!);
             }
             else
             {
@@ -1224,13 +1143,16 @@ namespace OutfitStudio
         private string GenerateRuleName()
         {
             return UIHelpers.GenerateRuleName(
-                selectedSeasons,
-                selectedWeather.Select(GetWeatherDisplayName),
-                selectedAreas.Select(GetAreaDisplayName),
+                SeasonValues.Where(s => selectedSeasons.Contains(s)),
+                weatherEntries.Where(e => selectedWeather.Contains(e.id)).Select(e => e.displayName),
+                AreaValues.Where(a => selectedAreas.Contains(a)).Select(GetAreaDisplayName),
                 GetSelectedLocationNames(),
                 GetSelectedFestivalNames(),
                 isWeddingDay,
-                TranslationCache.ScheduleEditWedding);
+                TranslationCache.ScheduleEditWedding,
+                SeasonValues.Length,
+                weatherEntries.Count,
+                areaOptionNames.Count);
         }
 
         // --- Total outfits count ---
@@ -1247,10 +1169,7 @@ namespace OutfitStudio
             {
                 var tempRule = new ScheduleRule
                 {
-                    TagsSelectAll = tagsSelectAll,
-                    SelectedTags = new List<string>(selectedTags),
-                    IncludedSetIds = new List<string>(includedSetIds),
-                    ExcludedSetIds = new List<string>(excludedSetIds)
+                    SelectedSetIds = new List<string>(selectedSetIds)
                 };
                 cachedTotalOutfits = ScheduleEngine.ResolvePool(tempRule, outfitSetStore.GetAllSets()).Count;
             }
@@ -1262,7 +1181,7 @@ namespace OutfitStudio
             if (cachedRemaining == null)
             {
                 int total = GetTotalOutfits();
-                if (editingRule == null)
+                if (editingRule == null || originalSetIds == null)
                 {
                     cachedRemaining = total;
                 }
@@ -1275,78 +1194,18 @@ namespace OutfitStudio
                     }
                     else
                     {
-                        var poolIds = new HashSet<string>(
-                            ScheduleEngine.ResolvePool(
-                                new ScheduleRule
-                                {
-                                    TagsSelectAll = tagsSelectAll,
-                                    SelectedTags = new List<string>(selectedTags),
-                                    IncludedSetIds = new List<string>(includedSetIds),
-                                    ExcludedSetIds = new List<string>(excludedSetIds)
-                                },
-                                outfitSetStore.GetAllSets()
-                            ).Select(s => s.Id)
-                        );
-                        cachedRemaining = state.Queue.Count(id => poolIds.Contains(id));
+                        var simulated = new RotationState
+                        {
+                            RuleId = state.RuleId,
+                            Queue = new List<string>(state.Queue),
+                            LastUsedId = state.LastUsedId
+                        };
+                        ScheduleStore.SyncQueueWithSetIds(simulated, originalSetIds, selectedSetIds, new Random());
+                        cachedRemaining = simulated.Queue.Count;
                     }
                 }
             }
             return cachedRemaining.Value;
-        }
-
-        // --- Tag/Set picker ---
-
-        private void OpenTagPicker()
-        {
-            CloseAllDropdowns();
-            setPicker.Close();
-            tagPicker.Open(
-                uiBuilder.ContentBoxBounds,
-                selectedTags,
-                tagsSelectAll,
-                tags =>
-                {
-                    selectedTags = new HashSet<string>(tags, TranslationCache.TagComparer);
-                    InvalidatePoolCache();
-                    if (setPicker.IsOpen)
-                        setPicker.UpdateState(selectedTags, tagsSelectAll, includedSetIds, excludedSetIds);
-                },
-                allSelected =>
-                {
-                    tagsSelectAll = allSelected;
-                    InvalidatePoolCache();
-                    if (setPicker.IsOpen)
-                        setPicker.UpdateState(selectedTags, tagsSelectAll, includedSetIds, excludedSetIds);
-                },
-                openToLeft: true
-            );
-        }
-
-        private void OpenSetPicker()
-        {
-            CloseAllDropdowns();
-            tagPicker.Close();
-            setPicker.Open(
-                uiBuilder.ContentBoxBounds,
-                selectedTags,
-                tagsSelectAll,
-                includedSetIds,
-                excludedSetIds
-            );
-        }
-
-        private void OnSetPickerChanged()
-        {
-            InvalidatePoolCache();
-        }
-
-        private bool IsInAnyPicker(int x, int y)
-        {
-            if (tagPicker.IsOpen && tagPicker.Bounds.Contains(x, y))
-                return true;
-            if (setPicker.IsOpen && setPicker.Bounds.Contains(x, y))
-                return true;
-            return false;
         }
 
         // --- Preview overlay ---
@@ -1354,50 +1213,21 @@ namespace OutfitStudio
         private void OpenPreviewOverlay()
         {
             CloseAllDropdowns();
-            tagPicker.Close();
-            setPicker.Close();
 
-            var triggerLines = BuildTriggerLines();
-
-            previewOverlay = new SetPreviewOverlay(
+            previewOverlay = new ScheduleOutfitOverlay(
                 outfitSetStore,
                 scheduleStore,
                 editingRule,
-                new List<string>(selectedTags),
-                tagsSelectAll,
-                new List<string>(excludedSetIds),
-                newExcluded => { excludedSetIds = new List<string>(newExcluded); InvalidatePoolCache(); },
-                HandleSave,
-                triggerLines
+                new List<string>(selectedSetIds),
+                originalSetIds,
+                newSelected => { selectedSetIds = new List<string>(newSelected); InvalidatePoolCache(); }
             );
-        }
-
-        private List<string> BuildTriggerLines()
-        {
-            var lines = new List<string>();
-
-            if (selectedSeasons.Count > 0)
-                lines.Add(string.Join(", ", selectedSeasons));
-            if (selectedWeather.Count > 0)
-                lines.Add(string.Join(", ", selectedWeather.Select(GetWeatherDisplayName)));
-            if (selectedAreas.Count > 0)
-                lines.Add(string.Join(", ", selectedAreas.Select(GetAreaDisplayName)));
-            if (selectedLocations.Count > 0)
-                lines.Add(string.Join(", ", GetSelectedLocationNames()));
-            if (selectedFestivals.Count > 0)
-                lines.Add(string.Join(", ", GetSelectedFestivalNames()));
-            if (isWeddingDay)
-                lines.Add(TranslationCache.ScheduleEditWedding);
-
-            return lines;
         }
 
         // --- Close ---
 
         private void CloseOverlay()
         {
-            tagPicker.Close();
-            setPicker.Close();
             Game1.activeClickableMenu = parentMenu;
         }
     }

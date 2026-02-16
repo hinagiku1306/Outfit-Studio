@@ -11,6 +11,9 @@ namespace OutfitStudio
         public static string CommonReset { get; private set; } = "";
         public static string CommonFavorite { get; private set; } = "";
         public static string CommonNone { get; private set; } = "";
+        public static string CommonClose { get; private set; } = "";
+        public static string CommonBack { get; private set; } = "";
+        public static string CommonSelectAll { get; private set; } = "";
 
         public static string MenuTitle { get; private set; } = "";
         public static string TabAll { get; private set; } = "";
@@ -130,13 +133,15 @@ namespace OutfitStudio
         public static string ScheduleEditSpecialEvents { get; private set; } = "";
         public static string ScheduleEditSeason { get; private set; } = "";
         public static string ScheduleEditFestival { get; private set; } = "";
-        public static string ScheduleEditAny { get; private set; } = "";
-        public static string ScheduleEditPreview { get; private set; } = "";
+
+        public static string ScheduleEditOutfits { get; private set; } = "";
+        public static string ScheduleEditBehavior { get; private set; } = "";
         public static string ScheduleEditPriority { get; private set; } = "";
         public static string ScheduleEditPriorityHigh { get; private set; } = "";
         public static string ScheduleEditPriorityMedium { get; private set; } = "";
         public static string ScheduleEditPriorityLow { get; private set; } = "";
-        public static string ScheduleEditRotate { get; private set; } = "";
+        public static string ScheduleEditPrioritySpecial { get; private set; } = "";
+        public static string ScheduleEditRotation { get; private set; } = "";
         public static string ScheduleEditRotateOnceADay { get; private set; } = "";
         public static string ScheduleEditRotateOnLocationChange { get; private set; } = "";
         public static string ScheduleEditWeather { get; private set; } = "";
@@ -151,15 +156,15 @@ namespace OutfitStudio
         public static string ScheduleEditWeatherGreenRain { get; private set; } = "";
         public static string ScheduleEditAreaOutdoor { get; private set; } = "";
         public static string ScheduleEditAreaIndoor { get; private set; } = "";
-        public static string ScheduleEditSets { get; private set; } = "";
         public static string ScheduleEditTotalOutfits { get; private set; } = "";
+        public static string ScheduleEditNameLabel { get; private set; } = "";
         public static string ScheduleInfoOutfits { get; private set; } = "";
         public static string ScheduleInfoDaily { get; private set; } = "";
         public static string ScheduleEditRemainingBeforeReset { get; private set; } = "";
         public static string ScheduleEditDeleteScheduleConfirm { get; private set; } = "";
 
-        public static string SetPreviewActiveSets { get; private set; } = "";
-        public static string SetPreviewTriggersHeader { get; private set; } = "";
+        public static string ScheduleOutfitActiveSets { get; private set; } = "";
+        public static string ScheduleOutfitShowSelected { get; private set; } = "";
 
         public static string ScheduleDebugTitle { get; private set; } = "";
         public static string ScheduleDebugNoEntries { get; private set; } = "";
@@ -184,11 +189,10 @@ namespace OutfitStudio
         public static string ScheduleDebugLabelOutfit { get; private set; } = "";
         public static string ScheduleDebugLabelStatus { get; private set; } = "";
         public static string ScheduleDebugLabelRotation { get; private set; } = "";
-        public static string ScheduleDebugLabelWedding { get; private set; } = "";
         public static string ScheduleDebugTriggerDayStarted { get; private set; } = "";
         public static string ScheduleDebugFailFestivalLocation { get; private set; } = "";
         public static string ScheduleDebugFailEmptyPool { get; private set; } = "";
-        public static string ScheduleDebugReasonSpecialEvent { get; private set; } = "";
+        public static string ScheduleDebugPriorityGroupSpecial { get; private set; } = "";
         public static string ScheduleDebugPriorityGroupHigh { get; private set; } = "";
         public static string ScheduleDebugPriorityGroupMedium { get; private set; } = "";
         public static string ScheduleDebugPriorityGroupLow { get; private set; } = "";
@@ -203,6 +207,10 @@ namespace OutfitStudio
         public static string ConfigConsistentTiebreaksTooltip { get; private set; } = "";
         public static string ConfigLockManualOutfitName { get; private set; } = "";
         public static string ConfigLockManualOutfitTooltip { get; private set; } = "";
+        public static string ConfigDefaultPriorityName { get; private set; } = "";
+        public static string ConfigDefaultPriorityTooltip { get; private set; } = "";
+        public static string ConfigDefaultRotationName { get; private set; } = "";
+        public static string ConfigDefaultRotationTooltip { get; private set; } = "";
 
         public static string ConfigSettingsTitle { get; private set; } = "";
         public static string ConfigKeybindListening { get; private set; } = "";
@@ -214,6 +222,9 @@ namespace OutfitStudio
             CommonReset = i18n.Get("common.reset");
             CommonFavorite = i18n.Get("common.favorite");
             CommonNone = i18n.Get("common.none");
+            CommonClose = i18n.Get("common.close");
+            CommonBack = i18n.Get("common.back");
+            CommonSelectAll = i18n.Get("common.select-all");
 
             MenuTitle = i18n.Get("menu.title");
             TabAll = i18n.Get("menu.tabs.all");
@@ -320,6 +331,10 @@ namespace OutfitStudio
             ConfigConsistentTiebreaksTooltip = i18n.Get("config.consistent-tiebreaks.tooltip");
             ConfigLockManualOutfitName = i18n.Get("config.lock-manual-outfit.name");
             ConfigLockManualOutfitTooltip = i18n.Get("config.lock-manual-outfit.tooltip");
+            ConfigDefaultPriorityName = i18n.Get("config.default-priority.name");
+            ConfigDefaultPriorityTooltip = i18n.Get("config.default-priority.tooltip");
+            ConfigDefaultRotationName = i18n.Get("config.default-rotation.name");
+            ConfigDefaultRotationTooltip = i18n.Get("config.default-rotation.tooltip");
 
             SchedulePriorityPlaceholder = i18n.Get("schedule.priority.placeholder");
 
@@ -336,13 +351,15 @@ namespace OutfitStudio
             ScheduleEditSpecialEvents = i18n.Get("schedule.edit.special-events");
             ScheduleEditSeason = i18n.Get("schedule.edit.season");
             ScheduleEditFestival = i18n.Get("schedule.edit.festival");
-            ScheduleEditAny = i18n.Get("schedule.edit.any");
-            ScheduleEditPreview = i18n.Get("schedule.edit.preview");
+
+            ScheduleEditOutfits = i18n.Get("schedule.edit.outfits");
+            ScheduleEditBehavior = i18n.Get("schedule.edit.behavior");
             ScheduleEditPriority = i18n.Get("schedule.edit.priority");
             ScheduleEditPriorityHigh = i18n.Get("schedule.edit.priority.high");
             ScheduleEditPriorityMedium = i18n.Get("schedule.edit.priority.medium");
             ScheduleEditPriorityLow = i18n.Get("schedule.edit.priority.low");
-            ScheduleEditRotate = i18n.Get("schedule.edit.rotate");
+            ScheduleEditPrioritySpecial = i18n.Get("schedule.edit.priority.special");
+            ScheduleEditRotation = i18n.Get("schedule.edit.rotation");
             ScheduleEditRotateOnceADay = i18n.Get("schedule.edit.rotate.once-a-day");
             ScheduleEditRotateOnLocationChange = i18n.Get("schedule.edit.rotate.on-location-change");
             ScheduleEditWeather = i18n.Get("schedule.edit.weather");
@@ -357,15 +374,15 @@ namespace OutfitStudio
             ScheduleEditWeatherGreenRain = i18n.Get("schedule.edit.weather.green-rain");
             ScheduleEditAreaOutdoor = i18n.Get("schedule.edit.area.outdoor");
             ScheduleEditAreaIndoor = i18n.Get("schedule.edit.area.indoor");
-            ScheduleEditSets = i18n.Get("schedule.edit.sets");
             ScheduleEditTotalOutfits = i18n.Get("schedule.edit.total-outfits");
+            ScheduleEditNameLabel = i18n.Get("schedule.edit.name-label");
             ScheduleInfoOutfits = i18n.Get("schedule.info.outfits");
             ScheduleInfoDaily = i18n.Get("schedule.info.daily");
             ScheduleEditRemainingBeforeReset = i18n.Get("schedule.edit.remaining-before-reset");
             ScheduleEditDeleteScheduleConfirm = i18n.Get("schedule.edit.delete-schedule-confirm");
 
-            SetPreviewActiveSets = i18n.Get("schedule.preview.active-sets");
-            SetPreviewTriggersHeader = i18n.Get("schedule.preview.triggers-header");
+            ScheduleOutfitActiveSets = i18n.Get("schedule.preview.active-sets");
+            ScheduleOutfitShowSelected = i18n.Get("schedule.outfit.show-selected");
 
             ScheduleDebugTitle = i18n.Get("schedule.debug.title");
             ScheduleDebugNoEntries = i18n.Get("schedule.debug.no-entries");
@@ -390,11 +407,11 @@ namespace OutfitStudio
             ScheduleDebugLabelOutfit = i18n.Get("schedule.debug.label-outfit");
             ScheduleDebugLabelStatus = i18n.Get("schedule.debug.label-status");
             ScheduleDebugLabelRotation = i18n.Get("schedule.debug.label-rotation");
-            ScheduleDebugLabelWedding = i18n.Get("schedule.debug.label-wedding");
+
             ScheduleDebugTriggerDayStarted = i18n.Get("schedule.debug.trigger-daystarted");
             ScheduleDebugFailFestivalLocation = i18n.Get("schedule.debug.fail-festival-location");
             ScheduleDebugFailEmptyPool = i18n.Get("schedule.debug.fail-empty-pool");
-            ScheduleDebugReasonSpecialEvent = i18n.Get("schedule.debug.reason-special-event");
+            ScheduleDebugPriorityGroupSpecial = i18n.Get("schedule.debug.priority-group-special");
             ScheduleDebugPriorityGroupHigh = i18n.Get("schedule.debug.priority-group-high");
             ScheduleDebugPriorityGroupMedium = i18n.Get("schedule.debug.priority-group-medium");
             ScheduleDebugPriorityGroupLow = i18n.Get("schedule.debug.priority-group-low");

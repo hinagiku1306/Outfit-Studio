@@ -137,12 +137,12 @@ namespace OutfitStudio.Tests.Helpers
         private static readonly int ScaledArrowH = (int)(UIHelpers.UpScrollArrowSourceRect.Height * DropdownArrowScale);
 
         [Fact]
-        // Expected: arrowX = anchorRight - scaledWidth - pad
+        // Expected: arrowX = anchorRight - scaledWidth - pad + 2
         public void ArrowX_UsesScaledWidthAndPad()
         {
             int anchorRight = 300;
             int result = UIHelpers.CalculateDropdownArrowX(anchorRight);
-            Assert.Equal(anchorRight - ScaledArrowW - DropdownArrowPad, result);
+            Assert.Equal(anchorRight - ScaledArrowW - DropdownArrowPad + 2, result);
         }
 
         [Fact]
@@ -155,43 +155,62 @@ namespace OutfitStudio.Tests.Helpers
         }
 
         [Fact]
-        // Expected: upArrowY = anchorBottom + pad (no panel padding)
+        // Expected: upArrowY = anchorBottom + pad - nudge + 4 (default arrowYNudge=0)
         public void UpArrowY_NoPanelPadding()
         {
             int anchorBottom = 250;
             int result = UIHelpers.CalculateDropdownUpArrowY(anchorBottom);
-            Assert.Equal(anchorBottom + DropdownArrowPad, result);
+            Assert.Equal(anchorBottom + DropdownArrowPad - ScheduleEditDropdownArrowNudge + 4, result);
         }
 
         [Fact]
-        // Expected: upArrowY = anchorBottom + panelPaddingV + pad
+        // Expected: upArrowY = anchorBottom + panelPaddingV + pad - nudge + 4
         public void UpArrowY_WithPanelPadding()
         {
             int anchorBottom = 250;
             int panelPadding = 5;
             int result = UIHelpers.CalculateDropdownUpArrowY(anchorBottom, panelPadding);
-            Assert.Equal(anchorBottom + panelPadding + DropdownArrowPad, result);
+            Assert.Equal(anchorBottom + panelPadding + DropdownArrowPad - ScheduleEditDropdownArrowNudge + 4, result);
         }
 
         [Fact]
-        // Expected: downArrowY = anchorBottom + dropdownHeight - scaledHeight - pad
+        // Expected: arrowYNudge shifts up arrow up by the specified amount
+        public void UpArrowY_WithArrowYNudge()
+        {
+            int anchorBottom = 250;
+            int result = UIHelpers.CalculateDropdownUpArrowY(anchorBottom, 0, 2);
+            Assert.Equal(anchorBottom + DropdownArrowPad - ScheduleEditDropdownArrowNudge + 4 - 2, result);
+        }
+
+        [Fact]
+        // Expected: downArrowY = anchorBottom + dropdownHeight - scaledHeight - pad + nudge - 4
         public void DownArrowY_NoPanelPadding()
         {
             int anchorBottom = 250;
             int dropdownHeight = 200;
             int result = UIHelpers.CalculateDropdownDownArrowY(anchorBottom, dropdownHeight);
-            Assert.Equal(anchorBottom + dropdownHeight - ScaledArrowH - DropdownArrowPad, result);
+            Assert.Equal(anchorBottom + dropdownHeight - ScaledArrowH - DropdownArrowPad + ScheduleEditDropdownArrowNudge - 4, result);
         }
 
         [Fact]
-        // Expected: downArrowY = anchorBottom + panelPaddingV + dropdownHeight - scaledHeight - pad
+        // Expected: downArrowY = anchorBottom + panelPaddingV + dropdownHeight - scaledHeight - pad + nudge - 4
         public void DownArrowY_WithPanelPadding()
         {
             int anchorBottom = 250;
             int dropdownHeight = 200;
             int panelPadding = 5;
             int result = UIHelpers.CalculateDropdownDownArrowY(anchorBottom, dropdownHeight, panelPadding);
-            Assert.Equal(anchorBottom + panelPadding + dropdownHeight - ScaledArrowH - DropdownArrowPad, result);
+            Assert.Equal(anchorBottom + panelPadding + dropdownHeight - ScaledArrowH - DropdownArrowPad + ScheduleEditDropdownArrowNudge - 4, result);
+        }
+
+        [Fact]
+        // Expected: arrowYNudge shifts down arrow down by the specified amount
+        public void DownArrowY_WithArrowYNudge()
+        {
+            int anchorBottom = 250;
+            int dropdownHeight = 200;
+            int result = UIHelpers.CalculateDropdownDownArrowY(anchorBottom, dropdownHeight, 0, 2);
+            Assert.Equal(anchorBottom + dropdownHeight - ScaledArrowH - DropdownArrowPad + ScheduleEditDropdownArrowNudge - 4 + 2, result);
         }
 
         [Fact]
@@ -242,6 +261,63 @@ namespace OutfitStudio.Tests.Helpers
         {
             int result = UIHelpers.CalculateDropdownButtonMaxTextWidth(60, hasClearButton: true);
             Assert.Equal(60 - ClearButtonSize - ClearButtonRightMargin - 20, result);
+        }
+    }
+
+    public class ResolveDisplayNameTests
+    {
+        [Fact]
+        // Expected: valid display name is returned as-is
+        public void ValidName_ReturnsResolved()
+        {
+            Assert.Equal("The Farm", UIHelpers.ResolveDisplayName("The Farm", "Farm"));
+        }
+
+        [Fact]
+        // Expected: null resolved falls back to fallback
+        public void Null_ReturnsFallback()
+        {
+            Assert.Equal("Farm", UIHelpers.ResolveDisplayName(null, "Farm"));
+        }
+
+        [Fact]
+        // Expected: empty resolved falls back to fallback
+        public void Empty_ReturnsFallback()
+        {
+            Assert.Equal("Farm", UIHelpers.ResolveDisplayName("", "Farm"));
+        }
+
+        [Fact]
+        // Expected: "no translation:" prefix falls back
+        public void NoTranslationPrefix_ReturnsFallback()
+        {
+            Assert.Equal("SomeLocation", UIHelpers.ResolveDisplayName(
+                "no translation:SomeLocation.Name", "SomeLocation"));
+        }
+
+        [Fact]
+        // Expected: "(no translation:...)" with parens falls back
+        public void NoTranslationWithParens_ReturnsFallback()
+        {
+            Assert.Equal("Custom_Ridgeside_AguarCaveFixed_alt", UIHelpers.ResolveDisplayName(
+                "(no translation:Custom_Ridgeside_AguarCaveFixed_alt.Name)",
+                "Custom_Ridgeside_AguarCaveFixed_alt"));
+        }
+
+        [Fact]
+        // Expected: case-insensitive match on "No Translation:"
+        public void NoTranslationCaseInsensitive_ReturnsFallback()
+        {
+            Assert.Equal("Fallback", UIHelpers.ResolveDisplayName(
+                "(No Translation:Something)", "Fallback"));
+        }
+
+        [Fact]
+        // Expected: text containing "no translation:" mid-string falls back
+        public void NoTranslationMidString_ReturnsFallback()
+        {
+            Assert.Equal("key", UIHelpers.ResolveDisplayName(
+                "Prefix (no translation:key.Name) suffix", "key"));
         }
     }
 

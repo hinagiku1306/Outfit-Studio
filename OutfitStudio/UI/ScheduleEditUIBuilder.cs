@@ -29,18 +29,19 @@ namespace OutfitStudio
         // Wedding checkbox
         public ClickableComponent WeddingCheckbox { get; private set; } = null!;
 
-        // Priority dropdown
-        public ClickableComponent PriorityDropdownBar { get; private set; } = null!;
+        // Priority inline text (click to open dropdown)
+        public ClickableComponent PriorityClickArea { get; private set; } = null!;
+        public Rectangle PriorityPanelAnchor { get; private set; }
 
-        // Rotate dropdown
-        public ClickableComponent RotateDropdownBar { get; private set; } = null!;
+        // Rotation inline text (click to open dropdown)
+        public ClickableComponent RotationClickArea { get; private set; } = null!;
+        public Rectangle RotationPanelAnchor { get; private set; }
 
-        // Tags/Sets buttons
-        public ClickableComponent TagsAddButton { get; private set; } = null!;
-        public ClickableComponent SetsAddButton { get; private set; } = null!;
+        // Outfits label + [+] toggle button (on Behavior header row)
+        public ClickableComponent OutfitsAddButton { get; private set; } = null!;
 
         // Bottom buttons
-        public ClickableComponent PreviewButton { get; private set; } = null!;
+        public ClickableComponent SaveButton { get; private set; } = null!;
         public ClickableComponent CancelButton { get; private set; } = null!;
 
         public Rectangle ContentBoxBounds { get; private set; }
@@ -50,19 +51,21 @@ namespace OutfitStudio
         public int Width { get; private set; }
         public int Height { get; private set; }
 
-        public int OptionsLabelRightX { get; private set; }
         public int RightColBarX { get; private set; }
 
         private int contentX;
         private int contentWidth;
 
         private int totalOutfitsRowY;
+        private int nameRowY;
         private int conditionsHeaderY;
         private int specialEventsHeaderY;
-        private int tagsRowY;
-        private int setsRowY;
+        private int behaviorHeaderY;
         private int priorityRowY;
-        private int rotateRowY;
+        private int rotationRowY;
+        private int textRowHeight;
+
+        public bool IsEditing { get; set; }
 
         public ScheduleEditUIBuilder()
         {
@@ -71,27 +74,29 @@ namespace OutfitStudio
 
         public void Recalculate()
         {
-            int contentInner = ScheduleBorderPadding
-                + ScheduleEditRowHeight                    // total outfits
-                + ScheduleEditSectionGap
+            textRowHeight = (int)Game1.smallFont.MeasureString("X").Y;
+
+            int contentInner = ScheduleEditTopPadding
+                + textRowHeight + ScheduleEditInfoRowGap   // Total outfits row
+                + textRowHeight + ScheduleEditInfoRowGap   // Name row
                 + ScheduleEditSectionHeaderHeight          // "Conditions"
-                + TabAndButtonHeight                       // Season|Weather bars
+                + ScheduleEditHeaderToContentGap
+                + TabAndButtonHeight                       // Season|Weather|Area bars
                 + ScheduleEditBarRowGap
-                + TabAndButtonHeight                       // Area|Location bars
-                + ScheduleEditSectionGap
+                + TabAndButtonHeight                       // Location bar
+                + ScheduleEditConditionsToEventsGap
                 + ScheduleEditSectionHeaderHeight          // "Special Events"
-                + TabAndButtonHeight                       // Festival|Wedding row
-                + ScheduleEditBarRowGap
-                + ScheduleEditRowHeight                    // Tags row
-                + ScheduleEditOptionRowGap
-                + ScheduleEditRowHeight                    // Sets row
-                + ScheduleEditOptionRowGap
-                + TabAndButtonHeight                       // Priority bar
-                + ScheduleEditOptionRowGap
-                + TabAndButtonHeight                       // Rotate bar
+                + ScheduleEditSpecialEventsHeaderGap
+                + TabAndButtonHeight                       // Festival + Wedding row
+                + ScheduleEditSectionGap
+                + ScheduleEditSectionHeaderHeight          // "Behavior"
+                + ScheduleEditBehaviorHeaderGap
+                + textRowHeight                            // Priority
+                + ScheduleEditPriorityRotationGap
+                + textRowHeight                            // Rotation
                 + ScheduleEditSectionGap
                 + TabAndButtonHeight                       // buttons row
-                + ScheduleBorderPadding;
+                + ScheduleEditBottomPadding;
 
             Height = contentInner;
             X = (Game1.uiViewport.Width - Width) / 2;
@@ -107,94 +112,111 @@ namespace OutfitStudio
             contentX = ContentBoxBounds.X + ScheduleBorderPadding;
             contentWidth = ContentBoxBounds.Width - ScheduleBorderPadding * 2;
 
-            int currentY = ContentBoxBounds.Y + ScheduleBorderPadding;
+            int currentY = ContentBoxBounds.Y + ScheduleEditTopPadding;
 
-            // Total outfits row
+            // Total outfits row (always shown)
             totalOutfitsRowY = currentY;
-            currentY += ScheduleEditRowHeight + ScheduleEditSectionGap;
+            currentY += textRowHeight + ScheduleEditInfoRowGap;
+
+            // Name row
+            nameRowY = currentY;
+            currentY += textRowHeight + ScheduleEditInfoRowGap;
 
             // Conditions header
             conditionsHeaderY = currentY;
-            currentY += ScheduleEditSectionHeaderHeight;
+            currentY += ScheduleEditSectionHeaderHeight + ScheduleEditHeaderToContentGap;
 
-            // 2-column condition layout (full width, no labels)
             int triggerX = contentX + ScheduleEditTriggerIndent;
-            int triggerAvail = contentWidth - ScheduleEditTriggerIndent;
-            int colWidth = (triggerAvail - ScheduleEditColumnGap) / 2;
-            int rightColX = triggerX + colWidth + ScheduleEditColumnGap;
-            RightColBarX = rightColX;
+            int triggerAvail = contentWidth - ScheduleEditTriggerIndent - ScheduleEditTriggerRightPad;
 
-            // Row 1: Season (left) | Weather (right)
+            // Row 1: Season | Weather | Area (3 columns)
+            int col3Width = (triggerAvail - ScheduleEditColumnGap * 2) / 3;
+            int col2X = triggerX + col3Width + ScheduleEditColumnGap;
+            int col3X = col2X + col3Width + ScheduleEditColumnGap;
+
             SeasonsDropdownBar = new ClickableComponent(
-                new Rectangle(triggerX, currentY, colWidth, TabAndButtonHeight),
+                new Rectangle(triggerX, currentY, col3Width, TabAndButtonHeight),
                 "SeasonsDropdown");
             SeasonsClearButton = CreateClearButton(SeasonsDropdownBar);
 
             WeatherDropdownBar = new ClickableComponent(
-                new Rectangle(rightColX, currentY, colWidth, TabAndButtonHeight),
+                new Rectangle(col2X, currentY, col3Width, TabAndButtonHeight),
                 "WeatherDropdown");
             WeatherClearButton = CreateClearButton(WeatherDropdownBar);
-            currentY += TabAndButtonHeight + ScheduleEditBarRowGap;
 
-            // Row 2: Area (left) | Location (right)
             AreasDropdownBar = new ClickableComponent(
-                new Rectangle(triggerX, currentY, colWidth, TabAndButtonHeight),
+                new Rectangle(col3X, currentY, col3Width, TabAndButtonHeight),
                 "AreasDropdown");
             AreasClearButton = CreateClearButton(AreasDropdownBar);
+            currentY += TabAndButtonHeight + ScheduleEditBarRowGap;
 
+            // Row 2: Location (full width)
             LocationsDropdownBar = new ClickableComponent(
-                new Rectangle(rightColX, currentY, colWidth, TabAndButtonHeight),
+                new Rectangle(triggerX, currentY, triggerAvail, TabAndButtonHeight),
                 "LocationsDropdown");
             LocationsClearButton = CreateClearButton(LocationsDropdownBar);
-            currentY += TabAndButtonHeight + ScheduleEditSectionGap;
+            currentY += TabAndButtonHeight + ScheduleEditConditionsToEventsGap;
 
             // Special Events header
             specialEventsHeaderY = currentY;
-            currentY += ScheduleEditSectionHeaderHeight;
+            currentY += ScheduleEditSectionHeaderHeight + ScheduleEditSpecialEventsHeaderGap;
 
-            // Row 3: Festival (left) | Wedding checkbox (right)
-            FestivalsDropdownBar = new ClickableComponent(
-                new Rectangle(triggerX, currentY, colWidth, TabAndButtonHeight),
-                "FestivalsDropdown");
-            FestivalsClearButton = CreateClearButton(FestivalsDropdownBar);
+            // Festival + Wedding row (same line)
+            {
+                string weddingLabel = TranslationCache.ScheduleEditWedding;
+                int weddingLabelW = (int)Game1.smallFont.MeasureString(weddingLabel).X;
+                int weddingTotalW = ScheduleCheckboxSize + ScheduleCheckboxGap + weddingLabelW;
+                int festivalBarW = Width / 2;
 
-            int weddingCheckY = currentY + (TabAndButtonHeight - ScheduleCheckboxSize) / 2;
-            WeddingCheckbox = new ClickableComponent(
-                new Rectangle(rightColX, weddingCheckY, ScheduleCheckboxSize, ScheduleCheckboxSize),
-                "Wedding");
-            currentY += TabAndButtonHeight + ScheduleEditBarRowGap;
+                FestivalsDropdownBar = new ClickableComponent(
+                    new Rectangle(triggerX, currentY, festivalBarW, TabAndButtonHeight),
+                    "FestivalsDropdown");
+                FestivalsClearButton = CreateClearButton(FestivalsDropdownBar);
 
-            // Tags row (center-aligned block)
-            tagsRowY = currentY;
-            currentY += ScheduleEditRowHeight + ScheduleEditOptionRowGap;
-
-            // Sets row
-            setsRowY = currentY;
-            currentY += ScheduleEditRowHeight + ScheduleEditOptionRowGap;
-
-            CalculateTagsSetsCenteredLayout();
-
-            // Priority dropdown bar
-            priorityRowY = currentY;
-            currentY += TabAndButtonHeight + ScheduleEditOptionRowGap;
-
-            // Rotate dropdown bar
-            rotateRowY = currentY;
+                int weddingX = FestivalsDropdownBar.bounds.Right + ScheduleEditFestivalToWeddingGap;
+                int weddingY = currentY + (TabAndButtonHeight - ScheduleCheckboxSize) / 2;
+                WeddingCheckbox = new ClickableComponent(
+                    new Rectangle(weddingX, weddingY, ScheduleCheckboxSize, ScheduleCheckboxSize),
+                    "Wedding");
+                RightColBarX = weddingX;
+            }
             currentY += TabAndButtonHeight + ScheduleEditSectionGap;
 
-            CalculateOptionsLayout();
+            // Behavior header + Outfits text + [+] toggle button
+            behaviorHeaderY = currentY;
+            {
+                int addBtnW = UIHelpers.GetToggleButtonWidth();
+                int outfitsTextX = RightColBarX;
+                int outfitsTextY = currentY + (int)((ScheduleEditSectionHeaderHeight - Game1.smallFont.MeasureString("A").Y) / 2);
+                int addBtnX = outfitsTextX + (int)Game1.smallFont.MeasureString(TranslationCache.ScheduleEditOutfits).X + 8;
+                int addBtnY = currentY + (ScheduleEditSectionHeaderHeight - SmallButtonHeight) / 2;
+                OutfitsAddButton = new ClickableComponent(
+                    new Rectangle(addBtnX, addBtnY, addBtnW, SmallButtonHeight),
+                    "OutfitsAdd");
+            }
+            currentY += ScheduleEditSectionHeaderHeight + ScheduleEditBehaviorHeaderGap;
 
-            // Bottom buttons (Preview + Cancel) — same width
+            // Priority row (inline text)
+            priorityRowY = currentY;
+            currentY += textRowHeight + ScheduleEditPriorityRotationGap;
+
+            // Rotation row (inline text)
+            rotationRowY = currentY;
+            currentY += textRowHeight + ScheduleEditSectionGap;
+
+            CalculateBehaviorLayout();
+
+            // Bottom buttons (Save + Cancel) — same width
             int maxButtonWidth = (contentWidth - ScheduleBottomButtonGap) / 2;
-            int previewWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ScheduleEditPreview, maxButtonWidth);
+            int saveWidth = UIHelpers.CalculateButtonWidth(TranslationCache.CommonSave, maxButtonWidth);
             int cancelWidth = UIHelpers.CalculateButtonWidth(TranslationCache.CommonCancel, maxButtonWidth);
-            int buttonWidth = Math.Max(previewWidth, cancelWidth);
+            int buttonWidth = Math.Max(saveWidth, cancelWidth);
             int totalBtnWidth = buttonWidth + ScheduleBottomButtonGap + buttonWidth;
             int btnStartX = X + (Width - totalBtnWidth) / 2;
 
-            PreviewButton = new ClickableComponent(
+            SaveButton = new ClickableComponent(
                 new Rectangle(btnStartX, currentY, buttonWidth, TabAndButtonHeight),
-                "Preview");
+                "Save");
             CancelButton = new ClickableComponent(
                 new Rectangle(btnStartX + buttonWidth + ScheduleBottomButtonGap, currentY, buttonWidth, TabAndButtonHeight),
                 "Cancel");
@@ -208,63 +230,39 @@ namespace OutfitStudio
                 4f);
         }
 
-        private void CalculateTagsSetsCenteredLayout()
+        private void CalculateBehaviorLayout()
         {
-            string tagsLabel = TranslationCache.SaveSetTagsLabel;
-            string setsLabel = TranslationCache.ScheduleEditSets;
+            int indent = contentX + ScheduleEditBehaviorIndent;
 
-            int tagsLabelW = (int)Game1.smallFont.MeasureString(tagsLabel).X;
-            int setsLabelW = (int)Game1.smallFont.MeasureString(setsLabel).X;
-            int maxLabelW = Math.Max(tagsLabelW, setsLabelW);
-
-            int addBtnWidth = UIHelpers.GetToggleButtonWidth();
-            int gap = 8;
-            int blockWidth = maxLabelW + gap + addBtnWidth;
-            int blockX = ContentBoxBounds.X + (ContentBoxBounds.Width - blockWidth) / 2;
-            int addBtnX = blockX + maxLabelW + gap;
-
-            int tagsAddBtnY = tagsRowY + (ScheduleEditRowHeight - SmallButtonHeight) / 2;
-            TagsAddButton = new ClickableComponent(
-                new Rectangle(addBtnX, tagsAddBtnY, addBtnWidth, SmallButtonHeight),
-                "TagsAdd");
-
-            int setsAddBtnY = setsRowY + (ScheduleEditRowHeight - SmallButtonHeight) / 2;
-            SetsAddButton = new ClickableComponent(
-                new Rectangle(addBtnX, setsAddBtnY, addBtnWidth, SmallButtonHeight),
-                "SetsAdd");
-        }
-
-        private void CalculateOptionsLayout()
-        {
-            int priorityLabelW = (int)Game1.smallFont.MeasureString(TranslationCache.ScheduleEditPriority).X;
-            int rotateLabelW = (int)Game1.smallFont.MeasureString(TranslationCache.ScheduleEditRotate).X;
-            int maxLabelW = Math.Max(priorityLabelW, rotateLabelW);
-
-            int priorityTextWidth = Math.Max(
+            // Priority: "Priority: <value>"
+            int priorityLabelW = (int)Game1.smallFont.MeasureString(TranslationCache.ScheduleEditPriority + ": ").X;
+            int priorityValueMaxW = Math.Max(
                 Math.Max(
-                    (int)Game1.smallFont.MeasureString(TranslationCache.ScheduleEditPriorityHigh).X,
-                    (int)Game1.smallFont.MeasureString(TranslationCache.ScheduleEditPriorityMedium).X),
-                (int)Game1.smallFont.MeasureString(TranslationCache.ScheduleEditPriorityLow).X);
-            int priorityBarWidth = priorityTextWidth + 40;
+                    Math.Max(
+                        (int)Game1.smallFont.MeasureString(TranslationCache.ScheduleEditPriorityHigh).X,
+                        (int)Game1.smallFont.MeasureString(TranslationCache.ScheduleEditPriorityMedium).X),
+                    (int)Game1.smallFont.MeasureString(TranslationCache.ScheduleEditPriorityLow).X),
+                (int)Game1.smallFont.MeasureString(TranslationCache.ScheduleEditPrioritySpecial).X);
+            int priorityTotalW = priorityLabelW + priorityValueMaxW;
+            PriorityClickArea = new ClickableComponent(
+                new Rectangle(indent, priorityRowY, priorityTotalW, textRowHeight),
+                "PriorityClick");
+            int priorityPanelW = priorityValueMaxW + 40;
+            int priorityPanelX = indent + priorityLabelW + priorityValueMaxW / 2 - priorityPanelW / 2;
+            PriorityPanelAnchor = new Rectangle(priorityPanelX, priorityRowY, priorityPanelW, textRowHeight);
 
-            int rotateTextWidth = Math.Max(
+            // Rotation: "Rotation: <value>"
+            int rotationLabelW = (int)Game1.smallFont.MeasureString(TranslationCache.ScheduleEditRotation + ": ").X;
+            int rotationValueMaxW = Math.Max(
                 (int)Game1.smallFont.MeasureString(TranslationCache.ScheduleEditRotateOnceADay).X,
                 (int)Game1.smallFont.MeasureString(TranslationCache.ScheduleEditRotateOnLocationChange).X);
-            int rotateBarWidth = Math.Min(rotateTextWidth, 200) + 40;
-
-            int maxControlWidth = Math.Max(priorityBarWidth, rotateBarWidth);
-            int groupWidth = maxLabelW + ScheduleEditOptionsLabelToBarGap + maxControlWidth;
-            int groupX = ContentBoxBounds.X + (ContentBoxBounds.Width - groupWidth) / 2;
-            OptionsLabelRightX = groupX + maxLabelW;
-            int controlX = OptionsLabelRightX + ScheduleEditOptionsLabelToBarGap;
-
-            PriorityDropdownBar = new ClickableComponent(
-                new Rectangle(controlX, priorityRowY, priorityBarWidth, TabAndButtonHeight),
-                "PriorityDropdown");
-
-            RotateDropdownBar = new ClickableComponent(
-                new Rectangle(controlX, rotateRowY, rotateBarWidth, TabAndButtonHeight),
-                "RotateDropdown");
+            int rotationTotalW = rotationLabelW + rotationValueMaxW;
+            RotationClickArea = new ClickableComponent(
+                new Rectangle(indent, rotationRowY, rotationTotalW, textRowHeight),
+                "RotationClick");
+            int rotationPanelW = rotationValueMaxW + 40;
+            int rotationPanelX = indent + rotationLabelW + rotationValueMaxW / 2 - rotationPanelW / 2;
+            RotationPanelAnchor = new Rectangle(rotationPanelX, rotationRowY, rotationPanelW, textRowHeight);
         }
 
         private ClickableComponent CreateClearButton(ClickableComponent bar)
@@ -294,15 +292,45 @@ namespace OutfitStudio
             }
         }
 
-        public void DrawTotalOutfitsRow(SpriteBatch b, int count, int remaining)
+        public void DrawTotalOutfitsRow(SpriteBatch b, int count, int remaining, bool showRemaining)
         {
-            string text = $"{TranslationCache.ScheduleEditTotalOutfits}: {count}";
-            text += $"   \u00b7   {remaining} {TranslationCache.ScheduleEditRemainingBeforeReset}";
+            string label = TranslationCache.ScheduleEditTotalOutfits;
+            string value = $": {count}";
+            if (showRemaining)
+                value += $"   \u00b7   {remaining} {TranslationCache.ScheduleEditRemainingBeforeReset}";
 
-            float textHeight = Game1.smallFont.MeasureString(text).Y;
-            int textY = totalOutfitsRowY + (int)((ScheduleEditRowHeight - textHeight) / 2);
-            Utility.drawTextWithShadow(b, text, Game1.smallFont,
-                new Vector2(contentX, textY), Game1.textColor);
+            Vector2 pos = new Vector2(contentX, totalOutfitsRowY);
+            Utility.drawTextWithShadow(b, label, Game1.smallFont, pos, Game1.textColor);
+            Utility.drawTextWithShadow(b, label, Game1.smallFont, pos + new Vector2(1, 0), Game1.textColor);
+
+            float labelWidth = Game1.smallFont.MeasureString(label).X;
+            Utility.drawTextWithShadow(b, value, Game1.smallFont, pos + new Vector2(labelWidth, 0), Game1.textColor);
+        }
+
+        public string? DrawNameRow(SpriteBatch b, string name)
+        {
+            string label = TranslationCache.ScheduleEditNameLabel;
+            float labelWidth = Game1.smallFont.MeasureString(label).X;
+            float colonWidth = Game1.smallFont.MeasureString(": ").X;
+            int maxNameWidth = contentWidth - (int)labelWidth - (int)colonWidth;
+            string displayName = UIHelpers.TruncateText(name, maxNameWidth);
+            string value = $": {displayName}";
+
+            Vector2 pos = new Vector2(contentX, nameRowY);
+            Utility.drawTextWithShadow(b, label, Game1.smallFont, pos, Game1.textColor);
+            Utility.drawTextWithShadow(b, label, Game1.smallFont, pos + new Vector2(1, 0), Game1.textColor);
+
+            Utility.drawTextWithShadow(b, value, Game1.smallFont, pos + new Vector2(labelWidth, 0), Game1.textColor);
+
+            if (displayName != name)
+            {
+                int mx = Game1.getMouseX(), my = Game1.getMouseY();
+                int rowHeight = (int)Game1.smallFont.MeasureString("X").Y;
+                if (mx >= contentX && mx <= contentX + contentWidth
+                    && my >= nameRowY && my <= nameRowY + rowHeight)
+                    return name;
+            }
+            return null;
         }
 
         public void DrawConditionsHeader(SpriteBatch b, float opacity = 1f)
@@ -335,13 +363,12 @@ namespace OutfitStudio
             string label = TranslationCache.ScheduleEditWedding;
             float textHeight = Game1.smallFont.MeasureString(label).Y;
             int textX = WeddingCheckbox.bounds.Right + ScheduleCheckboxGap;
-            int rowY = WeddingCheckbox.bounds.Y - (TabAndButtonHeight - ScheduleCheckboxSize) / 2;
-            int textY = rowY + (int)((TabAndButtonHeight - textHeight) / 2);
+            int textY = WeddingCheckbox.bounds.Y + (int)((ScheduleCheckboxSize - textHeight) / 2);
             Vector2 textPos = new Vector2(textX, textY);
 
             int labelWidth = (int)Game1.smallFont.MeasureString(label).X;
-            Rectangle hitArea = new Rectangle(RightColBarX, rowY,
-                (WeddingCheckbox.bounds.Right + ScheduleCheckboxGap + labelWidth) - RightColBarX, TabAndButtonHeight);
+            Rectangle hitArea = new Rectangle(RightColBarX, WeddingCheckbox.bounds.Y,
+                (WeddingCheckbox.bounds.Right + ScheduleCheckboxGap + labelWidth) - RightColBarX, ScheduleCheckboxSize);
             bool isHovered = !UIHelpers.SuppressHover && hitArea.Contains(Game1.getMouseX(), Game1.getMouseY());
 
             if (isHovered)
@@ -355,34 +382,74 @@ namespace OutfitStudio
             }
         }
 
-        public void DrawTagsRow(SpriteBatch b, int tagCount, bool isTagsOpen)
+        public void DrawBehaviorHeader(SpriteBatch b)
         {
-            string label = TranslationCache.SaveSetTagsLabel;
-            float textHeight = Game1.smallFont.MeasureString(label).Y;
-            int textY = tagsRowY + (int)((ScheduleEditRowHeight - textHeight) / 2);
+            string text = TranslationCache.ScheduleEditBehavior;
+            float textHeight = Game1.smallFont.MeasureString(text).Y;
+            int textY = behaviorHeaderY + (int)((ScheduleEditSectionHeaderHeight - textHeight) / 2);
+            Vector2 pos = new Vector2(contentX, textY);
+            Utility.drawTextWithShadow(b, text, Game1.smallFont, pos, Game1.textColor);
+            Utility.drawTextWithShadow(b, text, Game1.smallFont, pos + new Vector2(1, 0), Game1.textColor);
 
-            string displayText = tagCount > 0 ? $"{label} ({tagCount})" : label;
-            int labelX = TagsAddButton.bounds.X - 8 - (int)Game1.smallFont.MeasureString(displayText).X;
+            string outfitsText = TranslationCache.ScheduleEditOutfits;
+            int outfitsTextX = RightColBarX;
+            int outfitsTextY = behaviorHeaderY + (int)((ScheduleEditSectionHeaderHeight - textHeight) / 2);
+            Vector2 outfitsPos = new Vector2(outfitsTextX, outfitsTextY);
+            Utility.drawTextWithShadow(b, outfitsText, Game1.smallFont, outfitsPos, Game1.textColor);
+            Utility.drawTextWithShadow(b, outfitsText, Game1.smallFont, outfitsPos + new Vector2(1, 0), Game1.textColor);
 
-            Utility.drawTextWithShadow(b, displayText, Game1.smallFont,
-                new Vector2(labelX, textY), Game1.textColor);
-
-            UIHelpers.DrawToggleButton(b, TagsAddButton, isTagsOpen);
+            UIHelpers.DrawToggleButton(b, OutfitsAddButton, false);
         }
 
-        public void DrawSetsRow(SpriteBatch b, int includedCount, bool isSetsOpen)
+        public void DrawPriorityRow(SpriteBatch b, string currentValue, bool isOpen, bool isSpecial = false)
         {
-            string label = TranslationCache.ScheduleEditSets;
-            float textHeight = Game1.smallFont.MeasureString(label).Y;
-            int textY = setsRowY + (int)((ScheduleEditRowHeight - textHeight) / 2);
+            string label = TranslationCache.ScheduleEditPriority + ": ";
+            int textY = priorityRowY;
+            int textX = PriorityClickArea.bounds.X;
 
-            string displayText = includedCount > 0 ? $"{label} ({includedCount})" : label;
-            int labelX = SetsAddButton.bounds.X - 8 - (int)Game1.smallFont.MeasureString(displayText).X;
+            Utility.drawTextWithShadow(b, label, Game1.smallFont,
+                new Vector2(textX, textY), Game1.textColor);
 
-            Utility.drawTextWithShadow(b, displayText, Game1.smallFont,
-                new Vector2(labelX, textY), Game1.textColor);
+            int valueX = textX + (int)Game1.smallFont.MeasureString(label).X;
+            Vector2 valuePos = new Vector2(valueX, textY);
+            Color valueColor = isSpecial ? Color.Orange : Game1.textColor;
+            bool isHovered = !isSpecial && !isOpen && !UIHelpers.SuppressHover
+                && PriorityClickArea.containsPoint(Game1.getMouseX(), Game1.getMouseY());
 
-            UIHelpers.DrawToggleButton(b, SetsAddButton, isSetsOpen);
+            if (isHovered)
+            {
+                Utility.drawTextWithShadow(b, currentValue, Game1.smallFont, valuePos + new Vector2(-1, 0), valueColor * 0.8f);
+                Utility.drawTextWithShadow(b, currentValue, Game1.smallFont, valuePos, valueColor);
+            }
+            else
+            {
+                Utility.drawTextWithShadow(b, currentValue, Game1.smallFont, valuePos, valueColor);
+            }
+        }
+
+        public void DrawRotationRow(SpriteBatch b, string currentValue, bool isOpen)
+        {
+            string label = TranslationCache.ScheduleEditRotation + ": ";
+            int textY = rotationRowY;
+            int textX = RotationClickArea.bounds.X;
+
+            Utility.drawTextWithShadow(b, label, Game1.smallFont,
+                new Vector2(textX, textY), Game1.textColor);
+
+            int valueX = textX + (int)Game1.smallFont.MeasureString(label).X;
+            Vector2 valuePos = new Vector2(valueX, textY);
+            bool isHovered = !isOpen && !UIHelpers.SuppressHover
+                && RotationClickArea.containsPoint(Game1.getMouseX(), Game1.getMouseY());
+
+            if (isHovered)
+            {
+                Utility.drawTextWithShadow(b, currentValue, Game1.smallFont, valuePos + new Vector2(-1, 0), Game1.textColor * 0.8f);
+                Utility.drawTextWithShadow(b, currentValue, Game1.smallFont, valuePos, Game1.textColor);
+            }
+            else
+            {
+                Utility.drawTextWithShadow(b, currentValue, Game1.smallFont, valuePos, Game1.textColor);
+            }
         }
 
         public void BuildPriorityOptions(List<ClickableComponent> outOptions)
@@ -397,9 +464,9 @@ namespace OutfitStudio
             for (int i = 0; i < texts.Length; i++)
             {
                 outOptions.Add(new ClickableComponent(
-                    new Rectangle(PriorityDropdownBar.bounds.X,
-                        PriorityDropdownBar.bounds.Bottom + ScheduleEditDropdownPanelPadding + i * ScheduleEditDropdownOptionHeight,
-                        PriorityDropdownBar.bounds.Width, ScheduleEditDropdownOptionHeight),
+                    new Rectangle(PriorityPanelAnchor.X,
+                        PriorityPanelAnchor.Bottom + ScheduleEditDropdownPanelPadding + i * ScheduleEditDropdownOptionHeight,
+                        PriorityPanelAnchor.Width, ScheduleEditDropdownOptionHeight),
                     texts[i]));
             }
         }
@@ -408,13 +475,13 @@ namespace OutfitStudio
         {
             int dropdownHeight = optionCount * ScheduleEditDropdownOptionHeight + ScheduleEditDropdownPanelPadding * 2;
             return new Rectangle(
-                PriorityDropdownBar.bounds.X - 4,
-                PriorityDropdownBar.bounds.Bottom - 4,
-                PriorityDropdownBar.bounds.Width + 8,
+                PriorityPanelAnchor.X - 4,
+                PriorityPanelAnchor.Bottom - 4,
+                PriorityPanelAnchor.Width + 8,
                 dropdownHeight + 8);
         }
 
-        public void BuildRotateOptions(List<ClickableComponent> outOptions)
+        public void BuildRotationOptions(List<ClickableComponent> outOptions)
         {
             outOptions.Clear();
             string[] texts = {
@@ -425,26 +492,26 @@ namespace OutfitStudio
             for (int i = 0; i < texts.Length; i++)
             {
                 outOptions.Add(new ClickableComponent(
-                    new Rectangle(RotateDropdownBar.bounds.X,
-                        RotateDropdownBar.bounds.Bottom + ScheduleEditDropdownPanelPadding + i * ScheduleEditDropdownOptionHeight,
-                        RotateDropdownBar.bounds.Width, ScheduleEditDropdownOptionHeight),
+                    new Rectangle(RotationPanelAnchor.X,
+                        RotationPanelAnchor.Bottom + ScheduleEditDropdownPanelPadding + i * ScheduleEditDropdownOptionHeight,
+                        RotationPanelAnchor.Width, ScheduleEditDropdownOptionHeight),
                     texts[i]));
             }
         }
 
-        public Rectangle GetRotateDropdownPanelBounds(int optionCount)
+        public Rectangle GetRotationDropdownPanelBounds(int optionCount)
         {
             int dropdownHeight = optionCount * ScheduleEditDropdownOptionHeight + ScheduleEditDropdownPanelPadding * 2;
             return new Rectangle(
-                RotateDropdownBar.bounds.X - 4,
-                RotateDropdownBar.bounds.Bottom - 4,
-                RotateDropdownBar.bounds.Width + 8,
+                RotationPanelAnchor.X - 4,
+                RotationPanelAnchor.Bottom - 4,
+                RotationPanelAnchor.Width + 8,
                 dropdownHeight + 8);
         }
 
         public void DrawBottomButtons(SpriteBatch b)
         {
-            UIHelpers.DrawTextButton(b, PreviewButton, TranslationCache.ScheduleEditPreview);
+            UIHelpers.DrawTextButton(b, SaveButton, TranslationCache.CommonSave);
             UIHelpers.DrawTextButton(b, CancelButton, TranslationCache.CommonCancel);
         }
 

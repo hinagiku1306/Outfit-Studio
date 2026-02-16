@@ -60,15 +60,13 @@ namespace OutfitStudio.Tests.UI
         }
 
         [Fact]
-        // Expected: Empty rules without manual override returns at least one line height
-        public void NoRules_NoOverride_ReturnsMinHeight()
+        // Expected: Empty rules without manual override returns single line height for em-dash
+        public void NoRules_NoOverride_ReturnsSingleLineHeight()
         {
             var rules = new List<RuleEvalEntry>();
             int result = ScheduleDebugLogUIBuilder.CalculateRuleSectionHeight(rules);
 
-            int minHeight = ScheduleDebugMinExpandedRules * ScheduleDebugContextLineHeight;
-            int expected = System.Math.Max(minHeight, ScheduleDebugContextLineHeight);
-            Assert.Equal(expected, result);
+            Assert.Equal(ScheduleDebugContextLineHeight, result);
         }
 
         [Fact]
@@ -101,8 +99,8 @@ namespace OutfitStudio.Tests.UI
         }
 
         [Fact]
-        // Expected: Single failed rule produces priority group header + rule line, clamped to min
-        public void SingleFailedRule_ReturnsAtLeastMinHeight()
+        // Expected: Single failed rule produces priority group header + rule line sized to content
+        public void SingleFailedRule_ReturnsContentHeight()
         {
             var rules = new List<RuleEvalEntry>
             {
@@ -110,8 +108,8 @@ namespace OutfitStudio.Tests.UI
             };
             int result = ScheduleDebugLogUIBuilder.CalculateRuleSectionHeight(rules);
 
-            int minHeight = ScheduleDebugMinExpandedRules * ScheduleDebugContextLineHeight;
-            Assert.True(result >= minHeight);
+            // PriorityGroupGap + header line + PriorityHeaderToRulesGap + rule line
+            Assert.True(result > ScheduleDebugContextLineHeight);
         }
 
         [Fact]
@@ -157,13 +155,19 @@ namespace OutfitStudio.Tests.UI
     public class GetPriorityShortLabelTests
     {
         [Theory]
-        [InlineData(3, "H")]
-        [InlineData(4, "H")]
-        [InlineData(10, "H")]
-        // Expected: Priority >= 3 returns "H"
-        public void HighPriority_ReturnsH(int priority, string expected)
+        [InlineData(4, "S")]
+        [InlineData(10, "S")]
+        // Expected: Priority >= 4 returns "S"
+        public void SpecialPriority_ReturnsS(int priority, string expected)
         {
             Assert.Equal(expected, ScheduleDebugLogUIBuilder.GetPriorityShortLabel(priority));
+        }
+
+        [Fact]
+        // Expected: Priority 3 returns "H"
+        public void HighPriority_ReturnsH()
+        {
+            Assert.Equal("H", ScheduleDebugLogUIBuilder.GetPriorityShortLabel(3));
         }
 
         [Fact]

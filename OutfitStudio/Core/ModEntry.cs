@@ -274,6 +274,36 @@ namespace OutfitStudio
                     setValue: value => config.LockManualOutfit = value
                 );
 
+                gmcmApi.AddNumberOption(
+                    mod: ModManifest,
+                    name: () => TranslationCache.ConfigDefaultPriorityName,
+                    tooltip: () => TranslationCache.ConfigDefaultPriorityTooltip,
+                    getValue: () => config.DefaultPriority,
+                    setValue: value => config.DefaultPriority = value,
+                    min: 1,
+                    max: 3,
+                    formatValue: value => value switch
+                    {
+                        1 => TranslationCache.ScheduleEditPriorityLow,
+                        3 => TranslationCache.ScheduleEditPriorityHigh,
+                        _ => TranslationCache.ScheduleEditPriorityMedium
+                    }
+                );
+
+                gmcmApi.AddTextOption(
+                    mod: ModManifest,
+                    name: () => TranslationCache.ConfigDefaultRotationName,
+                    tooltip: () => TranslationCache.ConfigDefaultRotationTooltip,
+                    getValue: () => config.DefaultAdvanceOnWarp ? "OnWarp" : "Daily",
+                    setValue: value => config.DefaultAdvanceOnWarp = value == "OnWarp",
+                    allowedValues: new[] { "Daily", "OnWarp" },
+                    formatAllowedValue: value => value switch
+                    {
+                        "OnWarp" => TranslationCache.ScheduleEditRotateOnLocationChange,
+                        _ => TranslationCache.ScheduleEditRotateOnceADay
+                    }
+                );
+
             }
         }
 

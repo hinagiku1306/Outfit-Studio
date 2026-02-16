@@ -38,6 +38,8 @@ namespace OutfitStudio
         private bool showScheduleDebugLog;
         private bool consistentTiebreaks;
         private bool lockManualOutfit;
+        private int defaultPriority;
+        private bool defaultAdvanceOnWarp;
 
         private readonly int originalRows;
         private readonly int originalColumns;
@@ -46,6 +48,8 @@ namespace OutfitStudio
         private string? listeningForKeybind;
 
         private bool searchScopeDropdownOpen;
+        private bool priorityDropdownOpen;
+        private bool rotationDropdownOpen;
 
         public ConfigOverlay(IClickableMenu parentMenu, ModEntry mod)
         {
@@ -73,6 +77,8 @@ namespace OutfitStudio
             showScheduleDebugLog = config.ShowScheduleDebugLog;
             consistentTiebreaks = config.ConsistentTiebreaks;
             lockManualOutfit = config.LockManualOutfit;
+            defaultPriority = config.DefaultPriority;
+            defaultAdvanceOnWarp = config.DefaultAdvanceOnWarp;
 
             originalRows = visibleRows;
             originalColumns = visibleColumns;
@@ -83,6 +89,8 @@ namespace OutfitStudio
             uiBuilder.VisibleRowsSlider.Value = visibleRows;
             uiBuilder.VisibleColumnsSlider.Value = visibleColumns;
             uiBuilder.SlotSizeSlider.Value = slotSize;
+
+            UpdateDropdownPanelPositions();
 
             width = uiBuilder.Width;
             height = uiBuilder.Height;
@@ -119,8 +127,10 @@ namespace OutfitStudio
 
             if (!isWithinBounds(x, y) && ModEntry.Config.CloseOnClickOutside)
             {
-                bool clickedDropdownPanel = searchScopeDropdownOpen &&
-                    uiBuilder.SearchScopeOptions.Any(o => o.containsPoint(x, y));
+                bool clickedDropdownPanel =
+                    (searchScopeDropdownOpen && uiBuilder.SearchScopeOptions.Any(o => o.containsPoint(x, y))) ||
+                    (priorityDropdownOpen && uiBuilder.DefaultPriorityOptions.Any(o => o.containsPoint(x, y))) ||
+                    (rotationDropdownOpen && uiBuilder.DefaultRotationOptions.Any(o => o.containsPoint(x, y)));
 
                 if (!clickedDropdownPanel)
                 {
@@ -132,26 +142,32 @@ namespace OutfitStudio
 
             if (searchScopeDropdownOpen)
             {
-                foreach (var option in uiBuilder.SearchScopeOptions)
+                if (TryHandleDropdownClick(uiBuilder.SearchScopeOptions, uiBuilder.SearchScopeDropdown,
+                    ref searchScopeDropdownOpen, v => defaultSearchScope = v, clickInContentArea, x, y, playSound))
                 {
-                    if (option.containsPoint(x, y))
-                    {
-                        defaultSearchScope = option.name;
-                        searchScopeDropdownOpen = false;
-                        if (playSound) Game1.playSound("smallSelect");
-                        return;
-                    }
-                }
-
-                if (clickInContentArea && IsInRowOf(uiBuilder.SearchScopeDropdown, x, y))
-                {
-                    searchScopeDropdownOpen = false;
-                    if (playSound) Game1.playSound("smallSelect");
+                    UpdateDropdownPanelPositions();
                     return;
                 }
+            }
 
-                searchScopeDropdownOpen = false;
-                return;
+            if (priorityDropdownOpen)
+            {
+                if (TryHandleDropdownClickByLabel(uiBuilder.DefaultPriorityOptions, uiBuilder.DefaultPriorityDropdown,
+                    ref priorityDropdownOpen, v => defaultPriority = int.Parse(v), clickInContentArea, x, y, playSound))
+                {
+                    UpdateDropdownPanelPositions();
+                    return;
+                }
+            }
+
+            if (rotationDropdownOpen)
+            {
+                if (TryHandleDropdownClickByLabel(uiBuilder.DefaultRotationOptions, uiBuilder.DefaultRotationDropdown,
+                    ref rotationDropdownOpen, v => defaultAdvanceOnWarp = v == "true", clickInContentArea, x, y, playSound))
+                {
+                    UpdateDropdownPanelPositions();
+                    return;
+                }
             }
 
             if (uiBuilder.SaveButton.containsPoint(x, y))
@@ -200,6 +216,26 @@ namespace OutfitStudio
             if (IsInRowOf(uiBuilder.SearchScopeDropdown, x, y))
             {
                 searchScopeDropdownOpen = !searchScopeDropdownOpen;
+                priorityDropdownOpen = false;
+                rotationDropdownOpen = false;
+                if (playSound) Game1.playSound("smallSelect");
+                return;
+            }
+
+            if (IsInRowOf(uiBuilder.DefaultPriorityDropdown, x, y))
+            {
+                priorityDropdownOpen = !priorityDropdownOpen;
+                searchScopeDropdownOpen = false;
+                rotationDropdownOpen = false;
+                if (playSound) Game1.playSound("smallSelect");
+                return;
+            }
+
+            if (IsInRowOf(uiBuilder.DefaultRotationDropdown, x, y))
+            {
+                rotationDropdownOpen = !rotationDropdownOpen;
+                searchScopeDropdownOpen = false;
+                priorityDropdownOpen = false;
                 if (playSound) Game1.playSound("smallSelect");
                 return;
             }
@@ -222,15 +258,16 @@ namespace OutfitStudio
         {
             if (listeningForKeybind != null)
             {
+                KeybindList newKeybind;
                 if (key == Keys.Escape)
                 {
-                    listeningForKeybind = null;
-                    Game1.playSound("bigDeSelect");
-                    return;
+                    newKeybind = KeybindList.Parse("None");
                 }
-
-                SButton button = (SButton)key;
-                KeybindList newKeybind = KeybindList.Parse(button.ToString());
+                else
+                {
+                    SButton button = (SButton)key;
+                    newKeybind = KeybindList.Parse(button.ToString());
+                }
 
                 if (listeningForKeybind == "ToggleMenuKey")
                     toggleMenuKey = newKeybind;
@@ -270,7 +307,10 @@ namespace OutfitStudio
             if (uiBuilder.ScrollOffset != oldOffset)
             {
                 searchScopeDropdownOpen = false;
+                priorityDropdownOpen = false;
+                rotationDropdownOpen = false;
                 uiBuilder.Recalculate();
+                UpdateDropdownPanelPositions();
                 Game1.playSound("shiny4");
             }
         }
@@ -333,12 +373,16 @@ namespace OutfitStudio
             uiBuilder.DrawButtons(b);
             uiBuilder.DrawCloseButton(b);
 
-            if (searchScopeDropdownOpen)
-            {
-                uiBuilder.DrawSearchScopeDropdownOptions(b, defaultSearchScope);
-            }
+            bool anyDropdownOpen = searchScopeDropdownOpen || priorityDropdownOpen || rotationDropdownOpen;
 
-            if (!searchScopeDropdownOpen)
+            if (searchScopeDropdownOpen)
+                uiBuilder.DrawSearchScopeDropdownOptions(b, defaultSearchScope);
+            else if (priorityDropdownOpen)
+                uiBuilder.DrawDefaultPriorityDropdownOptions(b, defaultPriority.ToString());
+            else if (rotationDropdownOpen)
+                uiBuilder.DrawDefaultRotationDropdownOptions(b, defaultAdvanceOnWarp.ToString().ToLower());
+
+            if (!anyDropdownOpen)
             {
                 int mouseX = Game1.getMouseX();
                 int mouseY = Game1.getMouseY();
@@ -384,6 +428,16 @@ namespace OutfitStudio
             uiBuilder.DrawSectionHeader(b, uiBuilder.ScheduleHeaderY, TranslationCache.ConfigScheduleSection);
             uiBuilder.DrawCheckboxRow(b, TranslationCache.ConfigConsistentTiebreaksName, consistentTiebreaks, uiBuilder.ConsistentTiebreaksCheckbox);
             uiBuilder.DrawCheckboxRow(b, TranslationCache.ConfigLockManualOutfitName, lockManualOutfit, uiBuilder.LockManualOutfitCheckbox);
+
+            string priorityDisplay = defaultPriority >= 3 ? TranslationCache.ScheduleEditPriorityHigh
+                : defaultPriority <= 1 ? TranslationCache.ScheduleEditPriorityLow
+                : TranslationCache.ScheduleEditPriorityMedium;
+            uiBuilder.DrawDefaultPriorityRow(b, TranslationCache.ConfigDefaultPriorityName, priorityDisplay, priorityDropdownOpen);
+
+            string rotationDisplay = defaultAdvanceOnWarp
+                ? TranslationCache.ScheduleEditRotateOnLocationChange
+                : TranslationCache.ScheduleEditRotateOnceADay;
+            uiBuilder.DrawDefaultRotationRow(b, TranslationCache.ConfigDefaultRotationName, rotationDisplay, rotationDropdownOpen);
         }
 
         public override void gameWindowSizeChanged(Rectangle oldBounds, Rectangle newBounds)
@@ -392,10 +446,26 @@ namespace OutfitStudio
             parentMenu.gameWindowSizeChanged(oldBounds, newBounds);
 
             uiBuilder.Recalculate();
+            UpdateDropdownPanelPositions();
             width = uiBuilder.Width;
             height = uiBuilder.Height;
             xPositionOnScreen = uiBuilder.X;
             yPositionOnScreen = uiBuilder.Y;
+        }
+
+        private void UpdateDropdownPanelPositions()
+        {
+            uiBuilder.UpdateSearchScopePanelPosition(ConfigUIBuilder.FormatSearchScope(defaultSearchScope));
+
+            string priorityDisplay = defaultPriority >= 3 ? TranslationCache.ScheduleEditPriorityHigh
+                : defaultPriority <= 1 ? TranslationCache.ScheduleEditPriorityLow
+                : TranslationCache.ScheduleEditPriorityMedium;
+            uiBuilder.UpdatePriorityPanelPosition(priorityDisplay);
+
+            string rotationDisplay = defaultAdvanceOnWarp
+                ? TranslationCache.ScheduleEditRotateOnLocationChange
+                : TranslationCache.ScheduleEditRotateOnceADay;
+            uiBuilder.UpdateRotationPanelPosition(rotationDisplay);
         }
 
         private bool IsInRowOf(ClickableComponent control, int x, int y)
@@ -407,6 +477,64 @@ namespace OutfitStudio
                 && x < uiBuilder.ContentClipRect.Right
                 && y >= rowY
                 && y < rowY + ConfigRowHeight;
+        }
+
+        private bool TryHandleDropdownClick(
+            System.Collections.Generic.List<ClickableComponent> options,
+            ClickableComponent dropdownBar,
+            ref bool isOpen,
+            Action<string> setValue,
+            bool clickInContentArea, int x, int y, bool playSound)
+        {
+            foreach (var option in options)
+            {
+                if (option.containsPoint(x, y))
+                {
+                    setValue(option.name);
+                    isOpen = false;
+                    if (playSound) Game1.playSound("smallSelect");
+                    return true;
+                }
+            }
+
+            if (clickInContentArea && IsInRowOf(dropdownBar, x, y))
+            {
+                isOpen = false;
+                if (playSound) Game1.playSound("smallSelect");
+                return true;
+            }
+
+            isOpen = false;
+            return true;
+        }
+
+        private bool TryHandleDropdownClickByLabel(
+            System.Collections.Generic.List<ClickableComponent> options,
+            ClickableComponent dropdownBar,
+            ref bool isOpen,
+            Action<string> setValue,
+            bool clickInContentArea, int x, int y, bool playSound)
+        {
+            foreach (var option in options)
+            {
+                if (option.containsPoint(x, y))
+                {
+                    setValue(option.label);
+                    isOpen = false;
+                    if (playSound) Game1.playSound("smallSelect");
+                    return true;
+                }
+            }
+
+            if (clickInContentArea && IsInRowOf(dropdownBar, x, y))
+            {
+                isOpen = false;
+                if (playSound) Game1.playSound("smallSelect");
+                return true;
+            }
+
+            isOpen = false;
+            return true;
         }
 
         private bool TryToggleCheckbox(ClickableComponent checkbox, int x, int y, ref bool value, bool playSound)
@@ -449,6 +577,8 @@ namespace OutfitStudio
                 mod.GetScheduleEngine()?.InvalidateContextCache();
 
             config.LockManualOutfit = lockManualOutfit;
+            config.DefaultPriority = defaultPriority;
+            config.DefaultAdvanceOnWarp = defaultAdvanceOnWarp;
 
             mod.SaveConfig();
 

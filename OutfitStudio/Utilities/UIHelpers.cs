@@ -48,6 +48,28 @@ namespace OutfitStudio
             return text;
         }
 
+        internal static string BuildCountSummary(string firstName, int totalCount, int maxTextWidth, Func<string, float>? measureText = null)
+        {
+            if (totalCount == 0) return "";
+            if (totalCount == 1) return firstName;
+
+            var measure = measureText ?? (s => Game1.smallFont.MeasureString(s).X);
+            string suffix = $" (+{totalCount - 1})";
+            string full = firstName + suffix;
+
+            if (measure(full) <= maxTextWidth)
+                return full;
+
+            return $"(+{totalCount})";
+        }
+
+        internal static string ResolveDisplayName(string? resolved, string fallback)
+        {
+            if (string.IsNullOrEmpty(resolved) || resolved.Contains("no translation:", StringComparison.OrdinalIgnoreCase))
+                return fallback;
+            return resolved;
+        }
+
         internal static int CalculateInputBarMaxTextWidth(int boundsWidth, bool hasClearButton)
         {
             int rightReserved = hasClearButton
@@ -56,21 +78,21 @@ namespace OutfitStudio
             return boundsWidth - InputBarTextStartX - rightReserved;
         }
 
-        internal static int CalculateDropdownArrowX(int anchorRight)
+        internal static int CalculateDropdownArrowX(int anchorRight, int arrowXNudge = 0)
         {
             int arrowW = (int)(UpScrollArrowSourceRect.Width * DropdownArrowScale);
-            return anchorRight - arrowW - DropdownArrowPad;
+            return anchorRight - arrowW - DropdownArrowPad + 2 - arrowXNudge;
         }
 
-        internal static int CalculateDropdownUpArrowY(int anchorBottom, int panelPaddingV = 0)
+        internal static int CalculateDropdownUpArrowY(int anchorBottom, int panelPaddingV = 0, int arrowYNudge = 0)
         {
-            return anchorBottom + panelPaddingV + DropdownArrowPad;
+            return anchorBottom + panelPaddingV + DropdownArrowPad - ScheduleEditDropdownArrowNudge + 4 - arrowYNudge;
         }
 
-        internal static int CalculateDropdownDownArrowY(int anchorBottom, int dropdownHeight, int panelPaddingV = 0)
+        internal static int CalculateDropdownDownArrowY(int anchorBottom, int dropdownHeight, int panelPaddingV = 0, int arrowYNudge = 0)
         {
             int arrowH = (int)(UpScrollArrowSourceRect.Height * DropdownArrowScale);
-            return anchorBottom + panelPaddingV + dropdownHeight - arrowH - DropdownArrowPad;
+            return anchorBottom + panelPaddingV + dropdownHeight - arrowH - DropdownArrowPad + ScheduleEditDropdownArrowNudge - 4 + arrowYNudge;
         }
 
         internal static int CalculateDropdownButtonMaxTextWidth(int boundsWidth, bool hasClearButton)
@@ -117,10 +139,6 @@ namespace OutfitStudio
             return prefix + $"(+{tags.Count})";
         }
 
-        private const int TotalSeasons = 4;
-        private const int TotalWeatherTypes = 2;
-        private const int TotalAreaTypes = 2;
-
         internal static string GenerateRuleName(
             IEnumerable<string> seasons,
             IEnumerable<string> weatherDisplayNames,
@@ -128,20 +146,23 @@ namespace OutfitStudio
             IEnumerable<string> locations,
             IEnumerable<string> festivalDisplayNames,
             bool isWeddingDay,
-            string weddingLabel)
+            string weddingLabel,
+            int totalSeasons,
+            int totalWeatherTypes,
+            int totalAreaTypes)
         {
             var parts = new List<string>();
 
             var seasonList = seasons.ToList();
-            if (seasonList.Count > 0 && seasonList.Count < TotalSeasons)
+            if (seasonList.Count > 0 && seasonList.Count < totalSeasons)
                 parts.Add(string.Join(", ", seasonList));
 
             var weatherList = weatherDisplayNames.ToList();
-            if (weatherList.Count > 0 && weatherList.Count < TotalWeatherTypes)
+            if (weatherList.Count > 0 && weatherList.Count < totalWeatherTypes)
                 parts.Add(string.Join(", ", weatherList));
 
             var areaList = areaDisplayNames.ToList();
-            if (areaList.Count > 0 && areaList.Count < TotalAreaTypes)
+            if (areaList.Count > 0 && areaList.Count < totalAreaTypes)
                 parts.Add(string.Join(", ", areaList));
 
             var locationList = locations.ToList();
@@ -279,7 +300,9 @@ namespace OutfitStudio
             bool hasValue = false,
             Action<SpriteBatch, ClickableComponent>? drawClearButton = null,
             float opacity = 1f,
-            string? placeholder = null)
+            string? placeholder = null,
+            int shadowOffset = 4,
+            float shadowOpacity = 0.4f)
         {
             int mouseX = Game1.getMouseX();
             int mouseY = Game1.getMouseY();
@@ -294,7 +317,8 @@ namespace OutfitStudio
             }
 
             DrawTextureBox(b, bounds.X, bounds.Y, bounds.Width, bounds.Height,
-                isOpen ? Color.Wheat : Color.White * opacity);
+                isOpen ? Color.Wheat : Color.White * opacity,
+                shadowOffset: shadowOffset, shadowOpacity: shadowOpacity);
 
             int maxTextWidth = CalculateDropdownButtonMaxTextWidth(bounds.Width, hasValue && clearButton != null);
 
@@ -372,13 +396,16 @@ namespace OutfitStudio
             ClickableComponent? clearButton = null,
             float opacity = 1f,
             int xOffset = 0,
-            Color? focusedBoxColor = null)
+            Color? focusedBoxColor = null,
+            int shadowOffset = 4,
+            float shadowOpacity = 0.4f)
         {
             bool hasText = !string.IsNullOrEmpty(text);
             bool hasClearButton = clearButton != null && hasText;
             Color boxColor = (isFocused && focusedBoxColor.HasValue) ? focusedBoxColor.Value : Color.White;
 
-            DrawTextureBox(b, bounds.X + xOffset, bounds.Y, bounds.Width, bounds.Height, boxColor * opacity);
+            DrawTextureBox(b, bounds.X + xOffset, bounds.Y, bounds.Width, bounds.Height, boxColor * opacity,
+                shadowOffset: shadowOffset, shadowOpacity: shadowOpacity);
 
             float textHeight = Game1.smallFont.MeasureString("A").Y;
             int maxTextWidth = CalculateInputBarMaxTextWidth(bounds.Width, hasClearButton);
@@ -458,7 +485,9 @@ namespace OutfitStudio
             int maxVisibleItems,
             Func<ClickableComponent, bool>? isSelected = null,
             bool enableTruncation = true,
-            int panelPaddingV = 0)
+            int panelPaddingV = 0,
+            int arrowYNudge = 0,
+            int arrowXNudge = 0)
         {
             if (options.Count == 0)
                 return null;
@@ -562,17 +591,17 @@ namespace OutfitStudio
             bool canScrollUp = firstVisibleIndex > 0;
             bool canScrollDown = firstVisibleIndex + maxVisibleItems < options.Count;
 
-            int arrowX = CalculateDropdownArrowX(anchorBounds.Right);
+            int arrowX = CalculateDropdownArrowX(anchorBounds.Right, arrowXNudge);
 
             if (canScrollUp)
             {
-                int upArrowY = CalculateDropdownUpArrowY(anchorBounds.Bottom);
+                int upArrowY = CalculateDropdownUpArrowY(anchorBounds.Bottom, panelPaddingV, arrowYNudge);
                 b.Draw(Game1.mouseCursors, new Vector2(arrowX, upArrowY), UpScrollArrowSourceRect, Color.White, 0f, Vector2.Zero, DropdownArrowScale, SpriteEffects.None, 1f);
             }
 
             if (canScrollDown)
             {
-                int downArrowY = CalculateDropdownDownArrowY(anchorBounds.Bottom, dropdownHeight);
+                int downArrowY = CalculateDropdownDownArrowY(anchorBounds.Bottom, dropdownHeight, panelPaddingV, arrowYNudge);
                 b.Draw(Game1.mouseCursors, new Vector2(arrowX, downArrowY), DownScrollArrowSourceRect, Color.White, 0f, Vector2.Zero, DropdownArrowScale, SpriteEffects.None, 1f);
             }
 
@@ -588,7 +617,10 @@ namespace OutfitStudio
             Func<ClickableComponent, bool> isChecked,
             float checkboxScale = 3.2f,
             int checkboxSize = 29,
-            int panelPaddingV = 0)
+            int panelPaddingV = 0,
+            int totalItemCount = -1,
+            int arrowYNudge = 0,
+            int arrowXNudge = 0)
         {
             if (options.Count == 0) return null;
 
@@ -644,20 +676,21 @@ namespace OutfitStudio
                     hoveredTruncatedText = fullText;
             }
 
+            int effectiveTotal = totalItemCount > 0 ? totalItemCount : visibleCount;
             bool canScrollUp = firstVisibleIndex > 0;
-            bool canScrollDown = firstVisibleIndex + maxVisibleItems < options.Count;
+            bool canScrollDown = firstVisibleIndex + maxVisibleItems < effectiveTotal;
 
-            int arrowX = CalculateDropdownArrowX(anchorBounds.Right);
+            int arrowX = CalculateDropdownArrowX(anchorBounds.Right, arrowXNudge);
 
             if (canScrollUp)
             {
-                int upArrowY = CalculateDropdownUpArrowY(anchorBounds.Bottom, panelPaddingV);
+                int upArrowY = CalculateDropdownUpArrowY(anchorBounds.Bottom, panelPaddingV, arrowYNudge);
                 b.Draw(Game1.mouseCursors, new Vector2(arrowX, upArrowY), UpScrollArrowSourceRect,
                     Color.White, 0f, Vector2.Zero, DropdownArrowScale, SpriteEffects.None, 1f);
             }
             if (canScrollDown)
             {
-                int downArrowY = CalculateDropdownDownArrowY(anchorBounds.Bottom, dropdownHeight, panelPaddingV);
+                int downArrowY = CalculateDropdownDownArrowY(anchorBounds.Bottom, dropdownHeight, panelPaddingV, arrowYNudge);
                 b.Draw(Game1.mouseCursors, new Vector2(arrowX, downArrowY), DownScrollArrowSourceRect,
                     Color.White, 0f, Vector2.Zero, DropdownArrowScale, SpriteEffects.None, 1f);
             }

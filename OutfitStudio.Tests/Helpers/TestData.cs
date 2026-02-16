@@ -18,10 +18,7 @@ namespace OutfitStudio.Tests.Helpers
             List<string>? selectedLocations = null,
             bool areasSelectAll = false,
             List<string>? selectedAreas = null,
-            bool tagsSelectAll = false,
-            List<string>? selectedTags = null,
-            List<string>? excludedSetIds = null,
-            List<string>? includedSetIds = null,
+            List<string>? selectedSetIds = null,
             int priority = 2,
             bool isWeddingDay = false,
             bool advanceOnWarp = false)
@@ -41,10 +38,7 @@ namespace OutfitStudio.Tests.Helpers
                 SelectedLocations = selectedLocations ?? new List<string>(),
                 AreasSelectAll = areasSelectAll,
                 SelectedAreas = selectedAreas ?? new List<string>(),
-                TagsSelectAll = tagsSelectAll,
-                SelectedTags = selectedTags ?? new List<string>(),
-                ExcludedSetIds = excludedSetIds ?? new List<string>(),
-                IncludedSetIds = includedSetIds ?? new List<string>(),
+                SelectedSetIds = selectedSetIds ?? new List<string>(),
                 Priority = priority,
                 IsWeddingDay = isWeddingDay,
                 AdvanceOnWarp = advanceOnWarp

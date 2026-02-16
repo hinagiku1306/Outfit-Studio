@@ -34,7 +34,7 @@ namespace OutfitStudio.Services
             data = helper.Data.ReadSaveData<ScheduleData>(SaveDataKey) ?? new ScheduleData();
 
             PruneOrphanedRotationStates();
-            PruneStaleExcludedSetIds();
+            PruneStaleSelectedSetIds();
 
             DebugLogger.Log($"Loaded {data.Rules.Count} schedule rules.", LogLevel.Trace);
         }
@@ -77,6 +77,21 @@ namespace OutfitStudio.Services
             OnRulesChanged?.Invoke(rule.Id);
         }
 
+        public void UpdateRule(ScheduleRule rule, List<string> previousSetIds)
+        {
+            int index = data.Rules.FindIndex(r => r.Id == rule.Id);
+            if (index < 0)
+                return;
+
+            data.Rules[index] = rule;
+
+            if (data.RotationStates.TryGetValue(rule.Id, out var rotState))
+                SyncQueueWithSetIds(rotState, previousSetIds, rule.SelectedSetIds, new Random());
+
+            SaveLocalData();
+            OnRulesChanged?.Invoke(rule.Id);
+        }
+
         public void DeleteRule(string ruleId)
         {
             data.Rules.RemoveAll(r => r.Id == ruleId);
@@ -114,16 +129,39 @@ namespace OutfitStudio.Services
                 DebugLogger.Log($"Pruned {orphanedKeys.Count} orphaned rotation states.", LogLevel.Trace);
         }
 
-        private void PruneStaleExcludedSetIds()
+        internal static void SyncQueueWithSetIds(RotationState rotState, List<string> oldSetIds, List<string> newSetIds, Random random)
+        {
+            var oldSet = new HashSet<string>(oldSetIds);
+            var queueSet = new HashSet<string>(rotState.Queue);
+            var newIds = newSetIds.Where(id => !oldSet.Contains(id) && !queueSet.Contains(id)).ToList();
+            foreach (string newId in newIds)
+            {
+                int insertIndex = rotState.Queue.Count == 0 ? 0 : random.Next(rotState.Queue.Count + 1);
+                rotState.Queue.Insert(insertIndex, newId);
+            }
+
+            var newSet = new HashSet<string>(newSetIds);
+            rotState.Queue.RemoveAll(id => !newSet.Contains(id));
+        }
+
+        private void PruneStaleSelectedSetIds()
         {
             foreach (var rule in data.Rules)
             {
-                int before = rule.ExcludedSetIds.Count;
-                rule.ExcludedSetIds.RemoveAll(id => outfitSetStore.GetById(id) == null);
+                int before = rule.SelectedSetIds.Count;
+                rule.SelectedSetIds.RemoveAll(id => outfitSetStore.GetById(id) == null);
 
-                int removed = before - rule.ExcludedSetIds.Count;
+                int removed = before - rule.SelectedSetIds.Count;
                 if (removed > 0)
-                    DebugLogger.Log($"Pruned {removed} stale excluded set IDs from rule '{rule.Name}'.", LogLevel.Trace);
+                {
+                    DebugLogger.Log($"Pruned {removed} stale selected set IDs from rule '{rule.Name}'.", LogLevel.Trace);
+
+                    if (data.RotationStates.TryGetValue(rule.Id, out var rotState))
+                    {
+                        var validIds = new HashSet<string>(rule.SelectedSetIds);
+                        rotState.Queue.RemoveAll(id => !validIds.Contains(id));
+                    }
+                }
             }
         }
     }

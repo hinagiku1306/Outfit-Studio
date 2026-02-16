@@ -232,4 +232,88 @@ namespace OutfitStudio.Tests.UI
             Assert.Contains($"(+{totalTags})", result);
         }
     }
+
+    public class ConfigDropdownPanelWidthTests
+    {
+        [Fact]
+        // Expected: Width is maxOptionTextWidth + 32 (16px padding each side)
+        public void Width_Is_TextWidthPlus32()
+        {
+            int result = ConfigUIBuilder.CalculateDropdownPanelWidth(100, 300);
+            Assert.Equal(132, result);
+        }
+
+        [Fact]
+        // Expected: Width is capped at maxWidth when text + padding exceeds it
+        public void Width_CappedAtMaxWidth()
+        {
+            int result = ConfigUIBuilder.CalculateDropdownPanelWidth(180, 200);
+            Assert.Equal(200, result);
+        }
+
+        [Fact]
+        // Expected: When text + padding exactly equals maxWidth, returns maxWidth
+        public void Width_ExactlyAtMax_ReturnsMax()
+        {
+            int result = ConfigUIBuilder.CalculateDropdownPanelWidth(168, 200);
+            Assert.Equal(200, result);
+        }
+
+        [Fact]
+        // Expected: Small text width still gets 32px padding
+        public void Width_SmallText_StillPadded()
+        {
+            int result = ConfigUIBuilder.CalculateDropdownPanelWidth(20, 200);
+            Assert.Equal(52, result);
+        }
+    }
+
+    public class ConfigDropdownPanelCenteringTests
+    {
+        [Fact]
+        // Expected: Panel center aligns with center of right-aligned value text
+        public void PanelCenter_AlignsWith_ValueTextCenter()
+        {
+            int controlX = 500;
+            int valueWidth = 60;
+            int panelWidth = 100;
+            int panelX = ConfigUIBuilder.CalculateCenteredPanelX(controlX, valueWidth, panelWidth);
+
+            int panelCenter = panelX + panelWidth / 2;
+            int textCenter = controlX - valueWidth / 2;
+            Assert.Equal(textCenter, panelCenter);
+        }
+
+        [Fact]
+        // Expected: Narrow value text shifts panel right (closer to controlX)
+        public void NarrowValue_PanelShiftsRight()
+        {
+            int controlX = 500;
+            int panelWidth = 100;
+            int panelXNarrow = ConfigUIBuilder.CalculateCenteredPanelX(controlX, 30, panelWidth);
+            int panelXWide = ConfigUIBuilder.CalculateCenteredPanelX(controlX, 120, panelWidth);
+            Assert.True(panelXNarrow > panelXWide);
+        }
+
+        [Fact]
+        // Expected: When value width equals panel width, panel right edge equals controlX
+        public void ValueWidth_EqualsPanelWidth_RightEdgeAtControlX()
+        {
+            int controlX = 500;
+            int width = 100;
+            int panelX = ConfigUIBuilder.CalculateCenteredPanelX(controlX, width, width);
+            Assert.Equal(controlX, panelX + width);
+        }
+
+        [Fact]
+        // Expected: Panel center shifts with different value widths
+        public void DifferentValues_DifferentPositions()
+        {
+            int controlX = 500;
+            int panelWidth = 80;
+            int panelX1 = ConfigUIBuilder.CalculateCenteredPanelX(controlX, 40, panelWidth);
+            int panelX2 = ConfigUIBuilder.CalculateCenteredPanelX(controlX, 80, panelWidth);
+            Assert.NotEqual(panelX1, panelX2);
+        }
+    }
 }

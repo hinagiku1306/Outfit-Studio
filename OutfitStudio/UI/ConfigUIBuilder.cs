@@ -40,6 +40,17 @@ namespace OutfitStudio
         public ClickableComponent SearchScopeDropdown { get; private set; } = null!;
         public Rectangle SearchScopePanelAnchor { get; private set; }
         public List<ClickableComponent> SearchScopeOptions { get; private set; } = new();
+        private int searchScopePanelW;
+
+        public ClickableComponent DefaultPriorityDropdown { get; private set; } = null!;
+        public Rectangle DefaultPriorityPanelAnchor { get; private set; }
+        public List<ClickableComponent> DefaultPriorityOptions { get; private set; } = new();
+        private int priorityPanelW;
+
+        public ClickableComponent DefaultRotationDropdown { get; private set; } = null!;
+        public Rectangle DefaultRotationPanelAnchor { get; private set; }
+        public List<ClickableComponent> DefaultRotationOptions { get; private set; } = new();
+        private int rotationPanelW;
 
         public ClickableComponent SaveButton { get; private set; } = null!;
         public ClickableComponent CancelButton { get; private set; } = null!;
@@ -80,7 +91,7 @@ namespace OutfitStudio
 
         public void Recalculate()
         {
-            int totalRows = 19;
+            int totalRows = 21;
             int totalSections = 4;
 
             int scrollableContentNatural = (ConfigSectionHeaderHeight * totalSections)
@@ -251,9 +262,9 @@ namespace OutfitStudio
             rowYList.Add(currentY);
             labelsList.Add(TranslationCache.ConfigDefaultSearchScopeName);
             tooltipsList.Add(TranslationCache.ConfigDefaultSearchScopeTooltip);
-            int dropdownX = controlX - ConfigDropdownWidth;
+            int dropdownX = controlX - ConfigDropdownMinWidth;
             SearchScopeDropdown = new ClickableComponent(
-                new Rectangle(dropdownX, currentY, ConfigDropdownWidth, ConfigRowHeight),
+                new Rectangle(dropdownX, currentY, ConfigDropdownMinWidth, ConfigRowHeight),
                 "SearchScopeDropdown"
             );
 
@@ -265,9 +276,8 @@ namespace OutfitStudio
             int maxLabelWidth = 0;
             foreach (var lbl in scopeLabels)
                 maxLabelWidth = Math.Max(maxLabelWidth, (int)Game1.smallFont.MeasureString(lbl).X);
-            int textCenterX = controlX - maxLabelWidth / 2;
-            int panelX = textCenterX - ConfigDropdownWidth / 2;
-            SearchScopePanelAnchor = new Rectangle(panelX, currentY, ConfigDropdownWidth, ConfigRowHeight);
+            searchScopePanelW = CalculateDropdownPanelWidth(maxLabelWidth, ConfigDropdownMaxWidth);
+            SearchScopePanelAnchor = new Rectangle(controlX - searchScopePanelW, currentY, searchScopePanelW, ConfigRowHeight);
 
             BuildSearchScopeOptions();
             currentY += ConfigRowHeight;
@@ -285,6 +295,49 @@ namespace OutfitStudio
             labelsList.Add(TranslationCache.ConfigLockManualOutfitName);
             tooltipsList.Add(TranslationCache.ConfigLockManualOutfitTooltip);
             LockManualOutfitCheckbox = CreateCheckbox(currentY, "LockManualOutfit");
+            currentY += ConfigRowHeight;
+
+            rowYList.Add(currentY);
+            labelsList.Add(TranslationCache.ConfigDefaultPriorityName);
+            tooltipsList.Add(TranslationCache.ConfigDefaultPriorityTooltip);
+            DefaultPriorityDropdown = new ClickableComponent(
+                new Rectangle(dropdownX, currentY, ConfigDropdownMinWidth, ConfigRowHeight),
+                "DefaultPriorityDropdown"
+            );
+            {
+                string[] priorityLabels = {
+                    TranslationCache.ScheduleEditPriorityLow,
+                    TranslationCache.ScheduleEditPriorityMedium,
+                    TranslationCache.ScheduleEditPriorityHigh
+                };
+                int maxPriorityWidth = 0;
+                foreach (var lbl in priorityLabels)
+                    maxPriorityWidth = Math.Max(maxPriorityWidth, (int)Game1.smallFont.MeasureString(lbl).X);
+                priorityPanelW = CalculateDropdownPanelWidth(maxPriorityWidth, ConfigDropdownMaxWidth);
+                DefaultPriorityPanelAnchor = new Rectangle(controlX - priorityPanelW, currentY, priorityPanelW, ConfigRowHeight);
+            }
+            BuildDefaultPriorityOptions();
+            currentY += ConfigRowHeight;
+
+            rowYList.Add(currentY);
+            labelsList.Add(TranslationCache.ConfigDefaultRotationName);
+            tooltipsList.Add(TranslationCache.ConfigDefaultRotationTooltip);
+            DefaultRotationDropdown = new ClickableComponent(
+                new Rectangle(dropdownX, currentY, ConfigDropdownMinWidth, ConfigRowHeight),
+                "DefaultRotationDropdown"
+            );
+            {
+                string[] rotationLabels = {
+                    TranslationCache.ScheduleEditRotateOnceADay,
+                    TranslationCache.ScheduleEditRotateOnLocationChange
+                };
+                int maxRotationWidth = 0;
+                foreach (var lbl in rotationLabels)
+                    maxRotationWidth = Math.Max(maxRotationWidth, (int)Game1.smallFont.MeasureString(lbl).X);
+                rotationPanelW = CalculateDropdownPanelWidth(maxRotationWidth, ConfigDropdownMaxWidth);
+                DefaultRotationPanelAnchor = new Rectangle(controlX - rotationPanelW, currentY, rotationPanelW, ConfigRowHeight);
+            }
+            BuildDefaultRotationOptions();
             currentY += ConfigRowHeight;
 
             rowYPositions = rowYList.ToArray();
@@ -327,7 +380,7 @@ namespace OutfitStudio
             };
 
             int optionHeight = ConfigRowHeight;
-            int baseY = SearchScopePanelAnchor.Bottom;
+            int baseY = SearchScopePanelAnchor.Bottom + ConfigDropdownTopPadding;
             for (int i = 0; i < values.Length; i++)
             {
                 SearchScopeOptions.Add(new ClickableComponent(
@@ -336,6 +389,83 @@ namespace OutfitStudio
                     values[i]
                 ) { label = labels[i] });
             }
+        }
+
+        private void BuildDefaultPriorityOptions()
+        {
+            DefaultPriorityOptions.Clear();
+            string[] labels = {
+                TranslationCache.ScheduleEditPriorityLow,
+                TranslationCache.ScheduleEditPriorityMedium,
+                TranslationCache.ScheduleEditPriorityHigh
+            };
+            string[] values = { "1", "2", "3" };
+
+            int optionHeight = ConfigRowHeight;
+            int baseY = DefaultPriorityPanelAnchor.Bottom + ConfigDropdownTopPadding;
+            for (int i = 0; i < labels.Length; i++)
+            {
+                DefaultPriorityOptions.Add(new ClickableComponent(
+                    new Rectangle(DefaultPriorityPanelAnchor.X, baseY + i * optionHeight,
+                        DefaultPriorityPanelAnchor.Width, optionHeight),
+                    labels[i]
+                ) { label = values[i] });
+            }
+        }
+
+        private void BuildDefaultRotationOptions()
+        {
+            DefaultRotationOptions.Clear();
+            string[] values = { "false", "true" };
+            string[] labels = {
+                TranslationCache.ScheduleEditRotateOnceADay,
+                TranslationCache.ScheduleEditRotateOnLocationChange
+            };
+
+            int optionHeight = ConfigRowHeight;
+            int baseY = DefaultRotationPanelAnchor.Bottom + ConfigDropdownTopPadding;
+            for (int i = 0; i < values.Length; i++)
+            {
+                DefaultRotationOptions.Add(new ClickableComponent(
+                    new Rectangle(DefaultRotationPanelAnchor.X, baseY + i * optionHeight,
+                        DefaultRotationPanelAnchor.Width, optionHeight),
+                    labels[i]
+                ) { label = values[i] });
+            }
+        }
+
+        internal static int CalculateCenteredPanelX(int controlX, int valueWidth, int panelWidth)
+        {
+            return controlX - valueWidth / 2 - panelWidth / 2;
+        }
+
+        internal static int CalculateDropdownPanelWidth(int maxOptionTextWidth, int maxWidth)
+        {
+            return Math.Min(maxWidth, maxOptionTextWidth + 32);
+        }
+
+        public void UpdateSearchScopePanelPosition(string displayValue)
+        {
+            int valueW = (int)Game1.smallFont.MeasureString(displayValue).X;
+            int panelX = CalculateCenteredPanelX(controlX, valueW, searchScopePanelW);
+            SearchScopePanelAnchor = new Rectangle(panelX, SearchScopePanelAnchor.Y, searchScopePanelW, ConfigRowHeight);
+            BuildSearchScopeOptions();
+        }
+
+        public void UpdatePriorityPanelPosition(string displayValue)
+        {
+            int valueW = (int)Game1.smallFont.MeasureString(displayValue).X;
+            int panelX = CalculateCenteredPanelX(controlX, valueW, priorityPanelW);
+            DefaultPriorityPanelAnchor = new Rectangle(panelX, DefaultPriorityPanelAnchor.Y, priorityPanelW, ConfigRowHeight);
+            BuildDefaultPriorityOptions();
+        }
+
+        public void UpdateRotationPanelPosition(string displayValue)
+        {
+            int valueW = (int)Game1.smallFont.MeasureString(displayValue).X;
+            int panelX = CalculateCenteredPanelX(controlX, valueW, rotationPanelW);
+            DefaultRotationPanelAnchor = new Rectangle(panelX, DefaultRotationPanelAnchor.Y, rotationPanelW, ConfigRowHeight);
+            BuildDefaultRotationOptions();
         }
 
         private ClickableComponent CreateCheckbox(int rowY, string name)
@@ -436,26 +566,7 @@ namespace OutfitStudio
 
         public void DrawSearchScopeRow(SpriteBatch b, string label, string currentValue, bool isOpen)
         {
-            int rowY = SearchScopeDropdown.bounds.Y;
-            DrawRowLabel(b, label, rowY);
-
-            string displayValue = FormatSearchScope(currentValue);
-            Vector2 textSize = Game1.smallFont.MeasureString(displayValue);
-            float textX = controlX - textSize.X;
-            float textY = rowY + (ConfigRowHeight - textSize.Y) / 2;
-            Vector2 textPos = new Vector2(textX, textY);
-
-            bool isHovered = !isOpen && SearchScopeDropdown.containsPoint(Game1.getMouseX(), Game1.getMouseY());
-
-            if (isHovered)
-            {
-                Utility.drawTextWithShadow(b, displayValue, Game1.smallFont, textPos + new Vector2(-1, 0), Game1.textColor * 0.8f);
-                Utility.drawTextWithShadow(b, displayValue, Game1.smallFont, textPos, Game1.textColor);
-            }
-            else
-            {
-                Utility.drawTextWithShadow(b, displayValue, Game1.smallFont, textPos, Game1.textColor);
-            }
+            DrawDropdownRow(b, label, FormatSearchScope(currentValue), SearchScopeDropdown, isOpen);
         }
 
         public void DrawSearchScopeDropdownOptions(SpriteBatch b, string currentValue)
@@ -467,8 +578,70 @@ namespace OutfitStudio
                 firstVisibleIndex: 0,
                 maxVisibleItems: ConfigDropdownMaxVisible,
                 isSelected: option => option.name == currentValue,
-                enableTruncation: false
+                enableTruncation: true,
+                panelPaddingV: ConfigDropdownTopPadding
             );
+        }
+
+        public void DrawDefaultPriorityRow(SpriteBatch b, string label, string displayValue, bool isOpen)
+        {
+            DrawDropdownRow(b, label, displayValue, DefaultPriorityDropdown, isOpen);
+        }
+
+        public void DrawDefaultPriorityDropdownOptions(SpriteBatch b, string currentValue)
+        {
+            UIHelpers.DrawDropdownOptions(
+                b,
+                DefaultPriorityPanelAnchor,
+                DefaultPriorityOptions,
+                firstVisibleIndex: 0,
+                maxVisibleItems: ConfigDropdownMaxVisible,
+                isSelected: option => option.label == currentValue,
+                enableTruncation: true,
+                panelPaddingV: ConfigDropdownTopPadding
+            );
+        }
+
+        public void DrawDefaultRotationRow(SpriteBatch b, string label, string displayValue, bool isOpen)
+        {
+            DrawDropdownRow(b, label, displayValue, DefaultRotationDropdown, isOpen);
+        }
+
+        public void DrawDefaultRotationDropdownOptions(SpriteBatch b, string currentValue)
+        {
+            UIHelpers.DrawDropdownOptions(
+                b,
+                DefaultRotationPanelAnchor,
+                DefaultRotationOptions,
+                firstVisibleIndex: 0,
+                maxVisibleItems: ConfigDropdownMaxVisible,
+                isSelected: option => option.label == currentValue,
+                enableTruncation: true,
+                panelPaddingV: ConfigDropdownTopPadding
+            );
+        }
+
+        private void DrawDropdownRow(SpriteBatch b, string label, string displayValue, ClickableComponent dropdown, bool isOpen)
+        {
+            int rowY = dropdown.bounds.Y;
+            DrawRowLabel(b, label, rowY);
+
+            Vector2 textSize = Game1.smallFont.MeasureString(displayValue);
+            float textX = controlX - textSize.X;
+            float textY = rowY + (ConfigRowHeight - textSize.Y) / 2;
+            Vector2 textPos = new Vector2(textX, textY);
+
+            bool isHovered = !isOpen && dropdown.containsPoint(Game1.getMouseX(), Game1.getMouseY());
+
+            if (isHovered)
+            {
+                Utility.drawTextWithShadow(b, displayValue, Game1.smallFont, textPos + new Vector2(-1, 0), Game1.textColor * 0.8f);
+                Utility.drawTextWithShadow(b, displayValue, Game1.smallFont, textPos, Game1.textColor);
+            }
+            else
+            {
+                Utility.drawTextWithShadow(b, displayValue, Game1.smallFont, textPos, Game1.textColor);
+            }
         }
 
         public void DrawButtons(SpriteBatch b)

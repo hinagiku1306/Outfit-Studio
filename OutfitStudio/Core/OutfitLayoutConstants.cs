@@ -153,7 +153,10 @@ namespace OutfitStudio
         public const int ConfigSliderHeight = 24;
         public const int ConfigSliderValueLabelGap = 15;
         public const int ConfigKeybindBoxWidth = 140;
-        public const int ConfigDropdownWidth = 85;
+        public const int ConfigDropdownMinWidth = 85;
+        public const int ConfigDropdownMaxWidth = 200;
+        public const int ConfigDropdownTopPadding = 2;
+
         public const int ConfigDropdownHeight = 40;
         public const int ConfigDropdownMaxVisible = 3;
         public const int ConfigGearButtonSize = 40;
@@ -210,33 +213,33 @@ namespace OutfitStudio
         public const int ScheduleRuleListBottomPad = 10;
 
         // Schedule Edit Overlay
-        public const int ScheduleEditWidth = 700;
+        public const int ScheduleEditWidth = 750;
         public const int ScheduleEditRowHeight = 48;
+        public const int ScheduleEditInfoRowGap = 15;
         public const int ScheduleEditLabelWidth = 110;
         public const int ScheduleEditDropdownMaxVisible = 5;
         public const int ScheduleEditDropdownOptionHeight = 40;
-        public const int ScheduleEditSectionGap = 8;
+        public const int ScheduleEditSectionGap = 19;
+        public const int ScheduleEditConditionsToEventsGap = 20;
         public const int ScheduleEditTriggerIndent = 20;
+        public const int ScheduleEditTriggerRightPad = 10;
         public const int ScheduleEditColumnGap = 20;
         public const int ScheduleEditDropdownPanelPadding = 5;
         public const int ScheduleEditDeleteButtonSize = 20;
         public const int ScheduleEditSectionHeaderHeight = 30;
+        public const int ScheduleEditHeaderToContentGap = 8;
+        public const int ScheduleEditFestivalToWeddingGap = 30;
+        public const int ScheduleEditSpecialEventsHeaderGap = 12;
+        public const int ScheduleEditBehaviorHeaderGap = 10;
         public const int ScheduleEditBarRowGap = 10;
-        public const int ScheduleEditOptionRowGap = 10;
+        public const int ScheduleEditDropdownArrowNudge = 4;
         public const int ScheduleEditOptionsLabelToBarGap = 15;
-        public const int ScheduleEditClearButtonLeftShift = 8;
-
-        // Set Preview Overlay
-        public const int SetPreviewWidth = 750;
-        public const int SetPreviewPanelGap = 30;
-        public const int SetPreviewRowHeight = 44;
-        public const int SetPreviewMaxVisibleSets = 6;
-        public const int SetPreviewHeaderHeight = 36;
-        public const int SetPreviewNameToButtonGap = 8;
-        public const int SetPreviewTriggerPanelWidth = 200;
-        public const int SetPreviewTriggerIndent = 15;
-        public const int SetPreviewTriggerLineHeight = 28;
-        public const int SetPreviewDividerPadding = 4;
+        public const int ScheduleEditClearButtonLeftShift = 4;
+        public const int ScheduleEditTopPadding = 32;
+        public const int ScheduleEditBottomPadding = 32;
+        public const int ScheduleEditBehaviorIndent = 20;
+        public const int ScheduleEditPriorityRotationGap = 10;
+        public const float ScheduleEditInactiveOpacity = 0.5f;
 
         // Schedule Debug Log Overlay
         public const int ScheduleDebugLogWidth = 700;
@@ -249,7 +252,6 @@ namespace OutfitStudio
         public const int ScheduleDebugChevronLeftMargin = 10;
         public const int ScheduleDebugBadgeHeight = 22;
         public const int ScheduleDebugMaxVisibleEntries = 5;
-        public const int ScheduleDebugMinExpandedRules = 5;
         public const int ScheduleDebugRuleIndent = 20;
         public const int ScheduleDebugBorderPadding = 40;
         public const int ScheduleDebugItemGap = 10;

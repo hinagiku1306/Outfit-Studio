@@ -7,13 +7,16 @@ namespace OutfitStudio.Tests.UI
     public class GenerateRuleNameTests
     {
         private static readonly string[] Empty = System.Array.Empty<string>();
+        private const int Seasons = 4;
+        private const int WeatherTypes = 6;
+        private const int AreaTypes = 2;
 
         [Fact]
         // Expected: No triggers selected returns "Always"
         public void NoTriggers_ReturnsAlways()
         {
             var result = UIHelpers.GenerateRuleName(
-                Empty, Empty, Empty, Empty, Empty, false, "Wedding Day");
+                Empty, Empty, Empty, Empty, Empty, false, "Wedding Day", Seasons, WeatherTypes, AreaTypes);
 
             Assert.Equal("Always", result);
         }
@@ -23,7 +26,7 @@ namespace OutfitStudio.Tests.UI
         public void SingleSeason_ReturnsSeason()
         {
             var result = UIHelpers.GenerateRuleName(
-                new[] { "Spring" }, Empty, Empty, Empty, Empty, false, "Wedding Day");
+                new[] { "Spring" }, Empty, Empty, Empty, Empty, false, "Wedding Day", Seasons, WeatherTypes, AreaTypes);
 
             Assert.Equal("Spring", result);
         }
@@ -33,7 +36,7 @@ namespace OutfitStudio.Tests.UI
         public void MultipleSeasons_CommaSeparated()
         {
             var result = UIHelpers.GenerateRuleName(
-                new[] { "Spring", "Summer" }, Empty, Empty, Empty, Empty, false, "Wedding Day");
+                new[] { "Spring", "Summer" }, Empty, Empty, Empty, Empty, false, "Wedding Day", Seasons, WeatherTypes, AreaTypes);
 
             Assert.Equal("Spring, Summer", result);
         }
@@ -43,7 +46,7 @@ namespace OutfitStudio.Tests.UI
         public void SingleWeather_ReturnsDisplayName()
         {
             var result = UIHelpers.GenerateRuleName(
-                Empty, new[] { "Sunny" }, Empty, Empty, Empty, false, "Wedding Day");
+                Empty, new[] { "Sunny" }, Empty, Empty, Empty, false, "Wedding Day", Seasons, WeatherTypes, AreaTypes);
 
             Assert.Equal("Sunny", result);
         }
@@ -53,7 +56,7 @@ namespace OutfitStudio.Tests.UI
         public void AllWeather_OmittedFromName()
         {
             var result = UIHelpers.GenerateRuleName(
-                Empty, new[] { "Sunny", "Rainy" }, Empty, Empty, Empty, false, "Wedding Day");
+                Empty, new[] { "Sunny", "Rainy", "Stormy", "Snowy", "Windy", "Green Rain" }, Empty, Empty, Empty, false, "Wedding Day", Seasons, WeatherTypes, AreaTypes);
 
             Assert.Equal("Always", result);
         }
@@ -64,7 +67,7 @@ namespace OutfitStudio.Tests.UI
         {
             var result = UIHelpers.GenerateRuleName(
                 new[] { "Spring", "Summer", "Fall", "Winter" },
-                new[] { "Rainy" }, Empty, Empty, Empty, false, "Wedding Day");
+                new[] { "Rainy" }, Empty, Empty, Empty, false, "Wedding Day", Seasons, WeatherTypes, AreaTypes);
 
             Assert.Equal("Rainy", result);
         }
@@ -74,7 +77,7 @@ namespace OutfitStudio.Tests.UI
         public void AreasOnly_ReturnsDisplayNames()
         {
             var result = UIHelpers.GenerateRuleName(
-                Empty, Empty, new[] { "Outdoor" }, Empty, Empty, false, "Wedding Day");
+                Empty, Empty, new[] { "Outdoor" }, Empty, Empty, false, "Wedding Day", Seasons, WeatherTypes, AreaTypes);
 
             Assert.Equal("Outdoor", result);
         }
@@ -84,7 +87,7 @@ namespace OutfitStudio.Tests.UI
         public void LocationsOnly_ReturnsNames()
         {
             var result = UIHelpers.GenerateRuleName(
-                Empty, Empty, Empty, new[] { "Farm", "Beach" }, Empty, false, "Wedding Day");
+                Empty, Empty, Empty, new[] { "Farm", "Beach" }, Empty, false, "Wedding Day", Seasons, WeatherTypes, AreaTypes);
 
             Assert.Equal("Farm, Beach", result);
         }
@@ -94,7 +97,7 @@ namespace OutfitStudio.Tests.UI
         public void FestivalsOnly_ReturnsDisplayNames()
         {
             var result = UIHelpers.GenerateRuleName(
-                Empty, Empty, Empty, Empty, new[] { "Egg Festival" }, false, "Wedding Day");
+                Empty, Empty, Empty, Empty, new[] { "Egg Festival" }, false, "Wedding Day", Seasons, WeatherTypes, AreaTypes);
 
             Assert.Equal("Egg Festival", result);
         }
@@ -104,7 +107,7 @@ namespace OutfitStudio.Tests.UI
         public void WeddingOnly_ReturnsLabel()
         {
             var result = UIHelpers.GenerateRuleName(
-                Empty, Empty, Empty, Empty, Empty, true, "Wedding Day");
+                Empty, Empty, Empty, Empty, Empty, true, "Wedding Day", Seasons, WeatherTypes, AreaTypes);
 
             Assert.Equal("Wedding Day", result);
         }
@@ -114,7 +117,7 @@ namespace OutfitStudio.Tests.UI
         public void MultipleCategories_PipeSeparated()
         {
             var result = UIHelpers.GenerateRuleName(
-                new[] { "Spring" }, new[] { "Sunny" }, Empty, Empty, Empty, false, "Wedding Day");
+                new[] { "Spring" }, new[] { "Sunny" }, Empty, Empty, Empty, false, "Wedding Day", Seasons, WeatherTypes, AreaTypes);
 
             Assert.Equal("Spring | Sunny", result);
         }
@@ -130,7 +133,7 @@ namespace OutfitStudio.Tests.UI
                 new[] { "Farm" },
                 new[] { "Egg Festival" },
                 true,
-                "Wedding Day");
+                "Wedding Day", Seasons, WeatherTypes, AreaTypes);
 
             Assert.Equal("Spring, Summer | Rainy | Indoor | Farm | Egg Festival | Wedding Day", result);
         }
@@ -146,7 +149,7 @@ namespace OutfitStudio.Tests.UI
                 new[] { "Beach" },
                 new[] { "Luau" },
                 true,
-                "Wedding Day");
+                "Wedding Day", Seasons, WeatherTypes, AreaTypes);
 
             var parts = result.Split(" | ");
             Assert.Equal(6, parts.Length);
@@ -163,7 +166,7 @@ namespace OutfitStudio.Tests.UI
         public void SeasonsAndLocations_SkipsMiddle()
         {
             var result = UIHelpers.GenerateRuleName(
-                new[] { "Fall" }, Empty, Empty, new[] { "Mine", "Town" }, Empty, false, "Wedding Day");
+                new[] { "Fall" }, Empty, Empty, new[] { "Mine", "Town" }, Empty, false, "Wedding Day", Seasons, WeatherTypes, AreaTypes);
 
             Assert.Equal("Fall | Mine, Town", result);
         }
@@ -173,7 +176,7 @@ namespace OutfitStudio.Tests.UI
         public void WeddingLabel_UsesProvidedString()
         {
             var result = UIHelpers.GenerateRuleName(
-                Empty, Empty, Empty, Empty, Empty, true, "Boda");
+                Empty, Empty, Empty, Empty, Empty, true, "Boda", Seasons, WeatherTypes, AreaTypes);
 
             Assert.Equal("Boda", result);
         }
@@ -183,7 +186,7 @@ namespace OutfitStudio.Tests.UI
         public void SingleItemPerCategory_PipeSeparated()
         {
             var result = UIHelpers.GenerateRuleName(
-                new[] { "Spring" }, Empty, new[] { "Indoor" }, Empty, Empty, true, "Wedding Day");
+                new[] { "Spring" }, Empty, new[] { "Indoor" }, Empty, Empty, true, "Wedding Day", Seasons, WeatherTypes, AreaTypes);
 
             Assert.Equal("Spring | Indoor | Wedding Day", result);
         }
