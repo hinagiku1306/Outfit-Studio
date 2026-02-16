@@ -18,6 +18,8 @@ namespace OutfitStudio
 
         public ClickableComponent ToggleMenuKeyArea { get; private set; } = null!;
         public ClickableComponent ToggleItemInfoKeyArea { get; private set; } = null!;
+        public ClickableComponent ToggleWardrobeKeyArea { get; private set; } = null!;
+        public ClickableComponent ToggleScheduleKeyArea { get; private set; } = null!;
 
         public ClickableComponent ShowTooltipCheckbox { get; private set; } = null!;
         public ClickableComponent CloseOnClickOutsideCheckbox { get; private set; } = null!;
@@ -91,7 +93,7 @@ namespace OutfitStudio
 
         public void Recalculate()
         {
-            int totalRows = 21;
+            int totalRows = 23;
             int totalSections = 4;
 
             int scrollableContentNatural = (ConfigSectionHeaderHeight * totalSections)
@@ -164,6 +166,18 @@ namespace OutfitStudio
             labelsList.Add(TranslationCache.ConfigToggleItemInfoKeyName);
             tooltipsList.Add(TranslationCache.ConfigToggleItemInfoKeyTooltip);
             ToggleItemInfoKeyArea = CreateKeybindArea(currentY, "ToggleItemInfoKey");
+            currentY += ConfigRowHeight;
+
+            rowYList.Add(currentY);
+            labelsList.Add(TranslationCache.ConfigToggleWardrobeKeyName);
+            tooltipsList.Add(TranslationCache.ConfigToggleWardrobeKeyTooltip);
+            ToggleWardrobeKeyArea = CreateKeybindArea(currentY, "ToggleWardrobeKey");
+            currentY += ConfigRowHeight;
+
+            rowYList.Add(currentY);
+            labelsList.Add(TranslationCache.ConfigToggleScheduleKeyName);
+            tooltipsList.Add(TranslationCache.ConfigToggleScheduleKeyTooltip);
+            ToggleScheduleKeyArea = CreateKeybindArea(currentY, "ToggleScheduleKey");
             currentY += ConfigRowHeight;
 
             rowYList.Add(currentY);

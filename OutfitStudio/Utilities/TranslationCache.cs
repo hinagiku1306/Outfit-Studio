@@ -86,6 +86,10 @@ namespace OutfitStudio
         public static string ConfigToggleMenuKeyTooltip { get; private set; } = "";
         public static string ConfigToggleItemInfoKeyName { get; private set; } = "";
         public static string ConfigToggleItemInfoKeyTooltip { get; private set; } = "";
+        public static string ConfigToggleWardrobeKeyName { get; private set; } = "";
+        public static string ConfigToggleWardrobeKeyTooltip { get; private set; } = "";
+        public static string ConfigToggleScheduleKeyName { get; private set; } = "";
+        public static string ConfigToggleScheduleKeyTooltip { get; private set; } = "";
         public static string ConfigResetFilterOnTabSwitchName { get; private set; } = "";
         public static string ConfigResetFilterOnTabSwitchTooltip { get; private set; } = "";
         public static string ConfigResetSearchOnTabSwitchName { get; private set; } = "";
@@ -293,6 +297,10 @@ namespace OutfitStudio
             ConfigToggleMenuKeyTooltip = i18n.Get("config.toggle-menu-key.tooltip");
             ConfigToggleItemInfoKeyName = i18n.Get("config.toggle-item-info-key.name");
             ConfigToggleItemInfoKeyTooltip = i18n.Get("config.toggle-item-info-key.tooltip");
+            ConfigToggleWardrobeKeyName = i18n.Get("config.toggle-wardrobe-key.name");
+            ConfigToggleWardrobeKeyTooltip = i18n.Get("config.toggle-wardrobe-key.tooltip");
+            ConfigToggleScheduleKeyName = i18n.Get("config.toggle-schedule-key.name");
+            ConfigToggleScheduleKeyTooltip = i18n.Get("config.toggle-schedule-key.tooltip");
             ConfigResetFilterOnTabSwitchName = i18n.Get("config.reset-filter-on-tab-switch.name");
             ConfigResetFilterOnTabSwitchTooltip = i18n.Get("config.reset-filter-on-tab-switch.tooltip");
             ConfigResetSearchOnTabSwitchName = i18n.Get("config.reset-search-on-tab-switch.name");

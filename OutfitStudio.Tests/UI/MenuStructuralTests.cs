@@ -87,7 +87,9 @@ namespace OutfitStudio.Tests.UI
         {
             string source = SourceScanner.ReadSourceFile(sourceFile);
             bool found = SourceScanner.MethodContains(source,
-                "override void gameWindowSizeChanged", "parentMenu.gameWindowSizeChanged");
+                "override void gameWindowSizeChanged", "parentMenu.gameWindowSizeChanged")
+                || SourceScanner.MethodContains(source,
+                "override void gameWindowSizeChanged", "parentMenu?.gameWindowSizeChanged");
             Assert.True(found,
                 $"{sourceFile}: Type B overlay must forward gameWindowSizeChanged to parentMenu");
         }
@@ -812,7 +814,8 @@ namespace OutfitStudio.Tests.UI
             string body = SourceScanner.ExtractMethodBody(source, "override void draw");
             Assert.Contains("oldSuppressHover = UIHelpers.SuppressHover", body);
             Assert.Contains("UIHelpers.SuppressHover = true", body);
-            Assert.Contains("parentMenu.draw(b)", body);
+            Assert.True(body.Contains("parentMenu.draw(b)") || body.Contains("parentMenu?.draw(b)"),
+                $"{sourceFile}: draw must call parentMenu.draw(b)");
             Assert.Contains("UIHelpers.SuppressHover = oldSuppressHover", body);
         }
 
@@ -1662,7 +1665,7 @@ namespace OutfitStudio.Tests.UI
         public void WardrobeOverlay_ParentMenu_IsIClickableMenu()
         {
             string source = SourceScanner.ReadSourceFile("UI/WardrobeOverlay.cs");
-            Assert.Contains("IClickableMenu parentMenu", source);
+            Assert.Contains("IClickableMenu? parentMenu", source);
         }
 
         [Fact]
@@ -3255,6 +3258,121 @@ namespace OutfitStudio.Tests.UI
             int dividerIdx = layout.IndexOf("checkboxDividerY = currentY");
             string afterDivider = layout.Substring(dividerIdx, Math.Min(120, layout.Length - dividerIdx));
             Assert.DoesNotContain("+ SectionGap", afterDivider);
+        }
+        // ----------------------------------------------------------------
+        //  Toggle Wardrobe/Schedule Key configs
+        // ----------------------------------------------------------------
+
+        [Theory]
+        [InlineData("ToggleWardrobeKey")]
+        [InlineData("ToggleScheduleKey")]
+        // Expected: ConfigOverlay has state fields for each new keybind
+        public void ConfigOverlay_HasKeybindStateField(string fieldName)
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ConfigOverlay.cs");
+            Assert.Contains($"KeybindList {char.ToLower(fieldName[0])}{fieldName.Substring(1)}", source);
+        }
+
+        [Theory]
+        [InlineData("ToggleWardrobeKey")]
+        [InlineData("ToggleScheduleKey")]
+        // Expected: ConfigOverlay receiveKeyPress assigns to new keybind fields
+        public void ConfigOverlay_ReceiveKeyPress_AssignsNewKeybindField(string fieldName)
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ConfigOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void receiveKeyPress");
+            Assert.Contains($"\"{fieldName}\"", body);
+        }
+
+        [Theory]
+        [InlineData("ToggleWardrobeKey")]
+        [InlineData("ToggleScheduleKey")]
+        // Expected: ConfigOverlay save handler writes new keybind fields to config
+        public void ConfigOverlay_Save_WritesNewKeybindToConfig(string fieldName)
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ConfigOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void HandleSave");
+            Assert.Contains(fieldName, body);
+        }
+
+        [Theory]
+        [InlineData("ToggleWardrobeKeyArea")]
+        [InlineData("ToggleScheduleKeyArea")]
+        // Expected: ConfigUIBuilder has ClickableComponent properties for the new keybind areas
+        public void ConfigUIBuilder_HasKeybindArea(string propertyName)
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ConfigUIBuilder.cs");
+            Assert.Contains($"ClickableComponent {propertyName}", source);
+        }
+
+        [Theory]
+        [InlineData("ToggleWardrobeKey")]
+        [InlineData("ToggleScheduleKey")]
+        // Expected: ConfigOverlay click handler starts listening for new keybinds
+        public void ConfigOverlay_Click_StartsListeningForNewKeybind(string fieldName)
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ConfigOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void receiveLeftClick");
+            Assert.Contains($"listeningForKeybind = \"{fieldName}\"", body);
+        }
+
+        [Theory]
+        [InlineData("ToggleWardrobeKey")]
+        [InlineData("ToggleScheduleKey")]
+        // Expected: ConfigOverlay cancel-listening check includes new keybind areas
+        public void ConfigOverlay_CancelListening_IncludesNewKeybindArea(string fieldName)
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ConfigOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void receiveLeftClick");
+            Assert.Contains($"\"{fieldName}\"", body);
+            Assert.Contains($"{fieldName}Area", body);
+        }
+
+        [Theory]
+        [InlineData("UI/WardrobeOverlay.cs")]
+        [InlineData("UI/ScheduleMenu.cs")]
+        // Expected: Nullable parentMenu allows direct-open without parent OutfitMenu
+        public void TypeBOverlay_ParentMenu_IsNullable(string sourceFile)
+        {
+            string source = SourceScanner.ReadSourceFile(sourceFile);
+            Assert.Contains("IClickableMenu? parentMenu", source);
+        }
+
+        [Theory]
+        [InlineData("UI/WardrobeOverlay.cs")]
+        [InlineData("UI/ScheduleMenu.cs")]
+        // Expected: CloseOverlay uses exitActiveMenu when parentMenu is null
+        public void TypeBOverlay_CloseOverlay_HandlesNullParent(string sourceFile)
+        {
+            string source = SourceScanner.ReadSourceFile(sourceFile);
+            string body = SourceScanner.ExtractMethodBody(source, "void CloseOverlay");
+            Assert.Contains("parentMenu != null", body);
+            Assert.Contains("Game1.exitActiveMenu()", body);
+        }
+
+        [Theory]
+        [InlineData("ToggleWardrobeKey")]
+        [InlineData("ToggleScheduleKey")]
+        // Expected: ModEntry.OnButtonsChanged has toggle logic for each new keybind
+        public void ModEntry_OnButtonsChanged_HasToggleLogic(string configField)
+        {
+            string source = SourceScanner.ReadSourceFile("Core/ModEntry.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void OnButtonsChanged");
+            Assert.Contains($"{configField}.JustPressed()", body);
+        }
+
+        [Theory]
+        [InlineData("ToggleWardrobeKey", "WardrobeOverlay")]
+        [InlineData("ToggleScheduleKey", "ScheduleMenu")]
+        // Expected: Toggle key closes when same menu type is already active
+        public void ModEntry_ToggleKey_ClosesWhenSameMenuActive(string configField, string menuType)
+        {
+            string source = SourceScanner.ReadSourceFile("Core/ModEntry.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void OnButtonsChanged");
+            int keyIndex = body.IndexOf($"{configField}.JustPressed()");
+            string afterKey = body.Substring(keyIndex, Math.Min(500, body.Length - keyIndex));
+            Assert.Contains($"is {menuType}", afterKey);
+            Assert.Contains("exitActiveMenu()", afterKey);
         }
     }
 }

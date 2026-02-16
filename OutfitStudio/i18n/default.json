@@ -113,6 +113,10 @@
 
     // ==== v2.0.0 ====
     // Configs
+    "config.toggle-wardrobe-key.name": "Toggle Wardrobe Menu Key",
+    "config.toggle-wardrobe-key.tooltip": "Press this key to open/close the Wardrobe menu directly.",
+    "config.toggle-schedule-key.name": "Toggle Schedules Menu Key",
+    "config.toggle-schedule-key.tooltip": "Press this key to open/close the Schedules menu directly.",
     "config.schedule.section": "Schedules Menu",
     "config.show-schedule-debug-log.name": "Show Schedule Debug Log",
     "config.show-schedule-debug-log.description": "Show a Debug Log button to inspect schedule evaluation results.",

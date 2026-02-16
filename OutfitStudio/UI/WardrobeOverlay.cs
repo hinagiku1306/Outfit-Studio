@@ -17,7 +17,7 @@ namespace OutfitStudio
     {
         private readonly WardrobeUIBuilder uiBuilder;
         private readonly OutfitSetStore store;
-        private readonly IClickableMenu parentMenu;
+        private readonly IClickableMenu? parentMenu;
 
         private List<OutfitSet> displayedSets = new();
         private int selectedIndex = -1;
@@ -63,7 +63,7 @@ namespace OutfitStudio
         private Hat? cachedHat;
         private string? cachedSetId;
 
-        public WardrobeOverlay(OutfitSetStore store, IClickableMenu parentMenu)
+        public WardrobeOverlay(OutfitSetStore store, IClickableMenu? parentMenu)
         {
             this.store = store;
             this.parentMenu = parentMenu;
@@ -198,7 +198,7 @@ namespace OutfitStudio
         public override void gameWindowSizeChanged(Rectangle oldBounds, Rectangle newBounds)
         {
             base.gameWindowSizeChanged(oldBounds, newBounds);
-            parentMenu.gameWindowSizeChanged(oldBounds, newBounds);
+            parentMenu?.gameWindowSizeChanged(oldBounds, newBounds);
 
             uiBuilder.Recalculate();
             width = uiBuilder.Width;
@@ -216,7 +216,10 @@ namespace OutfitStudio
         private void CloseOverlay()
         {
             cleanupBeforeExit();
-            Game1.activeClickableMenu = parentMenu;
+            if (parentMenu != null)
+                Game1.activeClickableMenu = parentMenu;
+            else
+                Game1.exitActiveMenu();
         }
 
         public override void receiveLeftClick(int x, int y, bool playSound = true)
@@ -991,7 +994,7 @@ namespace OutfitStudio
             UIHelpers.SuppressHover = true;
             if (parentMenu is OutfitMenu outfitMenu)
                 outfitMenu.IsOverlayBlocking = true;
-            parentMenu.draw(b);
+            parentMenu?.draw(b);
             if (parentMenu is OutfitMenu outfitMenuAfter)
                 outfitMenuAfter.IsOverlayBlocking = false;
             UIHelpers.SuppressHover = oldSuppressHover;

@@ -104,6 +104,22 @@ namespace OutfitStudio
                     setValue: value => config.ToggleItemInfoKey = value
                 );
 
+                gmcmApi.AddKeybindList(
+                    mod: ModManifest,
+                    name: () => TranslationCache.ConfigToggleWardrobeKeyName,
+                    tooltip: () => TranslationCache.ConfigToggleWardrobeKeyTooltip,
+                    getValue: () => config.ToggleWardrobeKey,
+                    setValue: value => config.ToggleWardrobeKey = value
+                );
+
+                gmcmApi.AddKeybindList(
+                    mod: ModManifest,
+                    name: () => TranslationCache.ConfigToggleScheduleKeyName,
+                    tooltip: () => TranslationCache.ConfigToggleScheduleKeyTooltip,
+                    getValue: () => config.ToggleScheduleKey,
+                    setValue: value => config.ToggleScheduleKey = value
+                );
+
                 gmcmApi.AddBoolOption(
                     mod: ModManifest,
                     name: () => TranslationCache.ConfigShowTooltipName,
@@ -346,6 +362,40 @@ namespace OutfitStudio
 
                     menu = new OutfitMenu(this, categoryManager, filterManager, outfitSetStore, config.ShowItemInfo);
                     Game1.activeClickableMenu = menu;
+                }
+            }
+
+            if (config.ToggleWardrobeKey.JustPressed())
+            {
+                if (Game1.activeClickableMenu is WardrobeOverlay)
+                {
+                    Game1.exitActiveMenu();
+                }
+                else if (Game1.activeClickableMenu is OutfitMenu || Game1.activeClickableMenu == null)
+                {
+                    if (outfitSetStore == null)
+                        return;
+
+                    var parent = Game1.activeClickableMenu as OutfitMenu;
+                    Game1.activeClickableMenu = new WardrobeOverlay(outfitSetStore, parent);
+                    Game1.playSound("bigSelect");
+                }
+            }
+
+            if (config.ToggleScheduleKey.JustPressed())
+            {
+                if (Game1.activeClickableMenu is ScheduleMenu)
+                {
+                    Game1.exitActiveMenu();
+                }
+                else if (Game1.activeClickableMenu is OutfitMenu || Game1.activeClickableMenu == null)
+                {
+                    if (outfitSetStore == null || scheduleStore == null)
+                        return;
+
+                    var parent = Game1.activeClickableMenu as OutfitMenu;
+                    Game1.activeClickableMenu = new ScheduleMenu(parent, this, outfitSetStore, scheduleStore);
+                    Game1.playSound("bigSelect");
                 }
             }
         }

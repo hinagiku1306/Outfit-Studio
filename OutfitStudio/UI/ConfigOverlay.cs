@@ -21,6 +21,8 @@ namespace OutfitStudio
 
         private KeybindList toggleMenuKey;
         private KeybindList toggleItemInfoKey;
+        private KeybindList toggleWardrobeKey;
+        private KeybindList toggleScheduleKey;
         private bool showTooltip;
         private bool closeOnClickOutside;
         private bool autoOpenTagMenu;
@@ -60,6 +62,8 @@ namespace OutfitStudio
             var config = mod.GetConfig();
             toggleMenuKey = KeybindList.Parse(config.ToggleMenuKey.ToString());
             toggleItemInfoKey = KeybindList.Parse(config.ToggleItemInfoKey.ToString());
+            toggleWardrobeKey = KeybindList.Parse(config.ToggleWardrobeKey.ToString());
+            toggleScheduleKey = KeybindList.Parse(config.ToggleScheduleKey.ToString());
             showTooltip = config.ShowTooltip;
             closeOnClickOutside = config.CloseOnClickOutside;
             autoOpenTagMenu = config.AutoOpenTagMenu;
@@ -108,7 +112,9 @@ namespace OutfitStudio
             {
                 bool clickedSameArea = clickInContentArea &&
                     ((listeningForKeybind == "ToggleMenuKey" && IsInRowOf(uiBuilder.ToggleMenuKeyArea, x, y)) ||
-                     (listeningForKeybind == "ToggleItemInfoKey" && IsInRowOf(uiBuilder.ToggleItemInfoKeyArea, x, y)));
+                     (listeningForKeybind == "ToggleItemInfoKey" && IsInRowOf(uiBuilder.ToggleItemInfoKeyArea, x, y)) ||
+                     (listeningForKeybind == "ToggleWardrobeKey" && IsInRowOf(uiBuilder.ToggleWardrobeKeyArea, x, y)) ||
+                     (listeningForKeybind == "ToggleScheduleKey" && IsInRowOf(uiBuilder.ToggleScheduleKeyArea, x, y)));
 
                 if (!clickedSameArea)
                 {
@@ -198,6 +204,18 @@ namespace OutfitStudio
                 if (playSound) Game1.playSound("smallSelect");
                 return;
             }
+            if (IsInRowOf(uiBuilder.ToggleWardrobeKeyArea, x, y))
+            {
+                listeningForKeybind = "ToggleWardrobeKey";
+                if (playSound) Game1.playSound("smallSelect");
+                return;
+            }
+            if (IsInRowOf(uiBuilder.ToggleScheduleKeyArea, x, y))
+            {
+                listeningForKeybind = "ToggleScheduleKey";
+                if (playSound) Game1.playSound("smallSelect");
+                return;
+            }
 
             if (TryToggleCheckbox(uiBuilder.ShowTooltipCheckbox, x, y, ref showTooltip, playSound)) return;
             if (TryToggleCheckbox(uiBuilder.CloseOnClickOutsideCheckbox, x, y, ref closeOnClickOutside, playSound)) return;
@@ -273,6 +291,10 @@ namespace OutfitStudio
                     toggleMenuKey = newKeybind;
                 else if (listeningForKeybind == "ToggleItemInfoKey")
                     toggleItemInfoKey = newKeybind;
+                else if (listeningForKeybind == "ToggleWardrobeKey")
+                    toggleWardrobeKey = newKeybind;
+                else if (listeningForKeybind == "ToggleScheduleKey")
+                    toggleScheduleKey = newKeybind;
 
                 listeningForKeybind = null;
                 Game1.playSound("coin");
@@ -404,6 +426,10 @@ namespace OutfitStudio
                 uiBuilder.ToggleMenuKeyArea, listeningForKeybind == "ToggleMenuKey");
             uiBuilder.DrawKeybindRow(b, TranslationCache.ConfigToggleItemInfoKeyName, toggleItemInfoKey,
                 uiBuilder.ToggleItemInfoKeyArea, listeningForKeybind == "ToggleItemInfoKey");
+            uiBuilder.DrawKeybindRow(b, TranslationCache.ConfigToggleWardrobeKeyName, toggleWardrobeKey,
+                uiBuilder.ToggleWardrobeKeyArea, listeningForKeybind == "ToggleWardrobeKey");
+            uiBuilder.DrawKeybindRow(b, TranslationCache.ConfigToggleScheduleKeyName, toggleScheduleKey,
+                uiBuilder.ToggleScheduleKeyArea, listeningForKeybind == "ToggleScheduleKey");
             uiBuilder.DrawCheckboxRow(b, TranslationCache.ConfigShowTooltipName, showTooltip, uiBuilder.ShowTooltipCheckbox);
             uiBuilder.DrawCheckboxRow(b, TranslationCache.ConfigCloseOnClickOutsideName, closeOnClickOutside, uiBuilder.CloseOnClickOutsideCheckbox);
             uiBuilder.DrawCheckboxRow(b, TranslationCache.ConfigAutoOpenTagMenuName, autoOpenTagMenu, uiBuilder.AutoOpenTagMenuCheckbox);
@@ -552,6 +578,8 @@ namespace OutfitStudio
             var config = mod.GetConfig();
             config.ToggleMenuKey = toggleMenuKey;
             config.ToggleItemInfoKey = toggleItemInfoKey;
+            config.ToggleWardrobeKey = toggleWardrobeKey;
+            config.ToggleScheduleKey = toggleScheduleKey;
             config.ShowTooltip = showTooltip;
             config.CloseOnClickOutside = closeOnClickOutside;
             config.AutoOpenTagMenu = autoOpenTagMenu;
