@@ -53,7 +53,6 @@ namespace OutfitStudio.Models
         public bool WasTiebreak { get; set; }
         public bool IsConsistentTiebreak { get; set; }
         public List<string>? TiedRuleNames { get; set; }
-        public bool SpecialEventAutoWin { get; set; }
         public bool WinnerAdvanceOnWarp { get; set; }
 
         // Outfit

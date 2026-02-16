@@ -213,7 +213,7 @@ namespace OutfitStudio
         }
 
         public string? DrawCollapsedEntry(SpriteBatch b, int rowY, int entryHeight,
-            ScheduleEvalEntry entry, bool isExpanded, bool isHovered)
+            ScheduleEvalEntry entry, bool isExpanded, bool isHovered, int mouseX, int mouseY)
         {
             string? hoveredTooltip = null;
 
@@ -255,7 +255,9 @@ namespace OutfitStudio
             Utility.drawTextWithShadow(b, line1Display, Game1.smallFont,
                 new Vector2(textStartX, line1Y), Game1.textColor);
 
-            if (line1Display != line1Text && isHovered)
+            if (line1Display != line1Text && isHovered
+                && mouseX >= textStartX && mouseX < textStartX + maxTitleWidth
+                && mouseY >= line1Y && mouseY < line1Y + (int)Game1.smallFont.MeasureString("T").Y)
                 hoveredTooltip = line1Text;
 
             int line2Y = line1Y + ScheduleDebugTitleToInfoGap + (int)Game1.smallFont.MeasureString("T").Y;
@@ -294,7 +296,9 @@ namespace OutfitStudio
                 new Vector2(cursorX, line2Y), line2Color);
 
             string line2Display = ruleDisplay + arrow + outfitDisplay;
-            if (line2Display != line2Full && isHovered)
+            if (line2Display != line2Full && isHovered
+                && mouseX >= line2X && mouseX < line2X + line2MaxWidth
+                && mouseY >= line2Y && mouseY < line2Y + (int)Game1.smallFont.MeasureString("T").Y)
                 hoveredTooltip = line2Full;
 
             return hoveredTooltip;
@@ -338,7 +342,7 @@ namespace OutfitStudio
 
             ctxTip = DrawContextLine(b, sectionX, currentY, sectionWidth,
                 TranslationCache.ScheduleEditFestival, festivalText,
-                TranslationCache.ScheduleDebugLabelWedding, weddingText, mouseX, mouseY);
+                TranslationCache.ScheduleEditWedding, weddingText, mouseX, mouseY);
             if (ctxTip != null) tooltip = ctxTip;
             currentY += ScheduleDebugContextLineHeight + ScheduleDebugSectionGap;
 
@@ -390,7 +394,7 @@ namespace OutfitStudio
                 }
                 else if (entry.WinningRuleName == null)
                 {
-                    reasonValue = "\u2014";
+                    reasonValue = TranslationCache.ScheduleDebugNoMatch;
                 }
                 else if (entry.WasTiebreak)
                 {
@@ -401,10 +405,6 @@ namespace OutfitStudio
                 else if (entry.CacheOutcome == EvalCacheOutcome.Cached)
                 {
                     reasonValue = "\u2014";
-                }
-                else if (entry.SpecialEventAutoWin)
-                {
-                    reasonValue = TranslationCache.ScheduleDebugReasonSpecialEvent;
                 }
                 else
                 {
@@ -417,7 +417,9 @@ namespace OutfitStudio
                 Utility.drawTextWithShadow(b, reasonLabel, Game1.smallFont,
                     new Vector2(lineX, currentY + 2), Game1.textColor);
                 float reasonValueX = lineX + Game1.smallFont.MeasureString(reasonLabel).X;
-                Color reasonColor = entry.SpecialEventAutoWin ? Color.DarkGoldenrod : Game1.textColor;
+                Color reasonColor = entry.WinningRuleName == null && entry.ManualOverrideOutfitName == null
+                    ? Color.IndianRed
+                    : Game1.textColor;
                 Utility.drawTextWithShadow(b, reasonValue, Game1.smallFont,
                     new Vector2(reasonValueX, currentY + 2), reasonColor);
 
@@ -548,6 +550,7 @@ namespace OutfitStudio
                     .ToList();
 
                 foreach (var (minPri, label) in new[] {
+                    (4, TranslationCache.ScheduleDebugPriorityGroupSpecial),
                     (3, TranslationCache.ScheduleDebugPriorityGroupHigh),
                     (2, TranslationCache.ScheduleDebugPriorityGroupMedium),
                     (1, TranslationCache.ScheduleDebugPriorityGroupLow) })
@@ -711,7 +714,8 @@ namespace OutfitStudio
         {
             return priority switch
             {
-                >= 3 => "H",
+                >= 4 => "S",
+                3 => "H",
                 2 => "M",
                 _ => "L"
             };
@@ -727,7 +731,7 @@ namespace OutfitStudio
                 RuleMatchResult.FailWeather => TranslationCache.ScheduleEditWeather,
                 RuleMatchResult.FailLocation => TranslationCache.ScheduleEditLocation,
                 RuleMatchResult.FailArea => TranslationCache.ScheduleEditArea,
-                RuleMatchResult.FailWedding => TranslationCache.ScheduleDebugLabelWedding,
+                RuleMatchResult.FailWedding => TranslationCache.ScheduleEditWedding,
                 RuleMatchResult.EmptyPool => TranslationCache.ScheduleDebugFailEmptyPool,
                 _ => ""
             };
@@ -737,13 +741,14 @@ namespace OutfitStudio
         {
             return priority switch
             {
-                >= 3 => TranslationCache.ScheduleEditPriorityHigh,
+                >= 4 => TranslationCache.ScheduleEditPrioritySpecial,
+                3 => TranslationCache.ScheduleEditPriorityHigh,
                 2 => TranslationCache.ScheduleEditPriorityMedium,
                 _ => TranslationCache.ScheduleEditPriorityLow
             };
         }
 
-        private static int GetPriorityGroup(int priority) => priority >= 3 ? 3 : priority == 2 ? 2 : 1;
+        private static int GetPriorityGroup(int priority) => priority >= 4 ? 4 : priority >= 3 ? 3 : priority == 2 ? 2 : 1;
 
         private const int PriorityGroupGap = 8;
         private const int PriorityHeaderToRulesGap = 2;
@@ -754,33 +759,30 @@ namespace OutfitStudio
             if (rules.Count == 0 && isManualOverride)
                 return 0;
 
-            int minHeight = ScheduleDebugMinExpandedRules * ScheduleDebugContextLineHeight;
-
             if (rules.Count == 0)
-                return Math.Max(minHeight, ScheduleDebugContextLineHeight);
+                return ScheduleDebugContextLineHeight;
 
-            int matched = 0, failHigh = 0, failMed = 0, failLow = 0;
+            int matched = 0, failSpecial = 0, failHigh = 0, failMed = 0, failLow = 0;
             foreach (var r in rules)
             {
                 if (r.MatchResult == RuleMatchResult.Matched) matched++;
+                else if (r.Priority >= 4) failSpecial++;
                 else if (r.Priority >= 3) failHigh++;
                 else if (r.Priority == 2) failMed++;
                 else failLow++;
             }
 
             int totalPx = matched * ScheduleDebugContextLineHeight;
-            bool hasFailed = false;
 
-            foreach (int count in new[] { failHigh, failMed, failLow })
+            foreach (int count in new[] { failSpecial, failHigh, failMed, failLow })
             {
                 if (count == 0) continue;
-                hasFailed = true;
                 totalPx += PriorityGroupGap;
                 totalPx += ScheduleDebugContextLineHeight + PriorityHeaderToRulesGap;
                 totalPx += count * ScheduleDebugContextLineHeight;
             }
 
-            return hasFailed ? Math.Max(minHeight, totalPx) : totalPx;
+            return totalPx;
         }
 
         public void DrawNoEntriesText(SpriteBatch b)

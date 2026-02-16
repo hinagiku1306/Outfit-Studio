@@ -261,16 +261,20 @@ namespace OutfitStudio.Services
                 logEntry.Season = ctx.CurrentSeason;
                 logEntry.Weather = ctx.CurrentWeather;
                 logEntry.LocationName = ctx.CurrentLocationName;
-                logEntry.LocationDisplayName = Game1.currentLocation?.DisplayName ?? ctx.CurrentLocationName;
+                logEntry.LocationDisplayName = UIHelpers.ResolveDisplayName(
+                    Game1.currentLocation?.DisplayName, ctx.CurrentLocationName);
                 logEntry.IsOutdoors = ctx.IsOutdoors;
                 logEntry.IsActiveFestival = ctx.IsActiveFestival;
                 logEntry.IsAtPassiveFestivalLocation = ctx.IsAtPassiveFestivalLocation;
                 logEntry.IsWeddingDay = ctx.IsWeddingDay;
-                var passiveNames = cachedPassiveFestivals?.ToDictionary(
-                    kvp => kvp.Key,
-                    kvp => TokenParser.ParseText(kvp.Value.DisplayName));
+                var activeNames = cachedActiveFestivals?
+                    .Where(kvp => !string.IsNullOrEmpty(kvp.Value))
+                    .ToDictionary(kvp => kvp.Key,
+                        kvp => UIHelpers.ResolveDisplayName(TokenParser.ParseText(kvp.Value), kvp.Value));
+                var passiveNames = cachedPassiveFestivals?.ToDictionary(kvp => kvp.Key,
+                    kvp => UIHelpers.ResolveDisplayName(TokenParser.ParseText(kvp.Value.DisplayName), kvp.Key));
                 logEntry.TodaysFestivalIds = ctx.TodaysFestivalIds
-                    .Select(id => ResolveFestivalDisplayName(id, cachedActiveFestivals, passiveNames))
+                    .Select(id => ResolveFestivalDisplayName(id, activeNames, passiveNames))
                     .ToList();
                 logEntry.ManualOverrideOutfitId = lastManualSnapshot?.SourceSetId;
                 if (lastManualSnapshot != null)
@@ -467,7 +471,7 @@ namespace OutfitStudio.Services
                             logEntry.RuleResults.Add(new RuleEvalEntry
                             {
                                 RuleName = r.Name,
-                                Priority = r.Priority,
+                                Priority = r.EffectivePriority,
                                 MatchResult = RuleMatchResult.Matched,
                                 PoolSize = r.Id == cachedRule.Id ? logEntry.WinnerPoolSize : -1
                             });
@@ -535,7 +539,7 @@ namespace OutfitStudio.Services
                     ruleEntry = new RuleEvalEntry
                     {
                         RuleName = rule.Name,
-                        Priority = rule.Priority,
+                        Priority = rule.EffectivePriority,
                         MatchResult = matchResult,
                         FailDetail = failDetail,
                         IsSpecialEvent = rule.IsSpecialEventRule
@@ -559,7 +563,7 @@ namespace OutfitStudio.Services
                     continue;
                 }
 
-                DebugLogger.Trace($"[Schedule]     + \"{rule.Name}\" ({GetPriorityLabel(rule.Priority)}, {pool.Count} sets)");
+                DebugLogger.Trace($"[Schedule]     + \"{rule.Name}\" ({GetPriorityLabel(rule.EffectivePriority)}, {pool.Count} sets)");
                 candidates.Add((rule, pool));
                 if (ruleEntry != null) logEntry!.RuleResults.Add(ruleEntry);
             }
@@ -573,25 +577,20 @@ namespace OutfitStudio.Services
                 return;
             }
 
-            var specialCandidates = candidates.Where(c => c.rule.IsSpecialEventRule).ToList();
-            var effectiveCandidates = specialCandidates.Count > 0 ? specialCandidates : candidates;
-            bool specialEventAutoWin = specialCandidates.Count > 0 && candidates.Count > specialCandidates.Count;
-
-            var (winnerRule, winnerPool, usedConsistentCache) = SelectWinnerConsistent(effectiveCandidates, random);
-            DebugLogger.Trace($"[Schedule]   Selected: \"{winnerRule.Name}\" ({GetPriorityLabel(winnerRule.Priority)}){(effectiveCandidates.Count > 1 ? $" [{effectiveCandidates.Count} candidates]" : "")}{(specialEventAutoWin ? " [special event]" : "")}");
+            var (winnerRule, winnerPool, usedConsistentCache) = SelectWinnerConsistent(candidates, random);
+            DebugLogger.Trace($"[Schedule]   Selected: \"{winnerRule.Name}\" ({GetPriorityLabel(winnerRule.EffectivePriority)}){(candidates.Count > 1 ? $" [{candidates.Count} candidates]" : "")}");
 
             if (logEntry != null)
             {
                 logEntry.WinningRuleName = winnerRule.Name;
-                logEntry.WinningPriority = winnerRule.Priority;
-                logEntry.CandidateCount = effectiveCandidates.Count;
+                logEntry.WinningPriority = winnerRule.EffectivePriority;
+                logEntry.CandidateCount = candidates.Count;
                 logEntry.WinnerPoolSize = winnerPool.Count;
-                int topPri = effectiveCandidates.Max(c => c.rule.Priority);
-                logEntry.WasTiebreak = effectiveCandidates.Count(c => c.rule.Priority == topPri) > 1;
+                int topPri = candidates.Max(c => c.rule.EffectivePriority);
+                logEntry.WasTiebreak = candidates.Count(c => c.rule.EffectivePriority == topPri) > 1;
                 logEntry.IsConsistentTiebreak = logEntry.WasTiebreak && usedConsistentCache;
                 if (logEntry.WasTiebreak)
-                    logEntry.TiedRuleNames = effectiveCandidates.Where(c => c.rule.Priority == topPri).Select(c => c.rule.Name).ToList();
-                logEntry.SpecialEventAutoWin = specialEventAutoWin;
+                    logEntry.TiedRuleNames = candidates.Where(c => c.rule.EffectivePriority == topPri).Select(c => c.rule.Name).ToList();
                 logEntry.WinnerAdvanceOnWarp = winnerRule.AdvanceOnWarp;
             }
 
@@ -644,8 +643,8 @@ namespace OutfitStudio.Services
                     ruleDayCache[winnerRule.Id] = chosenSet.Id;
             }
 
-            int maxPriority = candidates.Max(c => c.rule.Priority);
-            var tiedRules = candidates.Where(c => c.rule.Priority == maxPriority).ToList();
+            int maxPriority = candidates.Max(c => c.rule.EffectivePriority);
+            var tiedRules = candidates.Where(c => c.rule.EffectivePriority == maxPriority).ToList();
 
             List<string> cachedIds = tiedRules.Count == 1
                 ? new List<string> { winnerRule.Id }
@@ -824,48 +823,15 @@ namespace OutfitStudio.Services
 
         internal static List<OutfitSet> ResolvePool(ScheduleRule rule, List<OutfitSet> allSets)
         {
-            List<OutfitSet> pool;
-
-            if (rule.TagsSelectAll)
+            if (rule.SelectedSetIds.Count == 0)
             {
-                pool = new List<OutfitSet>(allSets);
-                ScheduleDebug.Trace($"[Schedule]       Pool: ALL tags → {pool.Count}");
-            }
-            else
-            {
-                var tagSet = new HashSet<string>(rule.SelectedTags, TranslationCache.TagComparer);
-                pool = allSets
-                    .Where(s => s.Tags.Any(t => tagSet.Contains(t)))
-                    .ToList();
-                ScheduleDebug.Trace($"[Schedule]       Pool: [{string.Join(", ", rule.SelectedTags)}] → {pool.Count} matched");
+                ScheduleDebug.Trace("[Schedule]       Pool: no sets selected → 0");
+                return new List<OutfitSet>();
             }
 
-            if (rule.IncludedSetIds.Count > 0)
-            {
-                var poolIds = new HashSet<string>(pool.Select(s => s.Id));
-                int added = 0;
-                foreach (var id in rule.IncludedSetIds)
-                {
-                    if (!poolIds.Contains(id))
-                    {
-                        var set = allSets.FirstOrDefault(s => s.Id == id);
-                        if (set != null)
-                        {
-                            pool.Add(set);
-                            added++;
-                        }
-                    }
-                }
-                if (added > 0)
-                    ScheduleDebug.Trace($"[Schedule]       Pool: +{added} included → {pool.Count}");
-            }
-
-            var excluded = new HashSet<string>(rule.ExcludedSetIds);
-            int beforeExclude = pool.Count;
-            pool.RemoveAll(s => excluded.Contains(s.Id));
-            int removed = beforeExclude - pool.Count;
-            if (removed > 0)
-                ScheduleDebug.Trace($"[Schedule]       Pool: removed {removed} excluded, {pool.Count} left");
+            var selected = new HashSet<string>(rule.SelectedSetIds);
+            var pool = allSets.Where(s => selected.Contains(s.Id)).ToList();
+            ScheduleDebug.Trace($"[Schedule]       Pool: {pool.Count} of {rule.SelectedSetIds.Count} selected");
 
             return pool;
         }
@@ -875,8 +841,8 @@ namespace OutfitStudio.Services
             List<(ScheduleRule rule, List<OutfitSet> pool)> candidates,
             Random random)
         {
-            int maxPriority = candidates.Max(c => c.rule.Priority);
-            var filtered = candidates.Where(c => c.rule.Priority == maxPriority).ToList();
+            int maxPriority = candidates.Max(c => c.rule.EffectivePriority);
+            var filtered = candidates.Where(c => c.rule.EffectivePriority == maxPriority).ToList();
 
             if (filtered.Count < candidates.Count)
                 ScheduleDebug.Debug($"[Schedule]   Priority filter: kept {filtered.Count} of {candidates.Count} candidates ({GetPriorityLabel(maxPriority)})");
@@ -902,8 +868,8 @@ namespace OutfitStudio.Services
         internal (ScheduleRule rule, List<OutfitSet> pool, bool usedConsistentCache) SelectWinnerConsistent(
             List<(ScheduleRule rule, List<OutfitSet> pool)> candidates, Random random)
         {
-            int maxPriority = candidates.Max(c => c.rule.Priority);
-            var filtered = candidates.Where(c => c.rule.Priority == maxPriority).ToList();
+            int maxPriority = candidates.Max(c => c.rule.EffectivePriority);
+            var filtered = candidates.Where(c => c.rule.EffectivePriority == maxPriority).ToList();
 
             if (!getConsistentTiebreaks() || filtered.Count <= 1)
             {
@@ -924,8 +890,9 @@ namespace OutfitStudio.Services
             return (winner.rule, winner.pool, false);
         }
 
-        private static string GetPriorityLabel(int priority)
+        internal static string GetPriorityLabel(int priority)
         {
+            if (priority >= ScheduleRule.PrioritySpecial) return "Special";
             if (priority >= 3) return "High";
             if (priority <= 1) return "Low";
             return "Medium";

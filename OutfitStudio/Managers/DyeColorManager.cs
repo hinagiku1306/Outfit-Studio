@@ -71,9 +71,15 @@ namespace OutfitStudio
         public void SetSlidersFromColor(Color color)
         {
             ColorPicker.RGBtoHSV(color.R, color.G, color.B, out float h, out float s, out float v);
-            hueValue = float.IsNaN(h) ? 0 : (int)(h / 360f * 100f);
-            satValue = (int)(s * 100f);
-            valValue = (int)(v / 255f * 100f);
+            (hueValue, satValue, valValue) = CalculateHsvValues(h, s, v);
+        }
+
+        internal static (int hue, int sat, int val) CalculateHsvValues(float h, float s, float v)
+        {
+            int hue = (float.IsNaN(h) || h < 0f) ? 0 : (int)(h / 360f * 100f);
+            int sat = (int)(s * 100f);
+            int val2 = (int)(v / 255f * 100f);
+            return (hue, sat, val2);
         }
 
         public void ApplyToActiveItem(OutfitCategoryManager.Category category)

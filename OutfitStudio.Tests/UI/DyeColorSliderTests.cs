@@ -139,33 +139,33 @@ namespace OutfitStudio.Tests.UI
         // --- NaN hue guard (pure white / achromatic colors) ---
 
         [Fact]
-        // Expected: SetSlidersFromColor produces valid hueValue (0) for pure white, not NaN-derived garbage
-        public void SetSlidersFromColor_PureWhite_HueIsZero()
+        // Expected: Achromatic color (NaN hue) produces hue=0, cursor within bar
+        public void CalculateHsvValues_AchromaticNaN_HueIsZero()
         {
-            var manager = new DyeColorManager(() => { }, () => default);
-            manager.SetSlidersFromColor(Microsoft.Xna.Framework.Color.White);
-            int cursorX = DyeColorManager.CalculateCursorX(manager.HueValue, BarX, BarWidth);
+            var (hue, _, _) = DyeColorManager.CalculateHsvValues(float.NaN, 0f, 255f);
+            Assert.Equal(0, hue);
+            int cursorX = DyeColorManager.CalculateCursorX(hue, BarX, BarWidth);
             Assert.InRange(cursorX, BarX, BarX + BarWidth);
         }
 
         [Fact]
-        // Expected: SetSlidersFromColor produces valid hueValue for pure black (max=0 path returns h=-1)
-        public void SetSlidersFromColor_PureBlack_HueIsZero()
+        // Expected: Pure black (h=-1 from RGBtoHSV) produces hue=0, cursor within bar
+        public void CalculateHsvValues_NegativeHue_HueIsZero()
         {
-            var manager = new DyeColorManager(() => { }, () => default);
-            manager.SetSlidersFromColor(Microsoft.Xna.Framework.Color.Black);
-            int cursorX = DyeColorManager.CalculateCursorX(manager.HueValue, BarX, BarWidth);
+            var (hue, _, _) = DyeColorManager.CalculateHsvValues(-1f, 0f, 0f);
+            Assert.Equal(0, hue);
+            int cursorX = DyeColorManager.CalculateCursorX(hue, BarX, BarWidth);
             Assert.InRange(cursorX, BarX, BarX + BarWidth);
         }
 
         [Fact]
-        // Expected: SetSlidersFromColor produces valid hueValue for mid-gray (achromatic, delta=0)
-        public void SetSlidersFromColor_Gray_HueIsZero()
+        // Expected: Chromatic color produces correct hue value
+        public void CalculateHsvValues_ChromaticColor_CorrectHue()
         {
-            var manager = new DyeColorManager(() => { }, () => default);
-            manager.SetSlidersFromColor(new Microsoft.Xna.Framework.Color(128, 128, 128));
-            int cursorX = DyeColorManager.CalculateCursorX(manager.HueValue, BarX, BarWidth);
-            Assert.InRange(cursorX, BarX, BarX + BarWidth);
+            var (hue, sat, val) = DyeColorManager.CalculateHsvValues(180f, 0.5f, 200f);
+            Assert.Equal(50, hue);
+            Assert.Equal(50, sat);
+            Assert.Equal(78, val);
         }
 
         // --- Round-trip: click → value → cursor stays within gradient ---

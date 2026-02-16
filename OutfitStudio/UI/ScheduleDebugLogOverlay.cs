@@ -273,7 +273,7 @@ namespace OutfitStudio
                     && uiBuilder.GetEntryIndexAtPoint(mouseX, mouseY) == i;
 
                 string? rowTooltip = uiBuilder.DrawCollapsedEntry(b, entryScreenY, entryHeight,
-                    entries[i], isExpanded, isHovered);
+                    entries[i], isExpanded, isHovered, mouseX, mouseY);
                 if (rowTooltip != null)
                     tooltip = rowTooltip;
 

@@ -318,145 +318,25 @@ namespace OutfitStudio.Tests.Services
     public class ResolvePoolTests
     {
         [Fact]
-        // Expected: TagsSelectAll returns all valid sets
-        public void TagsSelectAll_ReturnsAllValidSets()
+        // Expected: SelectedSetIds returns exactly the matching sets from allSets
+        public void SelectedSetIds_ReturnsMatchingSets()
         {
-            var sets = new List<OutfitSet>
-            {
-                TestData.CreateSet(name: "A", tags: new List<string> { "Spring" }),
-                TestData.CreateSet(name: "B", tags: new List<string> { "Winter" }),
-                TestData.CreateSet(name: "C")
-            };
-            var rule = TestData.CreateRule(tagsSelectAll: true);
-
-            var pool = ScheduleEngine.ResolvePool(rule, sets);
-
-            Assert.Equal(3, pool.Count);
-        }
-
-        [Fact]
-        // Expected: TagsSelectAll includes invalid sets in pool
-        public void TagsSelectAll_IncludesInvalidSets()
-        {
-            var sets = new List<OutfitSet>
-            {
-                TestData.CreateSet(name: "Valid"),
-                TestData.CreateSet(name: "Invalid", isValid: false)
-            };
-            var rule = TestData.CreateRule(tagsSelectAll: true);
-
-            var pool = ScheduleEngine.ResolvePool(rule, sets);
-
-            Assert.Equal(2, pool.Count);
-        }
-
-        [Fact]
-        // Expected: Tag filtering returns sets with ANY matching tag (OR logic)
-        public void TagFilter_MatchesAnyTag()
-        {
-            var sets = new List<OutfitSet>
-            {
-                TestData.CreateSet(name: "A", tags: new List<string> { "Spring" }),
-                TestData.CreateSet(name: "B", tags: new List<string> { "Winter" }),
-                TestData.CreateSet(name: "C", tags: new List<string> { "Combat" })
-            };
-            var rule = TestData.CreateRule(selectedTags: new List<string> { "Spring", "Winter" });
+            var setA = TestData.CreateSet(id: "a", name: "A");
+            var setB = TestData.CreateSet(id: "b", name: "B");
+            var setC = TestData.CreateSet(id: "c", name: "C");
+            var sets = new List<OutfitSet> { setA, setB, setC };
+            var rule = TestData.CreateRule(selectedSetIds: new List<string> { "a", "c" });
 
             var pool = ScheduleEngine.ResolvePool(rule, sets);
 
             Assert.Equal(2, pool.Count);
             Assert.Contains(pool, s => s.Name == "A");
-            Assert.Contains(pool, s => s.Name == "B");
+            Assert.Contains(pool, s => s.Name == "C");
         }
 
         [Fact]
-        // Expected: Tag filtering is case-insensitive
-        public void TagFilter_CaseInsensitive()
-        {
-            var sets = new List<OutfitSet>
-            {
-                TestData.CreateSet(name: "A", tags: new List<string> { "Spring" })
-            };
-            var rule = TestData.CreateRule(selectedTags: new List<string> { "spring" });
-
-            var pool = ScheduleEngine.ResolvePool(rule, sets);
-
-            Assert.Single(pool);
-        }
-
-        [Fact]
-        // Expected: ExcludedSetIds are removed from pool
-        public void ExcludedSetIds_RemovedFromPool()
-        {
-            var excludedSet = TestData.CreateSet(id: "exclude-me", name: "Excluded", tags: new List<string> { "Daily" });
-            var keptSet = TestData.CreateSet(name: "Kept", tags: new List<string> { "Daily" });
-            var sets = new List<OutfitSet> { excludedSet, keptSet };
-            var rule = TestData.CreateRule(
-                tagsSelectAll: true,
-                excludedSetIds: new List<string> { "exclude-me" });
-
-            var pool = ScheduleEngine.ResolvePool(rule, sets);
-
-            Assert.Single(pool);
-            Assert.Equal("Kept", pool[0].Name);
-        }
-
-        [Fact]
-        // Expected: Invalid sets are kept in pool when tags match
-        public void InvalidSets_KeptInPool()
-        {
-            var sets = new List<OutfitSet>
-            {
-                TestData.CreateSet(name: "Valid", tags: new List<string> { "Daily" }),
-                TestData.CreateSet(name: "Invalid", tags: new List<string> { "Daily" }, isValid: false)
-            };
-            var rule = TestData.CreateRule(selectedTags: new List<string> { "Daily" });
-
-            var pool = ScheduleEngine.ResolvePool(rule, sets);
-
-            Assert.Equal(2, pool.Count);
-        }
-
-        [Fact]
-        // Expected: No matching tags returns empty pool
-        public void NoMatchingTags_EmptyPool()
-        {
-            var sets = new List<OutfitSet>
-            {
-                TestData.CreateSet(name: "A", tags: new List<string> { "Spring" })
-            };
-            var rule = TestData.CreateRule(selectedTags: new List<string> { "Winter" });
-
-            var pool = ScheduleEngine.ResolvePool(rule, sets);
-
-            Assert.Empty(pool);
-        }
-
-        [Fact]
-        // Expected: Combined filters (tag + excluded) apply, invalid sets kept
-        public void CombinedFilters_AllApply()
-        {
-            var sets = new List<OutfitSet>
-            {
-                TestData.CreateSet(id: "s1", name: "TagMatch-Valid", tags: new List<string> { "Daily" }),
-                TestData.CreateSet(id: "s2", name: "TagMatch-Invalid", tags: new List<string> { "Daily" }, isValid: false),
-                TestData.CreateSet(id: "s3", name: "TagMatch-Excluded", tags: new List<string> { "Daily" }),
-                TestData.CreateSet(id: "s4", name: "NoTag", tags: new List<string> { "Combat" })
-            };
-            var rule = TestData.CreateRule(
-                selectedTags: new List<string> { "Daily" },
-                excludedSetIds: new List<string> { "s3" });
-
-            var pool = ScheduleEngine.ResolvePool(rule, sets);
-
-            Assert.Equal(2, pool.Count);
-            Assert.Contains(pool, s => s.Name == "TagMatch-Valid");
-            Assert.Contains(pool, s => s.Name == "TagMatch-Invalid");
-        }
-
-        [Fact]
-        // Expected: No tags selected (not selectAll) returns empty pool
-        public void NoTagsSelected_EmptyPool()
+        // Expected: No SelectedSetIds returns empty pool
+        public void NoSelectedSetIds_EmptyPool()
         {
             var sets = new List<OutfitSet>
             {
@@ -470,77 +350,12 @@ namespace OutfitStudio.Tests.Services
         }
 
         [Fact]
-        // Expected: ResolvePool does not modify the original allSets list
-        public void DoesNotMutateInputList()
-        {
-            var sets = new List<OutfitSet>
-            {
-                TestData.CreateSet(name: "Valid"),
-                TestData.CreateSet(name: "Invalid", isValid: false)
-            };
-            var rule = TestData.CreateRule(tagsSelectAll: true);
-
-            ScheduleEngine.ResolvePool(rule, sets);
-
-            Assert.Equal(2, sets.Count);
-        }
-
-        [Fact]
-        // Expected: IncludedSetIds adds sets to pool even if they have no matching tags
-        public void IncludedSetIds_AddedToPool()
-        {
-            var included = TestData.CreateSet(id: "inc1", name: "Included", tags: new List<string> { "Combat" });
-            var sets = new List<OutfitSet> { included };
-            var rule = TestData.CreateRule(
-                selectedTags: new List<string> { "Daily" },
-                includedSetIds: new List<string> { "inc1" });
-
-            var pool = ScheduleEngine.ResolvePool(rule, sets);
-
-            Assert.Single(pool);
-            Assert.Equal("Included", pool[0].Name);
-        }
-
-        [Fact]
-        // Expected: IncludedSetIds merged with tag results without duplicates
-        public void IncludedSetIds_UnionWithTags()
-        {
-            var setA = TestData.CreateSet(id: "a", name: "A", tags: new List<string> { "Daily" });
-            var setB = TestData.CreateSet(id: "b", name: "B", tags: new List<string> { "Combat" });
-            var sets = new List<OutfitSet> { setA, setB };
-            var rule = TestData.CreateRule(
-                selectedTags: new List<string> { "Daily" },
-                includedSetIds: new List<string> { "a", "b" });
-
-            var pool = ScheduleEngine.ResolvePool(rule, sets);
-
-            Assert.Equal(2, pool.Count);
-            Assert.Contains(pool, s => s.Name == "A");
-            Assert.Contains(pool, s => s.Name == "B");
-        }
-
-        [Fact]
-        // Expected: Set in both IncludedSetIds and ExcludedSetIds is excluded (exclusion wins)
-        public void IncludedSetIds_ExclusionWins()
-        {
-            var set = TestData.CreateSet(id: "both", name: "Both", tags: new List<string> { "Daily" });
-            var sets = new List<OutfitSet> { set };
-            var rule = TestData.CreateRule(
-                includedSetIds: new List<string> { "both" },
-                excludedSetIds: new List<string> { "both" });
-
-            var pool = ScheduleEngine.ResolvePool(rule, sets);
-
-            Assert.Empty(pool);
-        }
-
-        [Fact]
-        // Expected: Manually included invalid set is kept in pool
-        public void IncludedSetIds_InvalidKept()
+        // Expected: Invalid sets in SelectedSetIds are kept in pool
+        public void SelectedSetIds_InvalidKept()
         {
             var set = TestData.CreateSet(id: "inv", name: "Invalid", isValid: false);
             var sets = new List<OutfitSet> { set };
-            var rule = TestData.CreateRule(includedSetIds: new List<string> { "inv" });
+            var rule = TestData.CreateRule(selectedSetIds: new List<string> { "inv" });
 
             var pool = ScheduleEngine.ResolvePool(rule, sets);
 
@@ -549,20 +364,47 @@ namespace OutfitStudio.Tests.Services
         }
 
         [Fact]
-        // Expected: No tags selected, only IncludedSetIds → pool contains exactly those sets
-        public void IncludedSetIds_OnlyManual_NoTags()
+        // Expected: SelectedSetIds referencing non-existent IDs are silently skipped
+        public void SelectedSetIds_MissingIdsSkipped()
         {
             var setA = TestData.CreateSet(id: "a", name: "A");
-            var setB = TestData.CreateSet(id: "b", name: "B");
-            var setC = TestData.CreateSet(id: "c", name: "C");
-            var sets = new List<OutfitSet> { setA, setB, setC };
-            var rule = TestData.CreateRule(includedSetIds: new List<string> { "a", "c" });
+            var sets = new List<OutfitSet> { setA };
+            var rule = TestData.CreateRule(selectedSetIds: new List<string> { "a", "deleted" });
 
             var pool = ScheduleEngine.ResolvePool(rule, sets);
 
-            Assert.Equal(2, pool.Count);
-            Assert.Contains(pool, s => s.Name == "A");
-            Assert.Contains(pool, s => s.Name == "C");
+            Assert.Single(pool);
+            Assert.Equal("A", pool[0].Name);
+        }
+
+        [Fact]
+        // Expected: ResolvePool does not modify the original allSets list
+        public void DoesNotMutateInputList()
+        {
+            var sets = new List<OutfitSet>
+            {
+                TestData.CreateSet(id: "a", name: "A"),
+                TestData.CreateSet(id: "b", name: "B")
+            };
+            var rule = TestData.CreateRule(selectedSetIds: new List<string> { "a" });
+
+            ScheduleEngine.ResolvePool(rule, sets);
+
+            Assert.Equal(2, sets.Count);
+        }
+
+        [Fact]
+        // Expected: Single selected set returns pool of one
+        public void SingleSelectedSet_ReturnsSingle()
+        {
+            var set = TestData.CreateSet(id: "only", name: "Only");
+            var sets = new List<OutfitSet> { set };
+            var rule = TestData.CreateRule(selectedSetIds: new List<string> { "only" });
+
+            var pool = ScheduleEngine.ResolvePool(rule, sets);
+
+            Assert.Single(pool);
+            Assert.Equal("Only", pool[0].Name);
         }
     }
 
@@ -899,6 +741,307 @@ namespace OutfitStudio.Tests.Services
         }
     }
 
+    public class SyncQueueWithSetIdsTests
+    {
+        [Fact]
+        // Expected: newly added set IDs are injected into the existing rotation queue
+        public void NewSetsInjectedIntoQueue()
+        {
+            var state = new RotationState { RuleId = "r1", Queue = new List<string> { "s1", "s2" } };
+            var oldIds = new List<string> { "s1", "s2", "s3" };
+            var newIds = new List<string> { "s1", "s2", "s3", "s4", "s5" };
+
+            ScheduleStore.SyncQueueWithSetIds(state, oldIds, newIds, new Random(42));
+
+            Assert.Contains("s4", state.Queue);
+            Assert.Contains("s5", state.Queue);
+            Assert.Equal(4, state.Queue.Count);
+        }
+
+        [Fact]
+        // Expected: no changes when set list is unchanged
+        public void NoChanges_QueueUnchanged()
+        {
+            var state = new RotationState { RuleId = "r1", Queue = new List<string> { "s2", "s3" } };
+            var ids = new List<string> { "s1", "s2", "s3" };
+
+            ScheduleStore.SyncQueueWithSetIds(state, ids, ids, new Random(42));
+
+            Assert.Equal(2, state.Queue.Count);
+            Assert.Equal(new List<string> { "s2", "s3" }, state.Queue);
+        }
+
+        [Fact]
+        // Expected: injection works when queue is empty (new set inserted at index 0)
+        public void EmptyQueue_NewSetsInjected()
+        {
+            var state = new RotationState { RuleId = "r1", Queue = new List<string>() };
+            var oldIds = new List<string> { "s1" };
+            var newIds = new List<string> { "s1", "s2" };
+
+            ScheduleStore.SyncQueueWithSetIds(state, oldIds, newIds, new Random(42));
+
+            Assert.Single(state.Queue);
+            Assert.Equal("s2", state.Queue[0]);
+        }
+
+        [Fact]
+        // Expected: removed set IDs are pruned from the rotation queue
+        public void RemovedSetsPrunedFromQueue()
+        {
+            var state = new RotationState { RuleId = "r1", Queue = new List<string> { "s1", "s2", "s3" } };
+            var oldIds = new List<string> { "s1", "s2", "s3" };
+            var newIds = new List<string> { "s1", "s3" };
+
+            ScheduleStore.SyncQueueWithSetIds(state, oldIds, newIds, new Random(42));
+
+            Assert.Equal(2, state.Queue.Count);
+            Assert.DoesNotContain("s2", state.Queue);
+        }
+
+        [Fact]
+        // Expected: removed set not in queue (already consumed) causes no issue
+        public void RemovedSetAlreadyConsumed_NoChange()
+        {
+            var state = new RotationState { RuleId = "r1", Queue = new List<string> { "s3" } };
+            var oldIds = new List<string> { "s1", "s2", "s3" };
+            var newIds = new List<string> { "s1", "s3" };
+
+            ScheduleStore.SyncQueueWithSetIds(state, oldIds, newIds, new Random(42));
+
+            Assert.Single(state.Queue);
+            Assert.Equal("s3", state.Queue[0]);
+        }
+
+        [Fact]
+        // Expected: simultaneous add and remove both applied correctly
+        public void SimultaneousAddAndRemove()
+        {
+            var state = new RotationState { RuleId = "r1", Queue = new List<string> { "s1", "s2" } };
+            var oldIds = new List<string> { "s1", "s2", "s3" };
+            var newIds = new List<string> { "s1", "s3", "s4" };
+
+            ScheduleStore.SyncQueueWithSetIds(state, oldIds, newIds, new Random(42));
+
+            Assert.Contains("s1", state.Queue);
+            Assert.Contains("s4", state.Queue);
+            Assert.DoesNotContain("s2", state.Queue);
+            Assert.Equal(2, state.Queue.Count);
+        }
+
+        [Fact]
+        // Expected: aliased old/new (same list reference) produces no changes — guards against the
+        // HandleSave aliasing bug where editingRule mutates before UpdateRule captures old state
+        public void AliasedOldAndNew_NoOp()
+        {
+            var state = new RotationState { RuleId = "r1", Queue = new List<string> { "s1", "s3" } };
+            var ids = new List<string> { "s1", "s2", "s3" };
+
+            ScheduleStore.SyncQueueWithSetIds(state, ids, ids, new Random(42));
+
+            Assert.Equal(2, state.Queue.Count);
+            Assert.Equal(new List<string> { "s1", "s3" }, state.Queue);
+        }
+
+        [Fact]
+        // Expected: adding then removing the same set returns queue to original state (no duplicates)
+        public void AddThenRemove_NoDuplicates()
+        {
+            var state = new RotationState { RuleId = "r1", Queue = new List<string> { "s1", "s2" } };
+
+            // Add s4
+            ScheduleStore.SyncQueueWithSetIds(state,
+                new List<string> { "s1", "s2", "s3" },
+                new List<string> { "s1", "s2", "s3", "s4" },
+                new Random(42));
+            Assert.Equal(3, state.Queue.Count);
+            Assert.Contains("s4", state.Queue);
+
+            // Remove s4
+            ScheduleStore.SyncQueueWithSetIds(state,
+                new List<string> { "s1", "s2", "s3", "s4" },
+                new List<string> { "s1", "s2", "s3" },
+                new Random(42));
+            Assert.Equal(2, state.Queue.Count);
+            Assert.DoesNotContain("s4", state.Queue);
+        }
+
+        [Fact]
+        // Expected: repeatedly adding the same set doesn't create duplicates in the queue
+        public void RepeatedAdd_NoDuplicates()
+        {
+            var state = new RotationState { RuleId = "r1", Queue = new List<string> { "s1", "s2" } };
+            var oldIds = new List<string> { "s1", "s2", "s3" };
+            var newIds = new List<string> { "s1", "s2", "s3", "s4" };
+
+            // Sync twice with the same diff
+            ScheduleStore.SyncQueueWithSetIds(state, oldIds, newIds, new Random(42));
+            ScheduleStore.SyncQueueWithSetIds(state, oldIds, newIds, new Random(99));
+
+            // s4 should appear exactly once
+            Assert.Equal(1, state.Queue.Count(id => id == "s4"));
+        }
+
+        [Fact]
+        // Expected: removing all sets empties the queue entirely
+        public void RemoveAllSets_EmptiesQueue()
+        {
+            var state = new RotationState { RuleId = "r1", Queue = new List<string> { "s1", "s2", "s3" } };
+
+            ScheduleStore.SyncQueueWithSetIds(state,
+                new List<string> { "s1", "s2", "s3" },
+                new List<string>(),
+                new Random(42));
+
+            Assert.Empty(state.Queue);
+        }
+
+        [Fact]
+        // Expected: after sync injects new IDs, PickWithRotation prunes any that are
+        // no longer in the pool (e.g. set deleted from Wardrobe after save)
+        public void RuntimePrune_AfterSyncInject()
+        {
+            var state = new RotationState { RuleId = "r1", Queue = new List<string> { "s1", "s2" } };
+
+            // Sync adds s3
+            ScheduleStore.SyncQueueWithSetIds(state,
+                new List<string> { "s1", "s2" },
+                new List<string> { "s1", "s2", "s3" },
+                new Random(42));
+            Assert.Equal(3, state.Queue.Count);
+
+            // But s3 was deleted from Wardrobe — pool only has s1, s2
+            var pool = new List<OutfitSet>
+            {
+                new OutfitSet { Id = "s1", Name = "A" },
+                new OutfitSet { Id = "s2", Name = "B" },
+            };
+            var pick = ScheduleEngine.PickWithRotation(pool, state, new Random(42));
+
+            Assert.NotNull(pick);
+            Assert.DoesNotContain("s3", state.Queue);
+        }
+
+        [Fact]
+        // Expected: adding a set that was already consumed (not in queue but in pool)
+        // correctly injects it back into the queue
+        public void AddBackConsumedSet()
+        {
+            // s2 was consumed (in old IDs but not in queue)
+            var state = new RotationState { RuleId = "r1", Queue = new List<string> { "s3" } };
+            var oldIds = new List<string> { "s1", "s2", "s3" };
+
+            // Remove s2 then re-add it
+            ScheduleStore.SyncQueueWithSetIds(state, oldIds,
+                new List<string> { "s1", "s3" }, new Random(42));
+            Assert.Single(state.Queue); // s2 wasn't in queue, no change
+
+            ScheduleStore.SyncQueueWithSetIds(state,
+                new List<string> { "s1", "s3" },
+                new List<string> { "s1", "s2", "s3" }, new Random(42));
+            Assert.Equal(2, state.Queue.Count);
+            Assert.Contains("s2", state.Queue);
+        }
+
+        [Fact]
+        // Expected: simulating sync on a copy does not mutate the original persisted queue
+        public void SimulationOnCopy_DoesNotMutateOriginal()
+        {
+            var persisted = new RotationState { RuleId = "r1", Queue = new List<string> { "s1", "s2" } };
+            var originalIds = new List<string> { "s1", "s2", "s3" };
+            var currentIds = new List<string> { "s1", "s2", "s3", "s4" };
+
+            var simulated = new RotationState
+            {
+                RuleId = persisted.RuleId,
+                Queue = new List<string>(persisted.Queue),
+                LastUsedId = persisted.LastUsedId
+            };
+            ScheduleStore.SyncQueueWithSetIds(simulated, originalIds, currentIds, new Random(42));
+
+            Assert.Equal(3, simulated.Queue.Count);
+            Assert.Contains("s4", simulated.Queue);
+            Assert.Equal(2, persisted.Queue.Count);
+            Assert.DoesNotContain("s4", persisted.Queue);
+        }
+
+        [Fact]
+        // Expected: simulated remaining count increases when a set is added
+        public void SimulatedRemaining_IncreasesOnAdd()
+        {
+            var persisted = new RotationState { RuleId = "r1", Queue = new List<string> { "s1" } };
+            var originalIds = new List<string> { "s1", "s2", "s3" };
+
+            // Before add: simulate with original = current → no changes
+            var sim1 = new RotationState { RuleId = "r1", Queue = new List<string>(persisted.Queue) };
+            ScheduleStore.SyncQueueWithSetIds(sim1, originalIds, originalIds, new Random(42));
+            Assert.Single(sim1.Queue);
+
+            // After add: simulate with s4 added
+            var currentIds = new List<string> { "s1", "s2", "s3", "s4" };
+            var sim2 = new RotationState { RuleId = "r1", Queue = new List<string>(persisted.Queue) };
+            ScheduleStore.SyncQueueWithSetIds(sim2, originalIds, currentIds, new Random(42));
+            Assert.Equal(2, sim2.Queue.Count);
+        }
+
+        [Fact]
+        // Expected: simulated remaining count decreases when a set still in queue is removed
+        public void SimulatedRemaining_DecreasesOnRemove()
+        {
+            var persisted = new RotationState { RuleId = "r1", Queue = new List<string> { "s1", "s2", "s3" } };
+            var originalIds = new List<string> { "s1", "s2", "s3" };
+
+            // Remove s2
+            var currentIds = new List<string> { "s1", "s3" };
+            var sim = new RotationState { RuleId = "r1", Queue = new List<string>(persisted.Queue) };
+            ScheduleStore.SyncQueueWithSetIds(sim, originalIds, currentIds, new Random(42));
+            Assert.Equal(2, sim.Queue.Count);
+            Assert.DoesNotContain("s2", sim.Queue);
+        }
+
+        [Fact]
+        // Expected: add-remove-add cycle produces correct remaining (no inflation)
+        public void SimulatedRemaining_AddRemoveAdd_NoInflation()
+        {
+            var persisted = new RotationState { RuleId = "r1", Queue = new List<string> { "s1" } };
+            var originalIds = new List<string> { "s1", "s2", "s3" };
+
+            // Add s4
+            var afterAdd = new List<string> { "s1", "s2", "s3", "s4" };
+            var sim1 = new RotationState { RuleId = "r1", Queue = new List<string>(persisted.Queue) };
+            ScheduleStore.SyncQueueWithSetIds(sim1, originalIds, afterAdd, new Random(42));
+            Assert.Equal(2, sim1.Queue.Count);
+
+            // Remove s4
+            var afterRemove = new List<string> { "s1", "s2", "s3" };
+            var sim2 = new RotationState { RuleId = "r1", Queue = new List<string>(persisted.Queue) };
+            ScheduleStore.SyncQueueWithSetIds(sim2, originalIds, afterRemove, new Random(42));
+            Assert.Single(sim2.Queue);
+
+            // Add s4 again — should be same as first add, not inflated
+            var sim3 = new RotationState { RuleId = "r1", Queue = new List<string>(persisted.Queue) };
+            ScheduleStore.SyncQueueWithSetIds(sim3, originalIds, afterAdd, new Random(42));
+            Assert.Equal(2, sim3.Queue.Count);
+            Assert.Equal(1, sim3.Queue.Count(id => id == "s4"));
+        }
+
+        [Fact]
+        // Expected: cancelling edit (no save) leaves persisted queue untouched
+        public void CancelEdit_PersistedQueueUntouched()
+        {
+            var persisted = new RotationState { RuleId = "r1", Queue = new List<string> { "s1", "s2" } };
+            var originalIds = new List<string> { "s1", "s2", "s3" };
+            var originalQueue = new List<string>(persisted.Queue);
+
+            // Simulate various edits (display-only, never saved)
+            var sim = new RotationState { RuleId = "r1", Queue = new List<string>(persisted.Queue) };
+            ScheduleStore.SyncQueueWithSetIds(sim, originalIds,
+                new List<string> { "s1", "s2", "s3", "s4", "s5" }, new Random(42));
+
+            // Persisted queue untouched
+            Assert.Equal(originalQueue, persisted.Queue);
+        }
+    }
 
     public class WeddingTriggerTests
     {
@@ -1217,15 +1360,78 @@ namespace OutfitStudio.Tests.Services
         }
     }
 
+    public class EffectivePriorityTests
+    {
+        [Fact]
+        // Expected: Normal rule returns user-set Priority as EffectivePriority
+        public void NormalRule_ReturnsUserPriority()
+        {
+            var rule = TestData.CreateRule(priority: 1);
+            Assert.Equal(1, rule.EffectivePriority);
+            Assert.False(rule.IsSpecialEventRule);
+        }
+
+        [Fact]
+        // Expected: Festival rule returns PrioritySpecial regardless of stored Priority
+        public void FestivalRule_ReturnsPrioritySpecial()
+        {
+            var rule = TestData.CreateRule(priority: 1, selectedFestivals: new List<string> { "spring13" });
+            Assert.Equal(ScheduleRule.PrioritySpecial, rule.EffectivePriority);
+        }
+
+        [Fact]
+        // Expected: FestivalsSelectAll rule returns PrioritySpecial
+        public void FestivalsSelectAll_ReturnsPrioritySpecial()
+        {
+            var rule = TestData.CreateRule(priority: 2, festivalsSelectAll: true);
+            Assert.Equal(ScheduleRule.PrioritySpecial, rule.EffectivePriority);
+        }
+
+        [Fact]
+        // Expected: Wedding rule returns PrioritySpecial regardless of stored Priority
+        public void WeddingRule_ReturnsPrioritySpecial()
+        {
+            var rule = TestData.CreateRule(priority: 1, isWeddingDay: true);
+            Assert.Equal(ScheduleRule.PrioritySpecial, rule.EffectivePriority);
+        }
+
+        [Fact]
+        // Expected: Removing festivals reverts EffectivePriority to stored Priority
+        public void RemoveFestivals_RevertsToStoredPriority()
+        {
+            var rule = TestData.CreateRule(priority: 1, selectedFestivals: new List<string> { "spring13" });
+            Assert.Equal(ScheduleRule.PrioritySpecial, rule.EffectivePriority);
+
+            rule.SelectedFestivals.Clear();
+            Assert.Equal(1, rule.EffectivePriority);
+        }
+
+        [Fact]
+        // Expected: PrioritySpecial constant is 4
+        public void PrioritySpecial_Is4()
+        {
+            Assert.Equal(4, ScheduleRule.PrioritySpecial);
+        }
+
+        [Fact]
+        // Expected: EffectivePriority is higher than max normal priority (3=High)
+        public void SpecialPriority_HigherThanHigh()
+        {
+            var normalHigh = TestData.CreateRule(priority: 3);
+            var festivalLow = TestData.CreateRule(priority: 1, selectedFestivals: new List<string> { "spring13" });
+            Assert.True(festivalLow.EffectivePriority > normalHigh.EffectivePriority);
+        }
+    }
+
     public class SpecialEventAutoWinTests
     {
         [Fact]
-        // Expected: Special event candidate beats normal candidate regardless of priority
-        public void SpecialEvent_BeatsNormal_RegardlessOfPriority()
+        // Expected: Special event candidate beats normal via EffectivePriority in SelectWinner
+        public void SpecialEvent_BeatsNormal_ViaEffectivePriority()
         {
             var specialRule = TestData.CreateRule(name: "Festival", priority: 1,
                 selectedFestivals: new List<string> { "spring13" });
-            var normalRule = TestData.CreateRule(name: "Normal", priority: 4,
+            var normalRule = TestData.CreateRule(name: "Normal", priority: 3,
                 selectedSeasons: new List<string> { "Spring" });
             var pool = new List<OutfitSet> { TestData.CreateSet() };
 
@@ -1233,40 +1439,44 @@ namespace OutfitStudio.Tests.Services
             {
                 (specialRule, pool), (normalRule, pool)
             };
-            var specialCandidates = candidates.Where(c => c.rule.IsSpecialEventRule).ToList();
-            var effectiveCandidates = specialCandidates.Count > 0 ? specialCandidates : candidates;
 
-            var (winner, _) = ScheduleEngine.SelectWinner(effectiveCandidates, new Random(42));
+            var (winner, _) = ScheduleEngine.SelectWinner(candidates, new Random(42));
             Assert.Equal("Festival", winner.Name);
         }
 
         [Fact]
-        // Expected: Among multiple special event candidates, higher priority wins
-        public void TwoSpecialEvents_HigherPriorityWins()
+        // Expected: Among two special event candidates, both get Special priority → tiebreak
+        public void TwoSpecialEvents_BothSpecialPriority_Tiebreak()
         {
-            var lowFestival = TestData.CreateRule(name: "LowFest", priority: 1,
+            var festival = TestData.CreateRule(name: "Festival", priority: 1,
                 selectedFestivals: new List<string> { "spring13" });
-            var highWedding = TestData.CreateRule(name: "HighWedding", priority: 3,
+            var wedding = TestData.CreateRule(name: "Wedding", priority: 2,
                 isWeddingDay: true);
             var pool = new List<OutfitSet> { TestData.CreateSet() };
 
             var candidates = new List<(ScheduleRule rule, List<OutfitSet> pool)>
             {
-                (lowFestival, pool), (highWedding, pool)
+                (festival, pool), (wedding, pool)
             };
-            var specialCandidates = candidates.Where(c => c.rule.IsSpecialEventRule).ToList();
 
-            var (winner, _) = ScheduleEngine.SelectWinner(specialCandidates, new Random(42));
-            Assert.Equal("HighWedding", winner.Name);
+            // Both have EffectivePriority=4, so over many seeds both should win
+            var winners = new HashSet<string>();
+            for (int i = 0; i < 50; i++)
+            {
+                var (winner, _) = ScheduleEngine.SelectWinner(candidates, new Random(i));
+                winners.Add(winner.Name);
+            }
+            Assert.Contains("Festival", winners);
+            Assert.Contains("Wedding", winners);
         }
 
         [Fact]
-        // Expected: Only normal candidates — no partitioning, normal winner selected
-        public void OnlyNormalCandidates_NoPartitioning()
+        // Expected: Only normal candidates — higher priority normal wins
+        public void OnlyNormalCandidates_HigherPriorityWins()
         {
             var ruleA = TestData.CreateRule(name: "A", priority: 2,
                 selectedSeasons: new List<string> { "Spring" });
-            var ruleB = TestData.CreateRule(name: "B", priority: 4,
+            var ruleB = TestData.CreateRule(name: "B", priority: 3,
                 selectedWeather: new List<string> { "Sun" });
             var pool = new List<OutfitSet> { TestData.CreateSet() };
 
@@ -1274,12 +1484,23 @@ namespace OutfitStudio.Tests.Services
             {
                 (ruleA, pool), (ruleB, pool)
             };
-            var specialCandidates = candidates.Where(c => c.rule.IsSpecialEventRule).ToList();
-            var effectiveCandidates = specialCandidates.Count > 0 ? specialCandidates : candidates;
 
-            Assert.Empty(specialCandidates);
-            var (winner, _) = ScheduleEngine.SelectWinner(effectiveCandidates, new Random(42));
+            var (winner, _) = ScheduleEngine.SelectWinner(candidates, new Random(42));
             Assert.Equal("B", winner.Name);
+        }
+    }
+
+    public class GetPriorityLabelTests
+    {
+        [Theory]
+        [InlineData(1, "Low")]
+        [InlineData(2, "Medium")]
+        [InlineData(3, "High")]
+        [InlineData(4, "Special")]
+        // Expected: Priority values map to correct labels
+        public void PriorityValue_MapsToLabel(int priority, string expected)
+        {
+            Assert.Equal(expected, ScheduleEngine.GetPriorityLabel(priority));
         }
     }
 

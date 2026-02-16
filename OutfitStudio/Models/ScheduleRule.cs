@@ -24,17 +24,16 @@ namespace OutfitStudio.Models
         public bool AreasSelectAll { get; set; }
         public List<string> SelectedAreas { get; set; } = new();
 
-        public bool TagsSelectAll { get; set; }
-        public List<string> SelectedTags { get; set; } = new();
+        public List<string> SelectedSetIds { get; set; } = new();
 
-        public List<string> ExcludedSetIds { get; set; } = new();
-        public List<string> IncludedSetIds { get; set; } = new();
+        public const int PrioritySpecial = 4;
 
         public int Priority { get; set; } = 2;
         public bool IsWeddingDay { get; set; }
         public bool AdvanceOnWarp { get; set; }
 
         public bool IsSpecialEventRule => IsWeddingDay || FestivalsSelectAll || SelectedFestivals.Count > 0;
+        public int EffectivePriority => IsSpecialEventRule ? PrioritySpecial : Priority;
     }
 
     public class RotationState

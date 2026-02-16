@@ -22,6 +22,8 @@ namespace OutfitStudio
         public bool ShowScheduleDebugLog { get; set; } = true;
         public bool ConsistentTiebreaks { get; set; } = true;
         public bool LockManualOutfit { get; set; } = true;
+        public int DefaultPriority { get; set; } = 2;
+        public bool DefaultAdvanceOnWarp { get; set; } = false;
 
         public int VisibleRows { get; set; } = OutfitLayoutConstants.DefaultVisibleRows;
         public int VisibleColumns { get; set; } = OutfitLayoutConstants.DefaultVisibleColumns;

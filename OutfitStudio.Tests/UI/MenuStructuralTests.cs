@@ -14,7 +14,7 @@ namespace OutfitStudio.Tests.UI
             "UI/ConfigOverlay.cs",
             "UI/ScheduleMenu.cs",
             "UI/ScheduleEditOverlay.cs",
-            "UI/SetPreviewOverlay.cs",
+            "UI/ScheduleOutfitOverlay.cs",
             "UI/ScheduleDebugLogOverlay.cs",
         };
 
@@ -40,7 +40,7 @@ namespace OutfitStudio.Tests.UI
         [InlineData("UI/ConfigOverlay.cs")]
         [InlineData("UI/ScheduleMenu.cs")]
         [InlineData("UI/ScheduleEditOverlay.cs")]
-        [InlineData("UI/SetPreviewOverlay.cs")]
+        [InlineData("UI/ScheduleOutfitOverlay.cs")]
         [InlineData("UI/ScheduleDebugLogOverlay.cs")]
         // Expected: Every menu class overrides gameWindowSizeChanged to stay anchored on window resize
         public void Menu_Overrides_GameWindowSizeChanged(string sourceFile)
@@ -60,7 +60,7 @@ namespace OutfitStudio.Tests.UI
         [InlineData("UI/ConfigOverlay.cs")]
         [InlineData("UI/ScheduleMenu.cs")]
         [InlineData("UI/ScheduleEditOverlay.cs")]
-        [InlineData("UI/SetPreviewOverlay.cs")]
+        [InlineData("UI/ScheduleOutfitOverlay.cs")]
         // Expected: Every gameWindowSizeChanged body calls Recalculate (with or without args) to recompute layout
         public void GameWindowSizeChanged_CallsRecalculate(string sourceFile)
         {
@@ -103,7 +103,7 @@ namespace OutfitStudio.Tests.UI
         [InlineData("UI/ConfigOverlay.cs")]
         [InlineData("UI/ScheduleMenu.cs")]
         [InlineData("UI/ScheduleEditOverlay.cs")]
-        [InlineData("UI/SetPreviewOverlay.cs")]
+        [InlineData("UI/ScheduleOutfitOverlay.cs")]
         [InlineData("UI/ScheduleDebugLogOverlay.cs")]
         // Expected: Every receiveLeftClick checks isWithinBounds for close-on-outside-bounds
         public void Menu_HandlesCloseOnClickOutside(string sourceFile)
@@ -116,7 +116,7 @@ namespace OutfitStudio.Tests.UI
         }
 
         // ----------------------------------------------------------------
-        //  S6b: ScheduleEditOverlay forwards input to SetPreviewOverlay (Type A child)
+        //  S6b: ScheduleEditOverlay forwards input to ScheduleOutfitOverlay (Type A child)
         // ----------------------------------------------------------------
 
         [Fact]
@@ -163,72 +163,6 @@ namespace OutfitStudio.Tests.UI
         }
 
         // ----------------------------------------------------------------
-        //  S6c: ScheduleEditOverlay forwards input to tagPicker and setPicker
-        // ----------------------------------------------------------------
-
-        [Fact]
-        // Expected: ScheduleEditOverlay forwards receiveLeftClick to tagPicker when open
-        public void ScheduleEditOverlay_ForwardsLeftClick_ToTagPicker()
-        {
-            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditOverlay.cs");
-            Assert.Contains("tagPicker.HandleClick", source);
-        }
-
-        [Fact]
-        // Expected: ScheduleEditOverlay forwards receiveLeftClick to setPicker when open
-        public void ScheduleEditOverlay_ForwardsLeftClick_ToSetPicker()
-        {
-            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditOverlay.cs");
-            Assert.Contains("setPicker.HandleClick", source);
-        }
-
-        [Fact]
-        // Expected: ScheduleEditOverlay forwards receiveKeyPress to tagPicker when open
-        public void ScheduleEditOverlay_ForwardsKeyPress_ToTagPicker()
-        {
-            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditOverlay.cs");
-            Assert.Contains("tagPicker.HandleKeyPress", source);
-        }
-
-        [Fact]
-        // Expected: ScheduleEditOverlay forwards receiveScrollWheelAction to tagPicker when open
-        public void ScheduleEditOverlay_ForwardsScrollWheel_ToTagPicker()
-        {
-            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditOverlay.cs");
-            Assert.Contains("tagPicker.HandleScrollWheel", source);
-        }
-
-        [Fact]
-        // Expected: ScheduleEditOverlay forwards receiveScrollWheelAction to setPicker when open
-        public void ScheduleEditOverlay_ForwardsScrollWheel_ToSetPicker()
-        {
-            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditOverlay.cs");
-            Assert.Contains("setPicker.HandleScrollWheel", source);
-        }
-
-        [Fact]
-        // Expected: ScheduleEditOverlay forwards gameWindowSizeChanged to tagPicker when open
-        public void ScheduleEditOverlay_ForwardsResize_ToTagPicker()
-        {
-            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditOverlay.cs");
-            bool found = SourceScanner.MethodContains(source,
-                "override void gameWindowSizeChanged", "tagPicker");
-            Assert.True(found,
-                "ScheduleEditOverlay.gameWindowSizeChanged must update tagPicker bounds");
-        }
-
-        [Fact]
-        // Expected: ScheduleEditOverlay forwards gameWindowSizeChanged to setPicker when open
-        public void ScheduleEditOverlay_ForwardsResize_ToSetPicker()
-        {
-            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditOverlay.cs");
-            bool found = SourceScanner.MethodContains(source,
-                "override void gameWindowSizeChanged", "setPicker");
-            Assert.True(found,
-                "ScheduleEditOverlay.gameWindowSizeChanged must update setPicker bounds");
-        }
-
-        // ----------------------------------------------------------------
         //  S6d: ScheduleMenu delete confirmation pattern
         // ----------------------------------------------------------------
 
@@ -257,16 +191,16 @@ namespace OutfitStudio.Tests.UI
         }
 
         // ----------------------------------------------------------------
-        //  S6e: SetPreviewOverlay has Save button wiring
+        //  S6e: ScheduleEditOverlay has Save button that calls HandleSave
         // ----------------------------------------------------------------
 
         [Fact]
-        // Expected: SetPreviewOverlay has a save button that calls the onSave callback
-        public void SetPreviewOverlay_HasSaveButton()
+        // Expected: ScheduleEditOverlay has a save button that calls HandleSave directly
+        public void ScheduleEditOverlay_HasSaveButton()
         {
-            string source = SourceScanner.ReadSourceFile("UI/SetPreviewOverlay.cs");
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditOverlay.cs");
             Assert.Contains("SaveButton", source);
-            Assert.Contains("onSave", source);
+            Assert.Contains("HandleSave", source);
         }
 
         // ----------------------------------------------------------------
@@ -595,7 +529,7 @@ namespace OutfitStudio.Tests.UI
         [Theory]
         [InlineData("UI/ScheduleMenu.cs")]
         [InlineData("UI/ScheduleEditOverlay.cs")]
-        [InlineData("UI/SetPreviewOverlay.cs")]
+        [InlineData("UI/ScheduleOutfitOverlay.cs")]
         [InlineData("UI/ScheduleDebugLogOverlay.cs")]
         // Expected: Schedule menus gate truncated-text tooltips with Config.ShowTooltip
         public void ScheduleMenu_GatesTooltips_WithShowTooltipConfig(string sourceFile)
@@ -978,23 +912,6 @@ namespace OutfitStudio.Tests.UI
             Assert.Contains("UIHelpers.DrawToggleButton", body);
         }
 
-        [Fact]
-        // Expected: ScheduleEditUIBuilder.DrawTagsRow delegates to UIHelpers.DrawToggleButton
-        public void ScheduleEditUIBuilder_DrawTagsRow_UsesDrawToggleButton()
-        {
-            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditUIBuilder.cs");
-            string body = SourceScanner.ExtractMethodBody(source, "void DrawTagsRow");
-            Assert.Contains("UIHelpers.DrawToggleButton", body);
-        }
-
-        [Fact]
-        // Expected: ScheduleEditUIBuilder.DrawSetsRow delegates to UIHelpers.DrawToggleButton
-        public void ScheduleEditUIBuilder_DrawSetsRow_UsesDrawToggleButton()
-        {
-            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditUIBuilder.cs");
-            string body = SourceScanner.ExtractMethodBody(source, "void DrawSetsRow");
-            Assert.Contains("UIHelpers.DrawToggleButton", body);
-        }
 
         [Fact]
         // Expected: ScheduleEditUIBuilder no longer has private DrawAddButton method
@@ -1028,21 +945,42 @@ namespace OutfitStudio.Tests.UI
         }
 
         [Fact]
-        // Expected: ConfigUIBuilder.DrawSearchScopeRow has hover detection via containsPoint
-        public void ConfigUIBuilder_DrawSearchScopeRow_HasHoverDetection()
+        // Expected: ConfigOverlay sets keybind to None when Escape is pressed while listening
+        public void ConfigOverlay_EscapeSetsKeybindToNone()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ConfigOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void receiveKeyPress");
+            Assert.Contains("Keys.Escape", body);
+            Assert.Contains("\"None\"", body);
+        }
+
+        [Fact]
+        // Expected: ConfigOverlay Escape keybind path assigns to the keybind field, not just cancels
+        public void ConfigOverlay_EscapeKeybind_AssignsNewKeybind()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ConfigOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void receiveKeyPress");
+            int escapeIndex = body.IndexOf("Keys.Escape");
+            int parseNoneIndex = body.IndexOf("\"None\"");
+            Assert.True(escapeIndex < parseNoneIndex, "None keybind should be set after Escape check");
+        }
+
+        [Fact]
+        // Expected: ConfigUIBuilder.DrawDropdownRow has hover detection via containsPoint
+        public void ConfigUIBuilder_DrawDropdownRow_HasHoverDetection()
         {
             string source = SourceScanner.ReadSourceFile("UI/ConfigUIBuilder.cs");
-            string body = SourceScanner.ExtractMethodBody(source, "void DrawSearchScopeRow");
+            string body = SourceScanner.ExtractMethodBody(source, "void DrawDropdownRow");
             Assert.Contains("containsPoint", body);
             Assert.Contains("isHovered", body);
         }
 
         [Fact]
-        // Expected: ConfigUIBuilder.DrawSearchScopeRow suppresses hover when dropdown is open
-        public void ConfigUIBuilder_DrawSearchScopeRow_SuppressesHoverWhenOpen()
+        // Expected: ConfigUIBuilder.DrawDropdownRow suppresses hover when dropdown is open
+        public void ConfigUIBuilder_DrawDropdownRow_SuppressesHoverWhenOpen()
         {
             string source = SourceScanner.ReadSourceFile("UI/ConfigUIBuilder.cs");
-            string body = SourceScanner.ExtractMethodBody(source, "void DrawSearchScopeRow");
+            string body = SourceScanner.ExtractMethodBody(source, "void DrawDropdownRow");
             Assert.Contains("!isOpen", body);
         }
         // ----------------------------------------------------------------
@@ -1060,7 +998,7 @@ namespace OutfitStudio.Tests.UI
         [Theory]
         [InlineData("UI/WardrobeOverlay.cs")]
         [InlineData("UI/SaveSetOverlay.cs")]
-        [InlineData("UI/SetPreviewOverlay.cs")]
+        [InlineData("UI/ScheduleOutfitOverlay.cs")]
         // Expected: No private ApplySavedColor/ApplyCapturedColor — all use ColorHelper.ApplyColor
         public void Menu_UsesColorHelperApplyColor(string sourceFile)
         {
@@ -1102,8 +1040,7 @@ namespace OutfitStudio.Tests.UI
         [InlineData("UI/WardrobeOverlay.cs")]
         [InlineData("UI/ScheduleMenu.cs")]
         [InlineData("UI/ScheduleEditOverlay.cs")]
-        [InlineData("UI/SetPreviewOverlay.cs")]
-        [InlineData("UI/ScheduleSetPickerPanel.cs")]
+        [InlineData("UI/ScheduleOutfitOverlay.cs")]
         // Expected: These files use UIHelpers.DrawWrappedTooltip instead of inline wrapping
         public void Menu_UsesDrawWrappedTooltip(string sourceFile)
         {
@@ -1138,17 +1075,6 @@ namespace OutfitStudio.Tests.UI
         //  S21: All checkbox draws use UIHelpers source rect constants
         // ----------------------------------------------------------------
 
-        [Fact]
-        // Expected: ScheduleSetPickerPanel uses UIHelpers constants, not inline rects
-        public void ScheduleSetPickerPanel_UsesUIHelpersCheckboxRects()
-        {
-            string source = SourceScanner.ReadSourceFile("UI/ScheduleSetPickerPanel.cs");
-            Assert.DoesNotContain("new Rectangle(236, 425, 9, 9)", source);
-            Assert.DoesNotContain("new Rectangle(227, 425, 9, 9)", source);
-            Assert.Contains("UIHelpers.CheckedSourceRect", source);
-            Assert.Contains("UIHelpers.UncheckedSourceRect", source);
-        }
-
         // ----------------------------------------------------------------
         //  S22: All menus with render targets override cleanupBeforeExit
         // ----------------------------------------------------------------
@@ -1156,7 +1082,7 @@ namespace OutfitStudio.Tests.UI
         [Theory]
         [InlineData("UI/WardrobeOverlay.cs")]
         [InlineData("UI/SaveSetOverlay.cs")]
-        [InlineData("UI/SetPreviewOverlay.cs")]
+        [InlineData("UI/ScheduleOutfitOverlay.cs")]
         // Expected: Overlays with render targets override cleanupBeforeExit to prevent GPU leaks
         public void Overlay_WithRenderTarget_OverridesCleanupBeforeExit(string sourceFile)
         {
@@ -1201,32 +1127,6 @@ namespace OutfitStudio.Tests.UI
             Assert.Contains("drawTextWithShadow", body);
             Assert.Contains("drawTextureBox", body);
             Assert.DoesNotContain("drawHoverText", body);
-        }
-
-        // ----------------------------------------------------------------
-        //  S25: ScheduleEditOverlay picker toggle-off on re-click
-        // ----------------------------------------------------------------
-
-        [Fact]
-        // Expected: ScheduleEditOverlay.receiveLeftClick closes tagPicker when Tags [+] is clicked while open
-        public void ScheduleEditOverlay_ReceiveLeftClick_ToglesOffTagPicker()
-        {
-            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditOverlay.cs");
-            string body = SourceScanner.ExtractMethodBody(source, "override void receiveLeftClick");
-            Assert.Contains("tagPicker.IsOpen", body);
-            Assert.Contains("TagsAddButton.containsPoint", body);
-            Assert.Contains("tagPicker.Close()", body);
-        }
-
-        [Fact]
-        // Expected: ScheduleEditOverlay.receiveLeftClick closes setPicker when Sets [+] is clicked while open
-        public void ScheduleEditOverlay_ReceiveLeftClick_TogglesOffSetPicker()
-        {
-            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditOverlay.cs");
-            string body = SourceScanner.ExtractMethodBody(source, "override void receiveLeftClick");
-            Assert.Contains("setPicker.IsOpen", body);
-            Assert.Contains("SetsAddButton.containsPoint", body);
-            Assert.Contains("setPicker.Close()", body);
         }
 
         // ----------------------------------------------------------------
@@ -1507,24 +1407,12 @@ namespace OutfitStudio.Tests.UI
         }
 
         [Fact]
-        // Expected: ScheduleEditOverlay blocks continuous scroll when previewOverlay or tagPicker is active
-        public void ScheduleEditOverlay_ArrowScroll_BlockedByPreviewAndTagPicker()
+        // Expected: ScheduleEditOverlay blocks continuous scroll when previewOverlay is active
+        public void ScheduleEditOverlay_ArrowScroll_BlockedByPreview()
         {
             string source = SourceScanner.ReadSourceFile("UI/ScheduleEditOverlay.cs");
             string updateBody = SourceScanner.ExtractMethodBody(source, "override void update");
             Assert.Contains("previewOverlay == null", updateBody);
-            Assert.Contains("!tagPicker.IsOpen", updateBody);
-        }
-
-        [Fact]
-        // Expected: ScheduleSetPickerPanel.HandleKeyPress only handles keys when panel is open
-        public void ScheduleSetPickerPanel_HandleKeyPress_GuardedByIsOpen()
-        {
-            string source = SourceScanner.ReadSourceFile("UI/ScheduleSetPickerPanel.cs");
-            string body = SourceScanner.ExtractMethodBody(source, "bool HandleKeyPress");
-            Assert.Contains("!isOpen", body);
-            Assert.Contains("Keys.Up", body);
-            Assert.Contains("Keys.Down", body);
         }
 
         // ── S33–S48: ScheduleEdit refactor tests ──────────────────────────────
@@ -1590,15 +1478,6 @@ namespace OutfitStudio.Tests.UI
         }
 
         [Fact]
-        // Expected: Constructor auto-opens tag picker when AutoOpenTagMenu config is set
-        public void ScheduleEditOverlay_Constructor_AutoOpensTagPicker()
-        {
-            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditOverlay.cs");
-            Assert.Contains("AutoOpenTagMenu", source);
-            Assert.Contains("OpenTagPicker", source);
-        }
-
-        [Fact]
         // Expected: Draw method suppresses hover behind open dropdown panels
         public void ScheduleEditOverlay_Draw_SuppressesHoverBehindDropdownPanels()
         {
@@ -1615,18 +1494,17 @@ namespace OutfitStudio.Tests.UI
         {
             string source = SourceScanner.ReadSourceFile("UI/ScheduleEditUIBuilder.cs");
             string body = SourceScanner.ExtractMethodBody(source, "void CalculateLayout");
-            Assert.Contains("Math.Max(previewWidth, cancelWidth)", body);
+            Assert.Contains("Math.Max(saveWidth, cancelWidth)", body);
         }
 
         [Fact]
-        // Expected: Priority and Rotate use right-aligned labels via OptionsLabelRightX
-        public void ScheduleEditOverlay_OptionsLabels_RightAligned()
+        // Expected: Priority and Rotation use inline text draw methods from UIBuilder
+        public void ScheduleEditOverlay_BehaviorRows_UseInlineTextDraw()
         {
             string source = SourceScanner.ReadSourceFile("UI/ScheduleEditOverlay.cs");
             string drawBody = SourceScanner.ExtractMethodBody(source, "override void draw");
-            Assert.Contains("OptionsLabelRightX", drawBody);
-            Assert.Contains("priorityLabelX", drawBody);
-            Assert.Contains("rotateLabelX", drawBody);
+            Assert.Contains("DrawPriorityRow", drawBody);
+            Assert.Contains("DrawRotationRow", drawBody);
         }
 
         [Fact]
@@ -1637,7 +1515,6 @@ namespace OutfitStudio.Tests.UI
             string body = SourceScanner.ExtractMethodBody(source, "void Recalculate");
             Assert.Contains("ScheduleEditSectionHeaderHeight", body);
             Assert.Contains("ScheduleEditBarRowGap", body);
-            Assert.Contains("ScheduleEditOptionRowGap", body);
         }
 
         [Fact]
@@ -1993,26 +1870,6 @@ namespace OutfitStudio.Tests.UI
         }
 
         [Fact]
-        // Expected: CalculateRuleSectionHeight uses ScheduleDebugMinExpandedRules for minimum rule slots
-        public void ScheduleDebugLogUIBuilder_CalculateRuleSectionHeight_UsesMinExpandedRules()
-        {
-            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
-            string body = SourceScanner.ExtractMethodBody(source, "int CalculateRuleSectionHeight");
-            Assert.Contains("ScheduleDebugMinExpandedRules", body);
-        }
-
-        [Fact]
-        // Expected: Min height only applies when failed rules exist, not for matched-only
-        public void ScheduleDebugLogUIBuilder_CalculateRuleSectionHeight_MinHeightOnlyWithFailed()
-        {
-            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
-            string body = SourceScanner.ExtractMethodBody(source, "int CalculateRuleSectionHeight");
-            Assert.Contains("hasFailed", body);
-            // Min height gated on hasFailed, not applied unconditionally
-            Assert.DoesNotContain("return Math.Max(minHeight, totalPx);", body);
-        }
-
-        [Fact]
         // Expected: Cached path draws all matched rules, not just the first
         public void ScheduleDebugLogUIBuilder_CachedPath_DrawsAllMatchedRules()
         {
@@ -2142,14 +1999,6 @@ namespace OutfitStudio.Tests.UI
         {
             string source = SourceScanner.ReadSourceFile("Core/OutfitLayoutConstants.cs");
             Assert.Contains("ScheduleDebugMaxVisibleEntries = 5", source);
-        }
-
-        [Fact]
-        // Expected: ScheduleDebugMinExpandedRules constant exists
-        public void OutfitLayoutConstants_HasScheduleDebugMinExpandedRules()
-        {
-            string source = SourceScanner.ReadSourceFile("Core/OutfitLayoutConstants.cs");
-            Assert.Contains("ScheduleDebugMinExpandedRules", source);
         }
 
         [Fact]
@@ -2315,11 +2164,12 @@ namespace OutfitStudio.Tests.UI
         }
 
         [Fact]
-        // Expected: Priority short labels H/M/L still available via GetPriorityShortLabel
-        public void ScheduleDebugLogUIBuilder_GetPriorityShortLabel_ReturnsHML()
+        // Expected: Priority short labels S/H/M/L still available via GetPriorityShortLabel
+        public void ScheduleDebugLogUIBuilder_GetPriorityShortLabel_ReturnsSHML()
         {
             string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
             string body = SourceScanner.ExtractMethodBody(source, "string GetPriorityShortLabel");
+            Assert.Contains("\"S\"", body);
             Assert.Contains("\"H\"", body);
             Assert.Contains("\"M\"", body);
             Assert.Contains("\"L\"", body);
@@ -2331,6 +2181,7 @@ namespace OutfitStudio.Tests.UI
         {
             string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
             string body = SourceScanner.ExtractMethodBody(source, "DrawExpandedSections");
+            Assert.Contains("ScheduleDebugPriorityGroupSpecial", body);
             Assert.Contains("ScheduleDebugPriorityGroupHigh", body);
             Assert.Contains("ScheduleDebugPriorityGroupMedium", body);
             Assert.Contains("ScheduleDebugPriorityGroupLow", body);
@@ -2610,7 +2461,7 @@ namespace OutfitStudio.Tests.UI
             Assert.Contains("ScheduleEditLocation", body);
             Assert.Contains("ScheduleEditArea", body);
             Assert.Contains("ScheduleEditFestival", body);
-            Assert.Contains("ScheduleDebugLabelWedding", body);
+            Assert.Contains("ScheduleEditWedding", body);
         }
 
         [Fact]
@@ -2624,7 +2475,7 @@ namespace OutfitStudio.Tests.UI
             Assert.Contains("ScheduleEditWeather", body);
             Assert.Contains("ScheduleEditLocation", body);
             Assert.Contains("ScheduleEditArea", body);
-            Assert.Contains("ScheduleDebugLabelWedding", body);
+            Assert.Contains("ScheduleEditWedding", body);
             Assert.Contains("ScheduleDebugFailEmptyPool", body);
         }
 
@@ -2645,6 +2496,7 @@ namespace OutfitStudio.Tests.UI
         {
             string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
             string body = SourceScanner.ExtractMethodBody(source, "DrawExpandedSections");
+            Assert.Contains("ScheduleDebugPriorityGroupSpecial", body);
             Assert.Contains("ScheduleDebugPriorityGroupHigh", body);
             Assert.Contains("ScheduleDebugPriorityGroupMedium", body);
             Assert.Contains("ScheduleDebugPriorityGroupLow", body);
@@ -2656,7 +2508,6 @@ namespace OutfitStudio.Tests.UI
         [InlineData("schedule.debug.label-outfit")]
         [InlineData("schedule.debug.label-status")]
         [InlineData("schedule.debug.label-rotation")]
-        [InlineData("schedule.debug.label-wedding")]
         [InlineData("schedule.debug.trigger-daystarted")]
         [InlineData("schedule.debug.fail-empty-pool")]
         [InlineData("schedule.debug.priority-group-high")]
@@ -2665,7 +2516,6 @@ namespace OutfitStudio.Tests.UI
         [InlineData("schedule.debug.tiebreak-consistent")]
         [InlineData("schedule.debug.tiebreak-random")]
         [InlineData("schedule.debug.reason-manual")]
-        [InlineData("schedule.debug.reason-special-event")]
         // Expected: All new debug log i18n keys exist in default.json
         public void DefaultJson_HasScheduleDebugLabelKey(string key)
         {
@@ -2681,16 +2531,6 @@ namespace OutfitStudio.Tests.UI
             string body = SourceScanner.ExtractMethodBody(source, "DrawExpandedSections");
             Assert.Contains("ManualOverrideOutfitName", body);
             Assert.Contains("ScheduleDebugReasonManual", body);
-        }
-
-        [Fact]
-        // Expected: Reason line handles special event with DarkGoldenrod color
-        public void ScheduleDebugLogUIBuilder_ReasonLine_SpecialEventOrange()
-        {
-            string source = SourceScanner.ReadSourceFile("UI/ScheduleDebugLogUIBuilder.cs");
-            string body = SourceScanner.ExtractMethodBody(source, "DrawExpandedSections");
-            Assert.Contains("ScheduleDebugReasonSpecialEvent", body);
-            Assert.Contains("Color.DarkGoldenrod", body);
         }
 
         [Fact]
@@ -3056,6 +2896,365 @@ namespace OutfitStudio.Tests.UI
             string source = SourceScanner.ReadSourceFile("UI/OutfitUIBuilder.cs");
             string body = SourceScanner.ExtractMethodBody(source, "void PositionContentSection");
             Assert.Contains("CalculateBottomButtonsSectionHeight()", body);
+        }
+        // ── ScheduleEdit layout v2 tests ──────────────────────────────
+
+        [Fact]
+        // Expected: ScheduleEditUIBuilder places Season, Weather, Area on one row (3 columns)
+        public void ScheduleEditUIBuilder_ConditionsRow1_ThreeColumns()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void CalculateLayout");
+            Assert.Contains("col3Width", body);
+            Assert.Contains("col2X", body);
+            Assert.Contains("col3X", body);
+            Assert.Contains("SeasonsDropdownBar", body);
+            Assert.Contains("WeatherDropdownBar", body);
+            Assert.Contains("AreasDropdownBar", body);
+        }
+
+        [Fact]
+        // Expected: Location and Festival bars use full trigger width
+        public void ScheduleEditUIBuilder_LocationAndFestival_FullWidth()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void CalculateLayout");
+            Assert.Contains("triggerAvail", body);
+            Assert.Contains("LocationsDropdownBar", body);
+            Assert.Contains("FestivalsDropdownBar", body);
+        }
+
+        [Fact]
+        // Expected: Priority and Rotation are on separate rows under Behavior section
+        public void ScheduleEditUIBuilder_PriorityAndRotation_SeparateRows()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void CalculateLayout");
+            Assert.Contains("priorityRowY = currentY", body);
+            Assert.Contains("rotationRowY = currentY", body);
+            Assert.Contains("behaviorHeaderY = currentY", body);
+        }
+
+        [Fact]
+        // Expected: CalculateBehaviorLayout uses PriorityClickArea and RotationClickArea
+        public void ScheduleEditUIBuilder_BehaviorLayout_UsesClickAreas()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void CalculateBehaviorLayout");
+            Assert.Contains("PriorityClickArea", body);
+            Assert.Contains("RotationClickArea", body);
+        }
+
+        [Fact]
+        // Expected: Recalculate uses separate top/bottom padding constants
+        public void ScheduleEditUIBuilder_Recalculate_UsesSeparatePadding()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void Recalculate");
+            Assert.Contains("ScheduleEditTopPadding", body);
+            Assert.Contains("ScheduleEditBottomPadding", body);
+            Assert.Contains("ScheduleEditSectionGap", body);
+        }
+
+        [Fact]
+        // Expected: Condition dropdown bars are drawn without opacity parameter
+        public void ScheduleEditOverlay_ConditionBars_NoOpacity()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditOverlay.cs");
+            string drawBody = SourceScanner.ExtractMethodBody(source, "override void draw");
+            Assert.DoesNotContain("conditionOpacity", drawBody);
+        }
+
+        [Fact]
+        // Expected: ScheduleOutfitOverlay includes invalid sets in the list (no IsValid filter)
+        public void ScheduleOutfitOverlay_RefreshDisplayedSets_IncludesInvalidSets()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleOutfitOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void RefreshDisplayedSets");
+            Assert.DoesNotContain("s.IsValid", body);
+        }
+
+        [Fact]
+        // Expected: ScheduleOutfitUIBuilder.DrawOutfitSetList checks IsValid and draws warning icon
+        public void ScheduleOutfitUIBuilder_DrawOutfitSetList_ShowsInvalidIcon()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleOutfitUIBuilder.cs");
+            Assert.Contains("IsValid", source);
+            Assert.Contains("warningSourceRect", source);
+        }
+
+        [Fact]
+        // Expected: Wedding checkbox invalidates pool cache
+        public void ScheduleEditOverlay_WeddingCheckbox_InvalidatesPoolCache()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "override void receiveLeftClick");
+            int weddingIdx = body.IndexOf("IsInWeddingRow");
+            string afterWedding = body.Substring(weddingIdx, Math.Min(200, body.Length - weddingIdx));
+            Assert.Contains("InvalidatePoolCache", afterWedding);
+        }
+
+        [Fact]
+        // Expected: Wedding checkbox is on same row as Festival, vertically centered with ScheduleCheckboxSize
+        public void ScheduleEditUIBuilder_WeddingRow_UsesCheckboxSize()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditUIBuilder.cs");
+            string layout = SourceScanner.ExtractMethodBody(source, "void CalculateLayout");
+            int weddingCheckboxIdx = layout.IndexOf("WeddingCheckbox = new");
+            Assert.True(weddingCheckboxIdx > 0, "WeddingCheckbox should be created in CalculateLayout");
+            string weddingSection = layout.Substring(weddingCheckboxIdx, Math.Min(300, layout.Length - weddingCheckboxIdx));
+            Assert.Contains("ScheduleCheckboxSize", weddingSection);
+            Assert.Contains("FestivalsDropdownBar", layout.Substring(0, weddingCheckboxIdx));
+        }
+
+        [Fact]
+        // Expected: DrawWeddingRow hit area uses ScheduleCheckboxSize, not TabAndButtonHeight
+        public void ScheduleEditUIBuilder_DrawWeddingRow_HitAreaUsesCheckboxSize()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void DrawWeddingRow");
+            Assert.Contains("ScheduleCheckboxSize", body);
+            Assert.DoesNotContain("TabAndButtonHeight", body);
+        }
+
+        [Fact]
+        // Expected: IsInWeddingRow uses checkbox bounds directly, not TabAndButtonHeight offset
+        public void ScheduleEditOverlay_IsInWeddingRow_UsesCheckboxBounds()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "bool IsInWeddingRow");
+            Assert.Contains("ScheduleCheckboxSize", body);
+            Assert.DoesNotContain("TabAndButtonHeight", body);
+        }
+
+        [Fact]
+        // Expected: Total outfits row is always drawn (shows remaining only in edit mode)
+        public void ScheduleEditOverlay_Draw_AlwaysDrawsTotalOutfitsRow()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "override void draw");
+            Assert.Contains("DrawTotalOutfitsRow", body);
+            Assert.Contains("selectedSetIds.Count", body);
+        }
+
+        [Fact]
+        // Expected: Recalculate always includes total outfits row height
+        public void ScheduleEditUIBuilder_Recalculate_AlwaysIncludesTotalOutfitsRow()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void Recalculate");
+            Assert.Contains("ScheduleEditInfoRowGap", body);
+        }
+
+        [Fact]
+        // Expected: CalculateLayout always positions total outfits row
+        public void ScheduleEditUIBuilder_CalculateLayout_AlwaysPositionsTotalOutfitsRow()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void CalculateLayout");
+            Assert.Contains("totalOutfitsRowY", body);
+        }
+
+        [Fact]
+        // Expected: Recalculate uses section-specific header gaps for Special Events and Behavior
+        public void ScheduleEditUIBuilder_Recalculate_UsesSectionSpecificHeaderGaps()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void Recalculate");
+            Assert.Contains("ScheduleEditSpecialEventsHeaderGap", body);
+            Assert.Contains("ScheduleEditBehaviorHeaderGap", body);
+        }
+
+        [Fact]
+        // Expected: CalculateLayout uses section-specific header gaps for Special Events and Behavior
+        public void ScheduleEditUIBuilder_CalculateLayout_UsesSectionSpecificHeaderGaps()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void CalculateLayout");
+            Assert.Contains("ScheduleEditSpecialEventsHeaderGap", body);
+            Assert.Contains("ScheduleEditBehaviorHeaderGap", body);
+        }
+
+        [Fact]
+        // Expected: ScheduleEditUIBuilder sets IsEditing from overlay
+        public void ScheduleEditOverlay_Constructor_SetsIsEditingOnUIBuilder()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditOverlay.cs");
+            Assert.Contains("IsEditing = IsEditing", source);
+        }
+
+        [Fact]
+        // Expected: Condition bar placeholders use plain label without "(Any)" suffix
+        public void ScheduleEditOverlay_Placeholders_NoAnySuffix()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "override void draw");
+            Assert.DoesNotContain("ScheduleEditAny", body);
+        }
+
+        [Fact]
+        // Expected: ScheduleEditAny is removed from TranslationCache (dead code)
+        public void TranslationCache_NoScheduleEditAny()
+        {
+            string source = SourceScanner.ReadSourceFile("Utilities/TranslationCache.cs");
+            Assert.DoesNotContain("ScheduleEditAny", source);
+        }
+
+        [Fact]
+        // Expected: Condition bars pass opacity when in special event mode
+        public void ScheduleEditOverlay_Draw_ConditionBarsPassOpacity()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "override void draw");
+            Assert.Contains("conditionsOpacity", body);
+            Assert.Contains("ScheduleEditInactiveOpacity", body);
+            Assert.Contains("IsSpecialEventMode", body);
+        }
+
+        [Fact]
+        // Expected: DrawConditionsHeader accepts opacity parameter
+        public void ScheduleEditUIBuilder_DrawConditionsHeader_AcceptsOpacity()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditUIBuilder.cs");
+            Assert.Contains("DrawConditionsHeader(SpriteBatch b, float opacity", source);
+        }
+
+        [Fact]
+        // Expected: DrawPriorityRow accepts isSpecial parameter and suppresses hover when special
+        public void ScheduleEditUIBuilder_DrawPriorityRow_AcceptsIsSpecial()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void DrawPriorityRow");
+            Assert.Contains("isSpecial", body);
+            Assert.Contains("!isSpecial", body);
+        }
+
+        [Fact]
+        // Expected: Priority click is blocked when IsSpecialEventMode
+        public void ScheduleEditOverlay_PriorityClick_BlockedInSpecialEventMode()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "bool HandleDropdownBarClick");
+            int priorityIdx = body.IndexOf("PriorityClickArea");
+            string before = body.Substring(Math.Max(0, priorityIdx - 80), 80);
+            Assert.Contains("!IsSpecialEventMode", before);
+        }
+
+        [Fact]
+        // Expected: Priority row shows "Special" text when IsSpecialEventMode
+        public void ScheduleEditOverlay_Draw_PriorityRowPassesIsSpecial()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "override void draw");
+            Assert.Contains("ScheduleEditPrioritySpecial", body);
+            Assert.Contains("DrawPriorityRow(b, priorityText, priorityDropdownOpen, isSpecial: IsSpecialEventMode)", body);
+        }
+
+        [Fact]
+        // Expected: i18n uses "Daily" not "Once a day" for rotate option
+        public void I18n_RotateOnceADay_SaysDaily()
+        {
+            string source = SourceScanner.ReadSourceFile("i18n/default.json");
+            Assert.Contains("\"schedule.edit.rotate.once-a-day\": \"Daily\"", source);
+        }
+
+        // ── Schedule Edit: Name row & Festival+Wedding layout ──────────
+
+        [Fact]
+        // Expected: ScheduleEditUIBuilder has DrawNameRow method using bold text
+        public void ScheduleEditUIBuilder_DrawNameRow_UsesBoldText()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "string? DrawNameRow");
+            Assert.Contains("ScheduleEditNameLabel", body);
+            Assert.Contains("new Vector2(1, 0)", body);
+        }
+
+        [Fact]
+        // Expected: ScheduleEditUIBuilder.DrawTotalOutfitsRow uses bold text
+        public void ScheduleEditUIBuilder_DrawTotalOutfitsRow_UsesBoldText()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void DrawTotalOutfitsRow");
+            Assert.Contains("new Vector2(1, 0)", body);
+        }
+
+        [Fact]
+        // Expected: ScheduleEditOverlay.draw calls DrawNameRow with GenerateRuleName
+        public void ScheduleEditOverlay_Draw_CallsDrawNameRow()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "override void draw");
+            Assert.Contains("DrawNameRow", body);
+            Assert.Contains("GenerateRuleName()", body);
+        }
+
+        [Fact]
+        // Expected: Recalculate includes Name row height (textRowHeight after TotalOutfitsRow)
+        public void ScheduleEditUIBuilder_Recalculate_IncludesNameRow()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void Recalculate");
+            Assert.Contains("nameRowY", SourceScanner.ExtractMethodBody(source, "void CalculateLayout"));
+        }
+
+        [Fact]
+        // Expected: Festival and Wedding share one row (ScheduleEditFestivalToWeddingGap between them)
+        public void ScheduleEditUIBuilder_FestivalAndWedding_ShareRow()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleEditUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void CalculateLayout");
+            Assert.Contains("ScheduleEditFestivalToWeddingGap", body);
+            int festivalIdx = body.IndexOf("FestivalsDropdownBar = new");
+            int weddingIdx = body.IndexOf("WeddingCheckbox = new");
+            Assert.True(festivalIdx > 0 && weddingIdx > festivalIdx,
+                "Festival bar should be created before Wedding checkbox in the same block");
+            int nextCurrentY = body.IndexOf("currentY +=", weddingIdx);
+            Assert.Contains("TabAndButtonHeight", body.Substring(nextCurrentY, 60));
+        }
+
+        [Fact]
+        // Expected: i18n has schedule.edit.name-label key
+        public void I18n_HasScheduleEditNameLabel()
+        {
+            string source = SourceScanner.ReadSourceFile("i18n/default.json");
+            Assert.Contains("schedule.edit.name-label", source);
+        }
+
+        [Fact]
+        // Expected: TranslationCache has ScheduleEditNameLabel property
+        public void TranslationCache_HasScheduleEditNameLabel()
+        {
+            string source = SourceScanner.ReadSourceFile("Utilities/TranslationCache.cs");
+            Assert.Contains("ScheduleEditNameLabel", source);
+            Assert.Contains("schedule.edit.name-label", source);
+        }
+
+        // ── Schedule Outfit: layout tweaks ──────────
+
+        [Fact]
+        // Expected: ScheduleOutfitUIBuilder uses FilterBarIndent for header, filter bar, checkboxes, divider
+        public void ScheduleOutfitUIBuilder_FilterBarIndent_AppliedToAll()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleOutfitUIBuilder.cs");
+            string layout = SourceScanner.ExtractMethodBody(source, "void CalculateLayout");
+            Assert.Contains("FilterBarIndent", layout);
+            string header = SourceScanner.ExtractMethodBody(source, "void DrawHeader");
+            Assert.Contains("FilterBarIndent", header);
+            string divider = SourceScanner.ExtractMethodBody(source, "void DrawCheckboxDivider");
+            Assert.Contains("FilterBarIndent", divider);
+        }
+
+        [Fact]
+        // Expected: ScheduleOutfitUIBuilder uses DividerToContentGap after divider (not SectionGap)
+        public void ScheduleOutfitUIBuilder_DividerToContentGap_UsedAfterDivider()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleOutfitUIBuilder.cs");
+            string layout = SourceScanner.ExtractMethodBody(source, "void CalculateLayout");
+            Assert.Contains("DividerToContentGap", layout);
+            int dividerIdx = layout.IndexOf("checkboxDividerY = currentY");
+            string afterDivider = layout.Substring(dividerIdx, Math.Min(120, layout.Length - dividerIdx));
+            Assert.DoesNotContain("+ SectionGap", afterDivider);
         }
     }
 }
