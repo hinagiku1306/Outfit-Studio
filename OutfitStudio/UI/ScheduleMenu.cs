@@ -16,7 +16,7 @@ namespace OutfitStudio
     {
         private static readonly RasterizerState ScissorEnabled = new RasterizerState { ScissorTestEnable = true };
 
-        private readonly IClickableMenu parentMenu;
+        private readonly IClickableMenu? parentMenu;
         private readonly ScheduleMenuUIBuilder uiBuilder;
         private readonly ModEntry mod;
         private readonly OutfitSetStore outfitSetStore;
@@ -44,7 +44,7 @@ namespace OutfitStudio
         private ClickableComponent? deleteYesButton;
         private ClickableComponent? deleteNoButton;
 
-        public ScheduleMenu(IClickableMenu parentMenu, ModEntry mod, OutfitSetStore outfitSetStore, ScheduleStore scheduleStore)
+        public ScheduleMenu(IClickableMenu? parentMenu, ModEntry mod, OutfitSetStore outfitSetStore, ScheduleStore scheduleStore)
         {
             this.parentMenu = parentMenu;
             this.mod = mod;
@@ -514,7 +514,7 @@ namespace OutfitStudio
             if (parentMenu is OutfitMenu outfitMenu)
                 outfitMenu.IsOverlayBlocking = true;
 
-            parentMenu.draw(b);
+            parentMenu?.draw(b);
 
             if (parentMenu is OutfitMenu outfitMenuAfter)
                 outfitMenuAfter.IsOverlayBlocking = false;
@@ -633,7 +633,7 @@ namespace OutfitStudio
         public override void gameWindowSizeChanged(Rectangle oldBounds, Rectangle newBounds)
         {
             base.gameWindowSizeChanged(oldBounds, newBounds);
-            parentMenu.gameWindowSizeChanged(oldBounds, newBounds);
+            parentMenu?.gameWindowSizeChanged(oldBounds, newBounds);
 
             uiBuilder.Recalculate(displayedRules.Count, ruleStates.Count);
             UpdateSearchTextBoxBounds();
@@ -705,7 +705,10 @@ namespace OutfitStudio
 
         private void CloseOverlay()
         {
-            Game1.activeClickableMenu = parentMenu;
+            if (parentMenu != null)
+                Game1.activeClickableMenu = parentMenu;
+            else
+                Game1.exitActiveMenu();
         }
 
         private class RuleState
