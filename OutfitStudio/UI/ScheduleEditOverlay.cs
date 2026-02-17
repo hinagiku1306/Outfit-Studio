@@ -241,7 +241,7 @@ namespace OutfitStudio
             {
                 previewOverlay.receiveLeftClick(x, y, playSound);
                 if (previewOverlay.readyToClose())
-                    previewOverlay = null;
+                    ClosePreviewOverlay();
                 return;
             }
 
@@ -325,7 +325,7 @@ namespace OutfitStudio
             {
                 previewOverlay.receiveKeyPress(key);
                 if (previewOverlay.readyToClose())
-                    previewOverlay = null;
+                    ClosePreviewOverlay();
                 return;
             }
 
@@ -1222,6 +1222,13 @@ namespace OutfitStudio
                 originalSetIds,
                 newSelected => { selectedSetIds = new List<string>(newSelected); InvalidatePoolCache(); }
             );
+        }
+
+        private void ClosePreviewOverlay()
+        {
+            previewOverlay?.Cleanup();
+            previewOverlay = null;
+            Game1.keyboardDispatcher.Subscriber = null;
         }
 
         // --- Close ---

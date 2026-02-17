@@ -142,12 +142,16 @@ namespace OutfitStudio
             if (selectedPriorityLabel == null)
                 return true;
 
+            int p = rule.EffectivePriority;
+
+            if (selectedPriorityLabel == TranslationCache.ScheduleEditPrioritySpecial)
+                return p >= ScheduleRule.PrioritySpecial;
             if (selectedPriorityLabel == TranslationCache.ScheduleEditPriorityHigh)
-                return rule.Priority >= 3;
+                return p == 3;
             if (selectedPriorityLabel == TranslationCache.ScheduleEditPriorityMedium)
-                return rule.Priority == 2;
+                return p == 2;
             if (selectedPriorityLabel == TranslationCache.ScheduleEditPriorityLow)
-                return rule.Priority <= 1;
+                return p <= 1;
 
             return true;
         }

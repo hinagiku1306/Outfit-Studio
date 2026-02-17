@@ -100,7 +100,6 @@ namespace OutfitStudio
                     break;
                 case OutfitCategoryManager.Category.Hair:
                     Game1.player.changeHairColor(color);
-                    Game1.player.FarmerRenderer.MarkSpriteDirty();
                     break;
             }
             onColorChanged?.Invoke();

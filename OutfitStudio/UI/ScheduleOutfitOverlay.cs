@@ -164,11 +164,20 @@ namespace OutfitStudio
             remainingBeforeReset = null;
 
             if (editingRule == null || originalSetIds == null)
+            {
+                remainingBeforeReset = selectedSetIds.Count;
+                remainingIds = new HashSet<string>(selectedSetIds);
                 return;
+            }
 
             var state = scheduleStore.GetRotationState(editingRule.Id);
+
             if (state == null)
+            {
+                remainingBeforeReset = selectedSetIds.Count;
+                remainingIds = new HashSet<string>(selectedSetIds);
                 return;
+            }
 
             var simulated = new RotationState
             {
@@ -959,10 +968,15 @@ namespace OutfitStudio
         }
 
 
+        public void Cleanup()
+        {
+            UIHelpers.SafeDispose(ref previewRenderTarget, ref previewSpriteBatch);
+        }
+
         protected override void cleanupBeforeExit()
         {
             base.cleanupBeforeExit();
-            UIHelpers.SafeDispose(ref previewRenderTarget, ref previewSpriteBatch);
+            Cleanup();
         }
 
         public override void draw(SpriteBatch b)

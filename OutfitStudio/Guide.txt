@@ -4,36 +4,121 @@ Hi everyone, thank you for checking out my mod! I wrote this guide to help you n
 Here, you can try on all hairstyles and clothing items.
 [screenshot of menu]
 
-Legends:
-
-[Add] -- save the current set into your wardrobe (check #2. Save Outfit Menu)
+Legend:
+[Wardrobe] -- open Wardrobe menu (check #3. Wardrobe Menu)
+[Schedules] -- open Schedules menu (check #4. Schedules Menu)
+[Add] -- save the current set into your wardrobe (check #2. Save/Edit Set Menu)
 [Apply] -- apply the current set
-[Reset] -- reset to the previously saved set (either when you open the menu, or when you last apply the set)
-[!] -- open Schedule Debug Log (check #. Schedule Debug Log Menu)
-[Pickaxe] -- open Mod Config menu (check #. Config Menu)
+[Reset] -- reset to the previously saved set
+[!] -- open Schedule Debug Log (check #7. Schedule Debug Log Menu). Only visible when enabled in Config.
+[Pickaxe] -- open Mod Config menu (check #8. Config Menu)
 [Prismatic Shard] -- open Color Picker menu to change color for hair and dyeable items
-[?] -- hovering over it will show the info of the current set in preview. [+] indicates that the item isn't saved yet.
+[screenshot of color picker menu]
+[?] -- hovering over it will show the info of the current set in preview. [+] indicates that the item isn't applied yet.
 [screenshot of hovering info for ?]
 
-2. Save/Edit Outfit Menu
-[screenshot of menu]
+2. Save/Edit Set Menu
+[screenshot of menu, deselect an item, check some tags, add a search term to custom input bar]
 
-Legends:
-[Item Slot] -- clicking on any slot to deselect it and not save it to the set
+Legend:
+[Dice] -- auto-generate outfit names — for when you can't think of one... (currently uses the Vanilla name generator for pets/animals)
+[Item Slot] -- click on any slot to deselect it and not save it to the set
+[Favorite] -- Favorite sets will show up at top of the item list in Wardrobe, and there is a special filter to retrieve them.
+[Save to this farm only] -- when enabled, this set is only available in the current save file. When disabled, it's shared across all save files.
+
 [Bag] (only available in Edit mode) -- open a new menu to change your hair and items for the set
 [screenshot of edit outfit menu]
-[Favorite] -- Favorite sets will show up at top of the item list in Wardrobe, and there is a special filter to retrieve them.
-[Save to this farm only] -- Determine whether the set will be saved across all saves, or just the current save.
 
 Sub-menu: Tags
-Select tags for your outfit. You can filter with the tags to find your outfits quickly in other menu.
-Legends:
-[Input Box] -- Act as both a search bar and an input bar. Click Enter or [+] button to add a custom tag.
-[Pickaxe] -- Enter Edit mode for Tags menu. 
-[screenshot of edit mode, some selected tags]
-Select the tags you want to remove. 
-Selected tags for delete are semi-transparent.
+Select tags for your outfit.
 
-Schedules for Passive Festivals:
-SDS Valentine DisplayName
-SVE Community Day
+Legend:
+[Input Box] -- type to search existing tags, or press Enter to create a new custom tag.
+[Pickaxe] -- enter Edit mode for Tags menu.
+[screenshot of edit mode, some selected tags]
+Select the tags you want to remove.
+Tags selected for deletion appear semi-transparent.
+Click Delete to remove all selected tags. Note that the tags will be removed from all outfit sets.
+
+3. Wardrobe Menu
+Show a list of your saved outfits.
+[screenshot]
+
+Legend:
+[Search Scope] -- search scope with 3 options: Set/Item/All
+Set: search set names only
+Item: search item names only
+All: search both
+[Match All] -- when enabled, outfits must match ALL selected tags instead of just any one. For example, selecting Spring + Summer will only show outfits tagged with both.
+[Show Invalid] -- includes invalid sets in the list. Invalid sets are those that contain missing items, most likely from removing mods.
+[Edit] -- open Edit Set menu (check #2. Save/Edit Set Menu)
+[Delete] -- delete the selected set
+[Apply & Close] -- apply the selected set and close the menu
+
+[Stardrop] -- Favorite outfit sets
+[!] -- Invalid outfit sets
+
+4. Schedules Menu
+Configure your wardrobe schedules for auto-changing clothes.
+[screenshot of menu, with some onWarp some daily rules]
+[Auto-swap Outfits] -- master toggle for the feature. Disabling it will disable all schedules.
+[!] -- open Schedule Debug Log (check #7. Schedule Debug Log Menu)
+[Speed] -- this icon means the schedule rotates outfits on each location change (see On Warp in #5. New/Edit Schedule Menu)
+[Pickaxe] -- open Edit Schedule Menu
+
+5. New/Edit Schedule Menu
+A schedule automatically changes your outfit when its conditions are met. Each schedule has a pool of outfits that are picked one by one. Once every outfit has been worn, the pool reshuffles. As a result, you won't see the same outfit twice in a row.
+Schedules are checked at the start of each day and every time you change locations. If multiple schedules match at the same time, the one with the highest priority wins. If they have the same priority, one is picked randomly (more on Consistent Tiebreaks in #8. Config Menu).
+If you manually apply an outfit, schedules will pause for the rest of the day and resume the next day (more on Lock Manual Outfits in #8. Config Menu).
+
+[screenshot]
+For any condition, if nothing is selected, the schedule will match regardless of that condition. For example, leaving Season empty means the schedule works in all seasons.
+Schedule Name is auto-generated based on the selected conditions.
+
+Conditions: Season, Weather, Area (Outdoor/Indoor), Location
+Special Events: Festival, Wedding
+Special Events have the highest priority (marked as Special) and will override any non-special schedule. Note: the outfit is applied when you enter the event, not at the start of the day.
+
+[Total Outfits] -- total number of selected outfits for the schedule
+
+[<number> remaining before reset] -- only available in Edit mode. Total number of outfits in pool before reshuffling.
+
+[Priority] -- determines which schedule will be picked when multiple schedules match.
+Value: High/Medium/Low
+Recommendation: for generic rules (e.g. Season=Spring), set Low Priority. For more specific rules (e.g. Weather=Rainy, Area=Outdoor), set High Priority for a better chance of getting picked.
+
+[Rotation] -- determines how often the schedule picks a new outfit from its pool.
+Daily -- one outfit is picked the first time the schedule triggers. That same outfit stays on for the rest of the day no matter how many more times the schedule triggers.
+On Warp -- a new outfit is picked every time you change locations and this schedule triggers.
+Example: A Spring schedule with 3 outfits: X, Y, Z. With Daily, if X is picked on the first trigger, you'll wear X for the rest of the day. With On Warp, you'll cycle through X, Y, Z as you move between areas.
+TLDR: On Warp = frequent outfit changes. Daily = one look per day.
+
+[Outfits +] -- open Schedule Outfit menu (more in #6. Schedule Outfit Menu)
+
+
+6. Schedule Outfit Menu
+[screenshot of new]
+[screenshot of edit]
+Select the outfits you want to include in the schedule.
+[Select All] -- select all the outfits in the current filter/search. Use case: pick a tag and click Select All to quickly select all outfits with that tag.
+[Show Selected] -- show all selected sets
+Outfits with an orange highlight are still in the rotation pool.
+
+7. Schedule Debug Log Menu
+[screenshot of concise & expanded logs]
+Show all schedule evaluations for the day (max 50 entries) in descending order.
+Click right arrow icon to expand the log for full info.
+[Collapse] -- collapse all expanded logs
+
+8. Config Menu
+[screenshot]
+I will leave out the more obvious ones.
+
+Include Hair in Outfit Sets=true
+Enables saving hair with outfit sets. Note: with this enabled, changing your hair in the menu also counts as manually applying an outfit, which may pause schedules (see Lock Manual Outfits below).
+
+Consistent Tiebreaks=true
+When multiple schedules with the same priority compete (e.g. Season=Spring and Area=Outdoor both at Medium), the winner is normally picked randomly each time. With this enabled, the winning schedule stays the same every time those schedules compete, instead of being randomly re-rolled. Enable this if you want predictable results.
+
+Lock Manual Outfits=true
+When enabled, manually applying an outfit pauses ALL schedules for the rest of the day. When disabled, schedules only pause at that specific location.
