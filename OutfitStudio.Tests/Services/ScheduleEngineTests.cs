@@ -1740,7 +1740,7 @@ namespace OutfitStudio.Tests.Services
     public class ManualOverrideTests
     {
         private static ManualOutfitSnapshot Snap(string label) =>
-            new(label, label, label, null, null, label, $"Set {label}");
+            new(label, label, label, null, null, SourceSetId: label, SourceSetName: $"Set {label}");
 
         [Fact]
         // Expected: Lock ON — last manual snapshot wins regardless of signature
@@ -1871,12 +1871,235 @@ namespace OutfitStudio.Tests.Services
         // Expected: EquipmentEquals compares only equipment fields, ignoring source metadata
         public void EquipmentEquals_IgnoresSourceMetadata()
         {
-            var fromSet = new ManualOutfitSnapshot("s1", "p1", "h1", "c1", "c2", "set-id", "My Set");
+            var fromSet = new ManualOutfitSnapshot("s1", "p1", "h1", "c1", "c2", SourceSetId: "set-id", SourceSetName: "My Set");
             var fromItems = new ManualOutfitSnapshot("s1", "p1", "h1", "c1", "c2");
 
             Assert.True(fromSet.EquipmentEquals(fromItems));
             Assert.True(fromItems.EquipmentEquals(fromSet));
             Assert.NotEqual(fromSet, fromItems); // record equality includes all fields
+        }
+
+        [Fact]
+        // Expected: EquipmentEquals returns false when HairId differs
+        public void EquipmentEquals_DifferentHairId_ReturnsFalse()
+        {
+            var a = new ManualOutfitSnapshot("s1", "p1", "h1", "c1", "c2", HairId: 5);
+            var b = new ManualOutfitSnapshot("s1", "p1", "h1", "c1", "c2", HairId: 10);
+
+            Assert.False(a.EquipmentEquals(b));
+        }
+
+        [Fact]
+        // Expected: EquipmentEquals returns false when HairColor differs
+        public void EquipmentEquals_DifferentHairColor_ReturnsFalse()
+        {
+            var a = new ManualOutfitSnapshot("s1", "p1", "h1", "c1", "c2", HairId: 5, HairColor: "255,0,0,255");
+            var b = new ManualOutfitSnapshot("s1", "p1", "h1", "c1", "c2", HairId: 5, HairColor: "0,255,0,255");
+
+            Assert.False(a.EquipmentEquals(b));
+        }
+
+        [Fact]
+        // Expected: EquipmentEquals returns true when hair fields match but source metadata differs
+        public void EquipmentEquals_SameHair_DifferentSource_ReturnsTrue()
+        {
+            var a = new ManualOutfitSnapshot("s1", "p1", "h1", "c1", "c2", HairId: 5, HairColor: "255,0,0,255", SourceSetId: "id1");
+            var b = new ManualOutfitSnapshot("s1", "p1", "h1", "c1", "c2", HairId: 5, HairColor: "255,0,0,255", SourceSetId: "id2");
+
+            Assert.True(a.EquipmentEquals(b));
+        }
+
+        [Fact]
+        // Expected: EquipmentEquals treats null HairId and null HairColor as equal
+        public void EquipmentEquals_BothNullHair_ReturnsTrue()
+        {
+            var a = new ManualOutfitSnapshot("s1", "p1", "h1", "c1", "c2");
+            var b = new ManualOutfitSnapshot("s1", "p1", "h1", "c1", "c2");
+
+            Assert.True(a.EquipmentEquals(b));
+        }
+
+        [Fact]
+        // Expected: EquipmentEquals returns false when one has HairId and other doesn't
+        public void EquipmentEquals_OneHasHair_OtherNull_ReturnsFalse()
+        {
+            var a = new ManualOutfitSnapshot("s1", "p1", "h1", "c1", "c2", HairId: 5);
+            var b = new ManualOutfitSnapshot("s1", "p1", "h1", "c1", "c2");
+
+            Assert.False(a.EquipmentEquals(b));
+        }
+
+        [Fact]
+        // Expected: FromOutfitSet includes HairId and HairColor from the set
+        public void FromOutfitSet_IncludesHairFields()
+        {
+            var set = new OutfitSet
+            {
+                Id = "test", Name = "Test",
+                ShirtId = "s1", PantsId = "p1", HatId = "h1",
+                HairId = 42, HairColor = "100,200,50,255"
+            };
+
+            var snap = ManualOutfitSnapshot.FromOutfitSet(set);
+
+            Assert.Equal(42, snap.HairId);
+            Assert.Equal("100,200,50,255", snap.HairColor);
+        }
+
+        [Fact]
+        // Expected: FromOutfitSet with null hair fields produces null in snapshot
+        public void FromOutfitSet_NullHair_ProducesNullInSnapshot()
+        {
+            var set = new OutfitSet
+            {
+                Id = "test", Name = "Test",
+                ShirtId = "s1", PantsId = "p1"
+            };
+
+            var snap = ManualOutfitSnapshot.FromOutfitSet(set);
+
+            Assert.Null(snap.HairId);
+            Assert.Null(snap.HairColor);
+        }
+
+        [Fact]
+        // Expected: FromOutfitSet with includeHair=false nulls hair fields even when set has hair data
+        public void FromOutfitSet_IncludeHairFalse_NullsHairFields()
+        {
+            var set = new OutfitSet
+            {
+                Id = "test", Name = "Test",
+                ShirtId = "s1", PantsId = "p1", HatId = "h1",
+                HairId = 42, HairColor = "100,200,50,255"
+            };
+
+            var snap = ManualOutfitSnapshot.FromOutfitSet(set, includeHair: false);
+
+            Assert.Null(snap.HairId);
+            Assert.Null(snap.HairColor);
+            Assert.Equal("s1", snap.ShirtId);
+            Assert.Equal("p1", snap.PantsId);
+        }
+
+        [Fact]
+        // Expected: FromOutfitSet with includeHair=true (explicit) preserves hair fields
+        public void FromOutfitSet_IncludeHairTrue_PreservesHairFields()
+        {
+            var set = new OutfitSet
+            {
+                Id = "test", Name = "Test",
+                ShirtId = "s1", PantsId = "p1",
+                HairId = 42, HairColor = "100,200,50,255"
+            };
+
+            var snap = ManualOutfitSnapshot.FromOutfitSet(set, includeHair: true);
+
+            Assert.Equal(42, snap.HairId);
+            Assert.Equal("100,200,50,255", snap.HairColor);
+        }
+
+        [Fact]
+        // Expected: Two snapshots with hair excluded match even if original sets had different hair
+        public void EquipmentEquals_BothExcludeHair_MatchesRegardlessOfOriginalHair()
+        {
+            var setA = new OutfitSet
+            {
+                Id = "a", Name = "A",
+                ShirtId = "s1", PantsId = "p1", HatId = "h1",
+                HairId = 5, HairColor = "255,0,0,255"
+            };
+            var setB = new OutfitSet
+            {
+                Id = "b", Name = "B",
+                ShirtId = "s1", PantsId = "p1", HatId = "h1",
+                HairId = 99, HairColor = "0,255,0,255"
+            };
+
+            var snapA = ManualOutfitSnapshot.FromOutfitSet(setA, includeHair: false);
+            var snapB = ManualOutfitSnapshot.FromOutfitSet(setB, includeHair: false);
+
+            Assert.True(snapA.EquipmentEquals(snapB));
+        }
+
+        [Fact]
+        // Expected: includeHair=false preserves all non-hair fields including source metadata
+        public void FromOutfitSet_IncludeHairFalse_PreservesAllOtherFields()
+        {
+            var set = new OutfitSet
+            {
+                Id = "set-1", Name = "My Set",
+                ShirtId = "s1", PantsId = "p1", HatId = "h1",
+                ShirtColor = "255,0,0,255", PantsColor = "0,255,0,255",
+                HairId = 42, HairColor = "100,200,50,255"
+            };
+
+            var snap = ManualOutfitSnapshot.FromOutfitSet(set, includeHair: false);
+
+            Assert.Equal("s1", snap.ShirtId);
+            Assert.Equal("p1", snap.PantsId);
+            Assert.Equal("h1", snap.HatId);
+            Assert.Equal("255,0,0,255", snap.ShirtColor);
+            Assert.Equal("0,255,0,255", snap.PantsColor);
+            Assert.Equal("set-1", snap.SourceSetId);
+            Assert.Equal("My Set", snap.SourceSetName);
+        }
+
+        [Fact]
+        // Expected: Comparing hair-included snapshot against hair-excluded fails when hair differs
+        public void EquipmentEquals_OneIncludesHair_OtherExcludes_ReturnsFalse()
+        {
+            var set = new OutfitSet
+            {
+                Id = "test", Name = "Test",
+                ShirtId = "s1", PantsId = "p1", HatId = "h1",
+                HairId = 42, HairColor = "255,0,0,255"
+            };
+
+            var withHair = ManualOutfitSnapshot.FromOutfitSet(set, includeHair: true);
+            var withoutHair = ManualOutfitSnapshot.FromOutfitSet(set, includeHair: false);
+
+            Assert.False(withHair.EquipmentEquals(withoutHair));
+        }
+
+        [Fact]
+        // Expected: Two hair-excluded snapshots with different clothing still differ
+        public void EquipmentEquals_BothExcludeHair_DifferentClothing_ReturnsFalse()
+        {
+            var setA = new OutfitSet
+            {
+                Id = "a", Name = "A",
+                ShirtId = "s1", PantsId = "p1", HatId = "h1",
+                HairId = 5
+            };
+            var setB = new OutfitSet
+            {
+                Id = "b", Name = "B",
+                ShirtId = "s2", PantsId = "p1", HatId = "h1",
+                HairId = 99
+            };
+
+            var snapA = ManualOutfitSnapshot.FromOutfitSet(setA, includeHair: false);
+            var snapB = ManualOutfitSnapshot.FromOutfitSet(setB, includeHair: false);
+
+            Assert.False(snapA.EquipmentEquals(snapB));
+        }
+
+        [Fact]
+        // Expected: Default includeHair parameter (true) preserves backward compatibility
+        public void FromOutfitSet_DefaultParam_IncludesHair()
+        {
+            var set = new OutfitSet
+            {
+                Id = "test", Name = "Test",
+                ShirtId = "s1", PantsId = "p1",
+                HairId = 42, HairColor = "100,200,50,255"
+            };
+
+            var withDefault = ManualOutfitSnapshot.FromOutfitSet(set);
+            var withExplicit = ManualOutfitSnapshot.FromOutfitSet(set, includeHair: true);
+
+            Assert.True(withDefault.EquipmentEquals(withExplicit));
+            Assert.Equal(42, withDefault.HairId);
         }
     }
 

@@ -8,13 +8,20 @@ namespace OutfitStudio
 {
     public class FilterCacheService
     {
+        private static readonly HashSet<string> VanillaHairTextureNames = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "hairstyles", "hairstyles2"
+        };
+
         private readonly ModDetectionService detectionService;
         private readonly Dictionary<string, List<string>> cachedFilteredShirts = new();
         private readonly Dictionary<string, List<string>> cachedFilteredPants = new();
         private readonly Dictionary<string, List<string>> cachedFilteredHats = new();
+        private readonly Dictionary<string, List<int>> cachedFilteredHairs = new();
         private readonly Dictionary<string, List<string>> cachedCombinedShirts = new();
         private readonly Dictionary<string, List<string>> cachedCombinedPants = new();
         private readonly Dictionary<string, List<string>> cachedCombinedHats = new();
+        private readonly Dictionary<string, List<int>> cachedCombinedHairs = new();
         private readonly Dictionary<string, string> displayNameCache = new();
 
         public FilterCacheService(ModDetectionService detectionService)
@@ -77,6 +84,62 @@ namespace OutfitStudio
 
             cachedFilteredHats[modFilter] = filtered;
             return filtered;
+        }
+
+        public List<int> GetFilteredHairIds(List<int> hairIds, string? filter)
+        {
+            if (string.IsNullOrEmpty(filter))
+                return hairIds;
+
+            if (cachedFilteredHairs.TryGetValue(filter, out var cached))
+                return cached;
+
+            var dataFile = Farmer.GetHairStyleMetadataFile();
+            var filtered = new List<int>();
+            foreach (int id in hairIds)
+            {
+                dataFile.TryGetValue(id, out var rawData);
+                bool isModded = IsModdedHairEntry(rawData);
+                if ((filter == TranslationCache.FilterVanilla && !isModded) ||
+                    (filter == TranslationCache.FilterModded && isModded))
+                    filtered.Add(id);
+            }
+
+            cachedFilteredHairs[filter] = filtered;
+            return filtered;
+        }
+
+        internal static bool IsModdedHairEntry(string? rawHairData)
+        {
+            if (rawHairData == null) return false;
+            string textureName = rawHairData.Split('/')[0];
+            return !VanillaHairTextureNames.Contains(textureName);
+        }
+
+        public List<int> GetSearchFilteredHairIds(List<int> hairIds, string? searchText)
+        {
+            if (string.IsNullOrWhiteSpace(searchText))
+                return hairIds;
+
+            var filtered = new List<int>();
+            foreach (int id in hairIds)
+            {
+                if (id.ToString().Contains(searchText, StringComparison.OrdinalIgnoreCase))
+                    filtered.Add(id);
+            }
+            return filtered;
+        }
+
+        public List<int> GetFilteredAndSearchedHairIds(List<int> hairIds, string? filter, string? searchText)
+        {
+            string cacheKey = $"{filter ?? "All"}::{searchText ?? ""}";
+            if (cachedCombinedHairs.TryGetValue(cacheKey, out var cached))
+                return cached;
+
+            var modFiltered = GetFilteredHairIds(hairIds, filter);
+            var result = GetSearchFilteredHairIds(modFiltered, searchText);
+            cachedCombinedHairs[cacheKey] = result;
+            return result;
         }
 
         private string GetCachedDisplayName(string qualifiedId)
@@ -190,6 +253,7 @@ namespace OutfitStudio
             cachedCombinedShirts.Clear();
             cachedCombinedPants.Clear();
             cachedCombinedHats.Clear();
+            cachedCombinedHairs.Clear();
             displayNameCache.Clear();
         }
     }

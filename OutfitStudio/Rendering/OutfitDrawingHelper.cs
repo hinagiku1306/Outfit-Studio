@@ -78,7 +78,7 @@ namespace OutfitStudio
             if (tooltipY + tooltipHeight > Game1.uiViewport.Height)
                 tooltipY = mouseY - tooltipHeight - 8;
 
-            IClickableMenu.drawTextureBox(b, tooltipX, tooltipY, tooltipWidth, tooltipHeight, Color.White);
+            UIHelpers.DrawTextureBox(b, tooltipX, tooltipY, tooltipWidth, tooltipHeight, Color.White);
             Utility.drawTextWithShadow(b, filterText, Game1.smallFont, new Vector2(tooltipX + TooltipPadding, tooltipY + TooltipPadding), Game1.textColor);
         }
 
@@ -87,11 +87,12 @@ namespace OutfitStudio
             string shirtName = GetCurrentEquippedName(OutfitCategoryManager.Category.Shirts);
             string pantsName = GetCurrentEquippedName(OutfitCategoryManager.Category.Pants);
             string hatName = GetCurrentEquippedName(OutfitCategoryManager.Category.Hats);
+            string hairName = $"#{Game1.player.hair.Value}";
 
-            // Add "+" prefix for unsaved items
             string shirtPrefix = state.IsShirtUnsaved ? "+ " : "";
             string pantsPrefix = state.IsPantsUnsaved ? "+ " : "";
             string hatPrefix = state.IsHatUnsaved ? "+ " : "";
+            string hairPrefix = state.IsHairUnsaved ? "+ " : "";
 
             int maxTooltipWidth = uiBuilder.Width / 2;
             int contentWidth = maxTooltipWidth - TooltipPadding * 2;
@@ -99,13 +100,15 @@ namespace OutfitStudio
             string shirtLine = UIHelpers.TruncateText($"{shirtPrefix}{TranslationCache.LookupShirt}: {shirtName}", contentWidth);
             string pantsLine = UIHelpers.TruncateText($"{pantsPrefix}{TranslationCache.LookupPants}: {pantsName}", contentWidth);
             string hatLine = UIHelpers.TruncateText($"{hatPrefix}{TranslationCache.LookupHat}: {hatName}", contentWidth);
+            string hairLine = UIHelpers.TruncateText($"{hairPrefix}{TranslationCache.LookupHair}: {hairName}", contentWidth);
 
             Vector2 shirtSize = Game1.smallFont.MeasureString(shirtLine);
             Vector2 pantsSize = Game1.smallFont.MeasureString(pantsLine);
             Vector2 hatSize = Game1.smallFont.MeasureString(hatLine);
+            Vector2 hairSize = Game1.smallFont.MeasureString(hairLine);
 
             int tooltipWidth = maxTooltipWidth;
-            int tooltipHeight = (int)(shirtSize.Y + pantsSize.Y + hatSize.Y) + 32;
+            int tooltipHeight = (int)(shirtSize.Y + pantsSize.Y + hatSize.Y + hairSize.Y) + 32;
 
             int mouseX = Game1.getMouseX();
             int mouseY = Game1.getMouseY();
@@ -117,18 +120,19 @@ namespace OutfitStudio
             if (tooltipY + tooltipHeight > Game1.uiViewport.Height)
                 tooltipY = mouseY - tooltipHeight - 8;
 
-            IClickableMenu.drawTextureBox(b, tooltipX, tooltipY, tooltipWidth, tooltipHeight, Color.White);
+            UIHelpers.DrawTextureBox(b, tooltipX, tooltipY, tooltipWidth, tooltipHeight, Color.White);
 
             int textX = tooltipX + TooltipPadding;
             int textY = tooltipY + TooltipPadding;
             int lineHeight = (int)shirtSize.Y;
 
-            // Draw each line with bold effect if unsaved
             DrawLookupLine(b, shirtLine, new Vector2(textX, textY), state.IsShirtUnsaved);
             textY += lineHeight;
             DrawLookupLine(b, pantsLine, new Vector2(textX, textY), state.IsPantsUnsaved);
             textY += lineHeight;
             DrawLookupLine(b, hatLine, new Vector2(textX, textY), state.IsHatUnsaved);
+            textY += lineHeight;
+            DrawLookupLine(b, hairLine, new Vector2(textX, textY), state.IsHairUnsaved);
         }
 
         private void DrawLookupLine(SpriteBatch b, string text, Vector2 position, bool isBold)

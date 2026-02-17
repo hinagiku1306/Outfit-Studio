@@ -15,9 +15,10 @@ namespace OutfitStudio
         public readonly List<string> ShirtIds = new();
         public readonly List<string> PantsIds = new();
         public readonly List<string> HatIds = new(); // HatIds[0] is NoHatId
+        public readonly List<int> HairIds = new();
         public readonly List<(Category ItemCategory, string ItemId)> AllItemIds = new();
 
-        public enum Category { All, Shirts, Pants, Hats }
+        public enum Category { All, Shirts, Pants, Hats, Hair }
 
         public OutfitCategoryManager(IMonitor monitor, OutfitFilterManager? filterManager = null)
         {
@@ -26,6 +27,7 @@ namespace OutfitStudio
             LoadShirts();
             LoadPants();
             LoadHats();
+            LoadHairs();
             BuildAllItemsList();
         }
 
@@ -65,6 +67,15 @@ namespace OutfitStudio
             foreach (var id in DataLoader.Hats(Game1.content).Keys)
             {
                 HatIds.Add(id);
+            }
+        }
+
+        private void LoadHairs()
+        {
+            HairIds.Clear();
+            foreach (int id in Farmer.GetAllHairstyleIndices())
+            {
+                HairIds.Add(id);
             }
         }
 
@@ -108,6 +119,7 @@ namespace OutfitStudio
                 Category.Shirts => ShirtIds.Count,
                 Category.Pants => PantsIds.Count,
                 Category.Hats => HatIds.Count,
+                Category.Hair => HairIds.Count,
                 _ => 0
             };
         }

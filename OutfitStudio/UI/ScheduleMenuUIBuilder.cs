@@ -39,6 +39,9 @@ namespace OutfitStudio
         public ClickableComponent SearchBar { get; private set; } = null!;
         public ClickableComponent SearchClearButton { get; private set; } = null!;
 
+        // Floating debug log button
+        public ClickableComponent DebugLogButton { get; private set; } = null!;
+
         // Divider
         public Rectangle DividerBounds { get; private set; }
 
@@ -181,6 +184,13 @@ namespace OutfitStudio
                 new Rectangle(X + Width - CloseButtonSize - CloseButtonEdgeMargin,
                     Y + CloseButtonEdgeMargin, CloseButtonSize, CloseButtonSize),
                 Game1.mouseCursors, new Rectangle(337, 494, 12, 12), 4f);
+
+            // Floating debug log button — outside right edge, same as main menu
+            int debugBtnSize = (int)(CloseButtonSize * 1.1f);
+            int debugBtnX = X + Width + 5;
+            int debugBtnY = Y + CloseButtonEdgeMargin + 110;
+            DebugLogButton = new ClickableComponent(
+                new Rectangle(debugBtnX, debugBtnY, debugBtnSize, debugBtnSize), "DebugLog");
 
         }
 
@@ -516,6 +526,29 @@ namespace OutfitStudio
                     UIHelpers.DownScrollArrowSourceRect, Color.White, 0f, Vector2.Zero,
                     ScheduleScrollArrowScale, SpriteEffects.None, 1f);
             }
+        }
+
+        private static readonly Rectangle JournalIconSourceRect = new Rectangle(395, 497, 3, 8);
+
+        public void DrawDebugLogButton(SpriteBatch b)
+        {
+            var bounds = DebugLogButton.bounds;
+            bool isHovered = !UIHelpers.SuppressHover
+                && DebugLogButton.containsPoint(Game1.getMouseX(), Game1.getMouseY());
+
+            float buttonScale = isHovered ? ButtonHoveringScale : 1f;
+            int bgSize = (int)(bounds.Width * buttonScale);
+            int bgX = bounds.X + (bounds.Width - bgSize) / 2;
+            int bgY = bounds.Y + (bounds.Height - bgSize) / 2;
+            UIHelpers.DrawTextureBox(b, bgX, bgY, bgSize, bgSize, Color.White, 1f, 4, 0.6f);
+
+            Vector2 iconCenter = new Vector2(
+                bounds.X + bounds.Width / 2,
+                bounds.Y + bounds.Height / 2);
+            float iconScale = (bgSize / 10f) * 0.6f;
+            Vector2 origin = new Vector2(JournalIconSourceRect.Width / 2f, JournalIconSourceRect.Height / 2f);
+            b.Draw(Game1.mouseCursors, iconCenter, JournalIconSourceRect,
+                Color.White, 0f, origin, iconScale, SpriteEffects.None, 1f);
         }
 
         public int GetRuleIndexAtPoint(int x, int y)

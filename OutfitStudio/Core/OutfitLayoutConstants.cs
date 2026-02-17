@@ -17,6 +17,8 @@ namespace OutfitStudio
 
         // Tab Bar
         public const int TabSectionHeight = 48;
+        public const int TabDividerWidth = 2;
+        public const int TabDividerGap = 8;
 
         // Item Grid
         public const int DefaultVisibleRows = 4;
@@ -37,6 +39,7 @@ namespace OutfitStudio
         public const int CharacterPreviewWidth = (int)(128 * FarmerSpriteScale);
         public const int CharacterPreviewHeight = (int)(192 * FarmerSpriteScale);
         public const int GapBetweenPortraitAndButtons = 16;
+        public const int HideHatRowHeight = 28;
         public const int BackgroundSourceWidth = 64;
         public const int BackgroundSourceHeight = 96;
         public const float CharacterPreviewScale = 1f;

@@ -10,7 +10,7 @@ namespace OutfitStudio
         private readonly int initialDelay;
         private readonly int repeatDelay;
 
-        public ContinuousScrollHandler(int initialDelay = 400, int repeatDelay = 100)
+        public ContinuousScrollHandler(int initialDelay = 200, int repeatDelay = 100)
         {
             this.initialDelay = initialDelay;
             this.repeatDelay = repeatDelay;

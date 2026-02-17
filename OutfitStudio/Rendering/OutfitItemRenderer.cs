@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -11,6 +12,9 @@ namespace OutfitStudio
     {
         private static readonly HashSet<string> loggedMissingItems = new();
         private readonly Dictionary<string, Item?> itemCache = new();
+        private readonly Dictionary<int, HairSpriteInfo> hairSpriteCache = new();
+
+        internal readonly record struct HairSpriteInfo(Texture2D Texture, Rectangle SourceRect);
 
         private readonly IMonitor monitor;
         private readonly IModRegistry modRegistry;
@@ -22,8 +26,16 @@ namespace OutfitStudio
         }
 
         public void DrawItemSprite(SpriteBatch b, OutfitCategoryManager.Category category, int listIndex,
-            Rectangle slot, List<string> shirtIds, List<string> pantsIds, List<string> hatIds)
+            Rectangle slot, List<string> shirtIds, List<string> pantsIds, List<string> hatIds,
+            List<int>? hairIds = null)
         {
+            if (category == OutfitCategoryManager.Category.Hair)
+            {
+                if (hairIds != null && listIndex >= 0 && listIndex < hairIds.Count)
+                    DrawHairSpriteCached(b, hairIds[listIndex], slot);
+                return;
+            }
+
             string? qualifiedId = GetQualifiedItemId(category, listIndex, shirtIds, pantsIds, hatIds);
 
             if (qualifiedId != null)
@@ -34,6 +46,78 @@ namespace OutfitStudio
             {
                 DrawNoHatIndicator(b, slot);
             }
+        }
+
+        public static void DrawHairSprite(SpriteBatch b, int hairId, Rectangle slot, Color? colorOverride = null)
+        {
+            var meta = Farmer.GetHairStyleMetadata(hairId);
+            Texture2D texture;
+            Rectangle sourceRect;
+
+            if (meta != null)
+            {
+                texture = meta.texture;
+                sourceRect = CalculateMetadataHairSourceRect(meta.tileX, meta.tileY);
+            }
+            else
+            {
+                texture = FarmerRenderer.hairStylesTexture;
+                sourceRect = CalculateVanillaHairSourceRect(hairId, texture.Width);
+            }
+
+            Color tint = colorOverride ?? (Game1.player.prismaticHair.Value
+                ? Utility.GetPrismaticColor()
+                : Game1.player.hairstyleColor.Value);
+
+            float scale = Math.Min(slot.Width, slot.Height) / 16f * 0.75f;
+            Vector2 center = new Vector2(
+                slot.X + slot.Width / 2f - (16 * scale) / 2f,
+                slot.Y + slot.Height / 2f - (15 * scale) / 2f);
+
+            b.Draw(texture, center, sourceRect, tint, 0f, Vector2.Zero, scale, SpriteEffects.None, 1f);
+        }
+
+        internal static Rectangle CalculateVanillaHairSourceRect(int hairId, int textureWidth)
+        {
+            return new Rectangle(
+                hairId * 16 % textureWidth,
+                hairId * 16 / textureWidth * 96,
+                16, 15);
+        }
+
+        internal static Rectangle CalculateMetadataHairSourceRect(int tileX, int tileY)
+        {
+            return new Rectangle(tileX * 16, tileY * 16, 16, 15);
+        }
+
+        internal HairSpriteInfo GetHairSpriteInfo(int hairId)
+        {
+            if (hairSpriteCache.TryGetValue(hairId, out var info))
+                return info;
+
+            var meta = Farmer.GetHairStyleMetadata(hairId);
+            info = meta != null
+                ? new HairSpriteInfo(meta.texture, CalculateMetadataHairSourceRect(meta.tileX, meta.tileY))
+                : new HairSpriteInfo(FarmerRenderer.hairStylesTexture, CalculateVanillaHairSourceRect(hairId, FarmerRenderer.hairStylesTexture.Width));
+
+            hairSpriteCache[hairId] = info;
+            return info;
+        }
+
+        private void DrawHairSpriteCached(SpriteBatch b, int hairId, Rectangle slot, Color? colorOverride = null)
+        {
+            var info = GetHairSpriteInfo(hairId);
+
+            Color tint = colorOverride ?? (Game1.player.prismaticHair.Value
+                ? Utility.GetPrismaticColor()
+                : Game1.player.hairstyleColor.Value);
+
+            float scale = Math.Min(slot.Width, slot.Height) / 16f * 0.75f;
+            Vector2 center = new Vector2(
+                slot.X + slot.Width / 2f - (16 * scale) / 2f,
+                slot.Y + slot.Height / 2f - (15 * scale) / 2f);
+
+            b.Draw(info.Texture, center, info.SourceRect, tint, 0f, Vector2.Zero, scale, SpriteEffects.None, 1f);
         }
 
         public void DrawItemFromAllCategory(SpriteBatch b, OutfitCategoryManager.Category itemCategory, string itemId, Rectangle slot)
@@ -54,6 +138,7 @@ namespace OutfitStudio
         public void ClearCache()
         {
             itemCache.Clear();
+            hairSpriteCache.Clear();
         }
 
         private Item? GetCachedItem(string qualifiedId)

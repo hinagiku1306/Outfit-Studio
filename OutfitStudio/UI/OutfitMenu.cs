@@ -40,9 +40,10 @@ namespace OutfitStudio
         {
             state.SaveAppliedOutfit();
             uiBuilder.MarkPreviewDirty();
+            bool includeHair = ModEntry.Config.IncludeHairInOutfitSets;
             var snapshot = set != null
-                ? ManualOutfitSnapshot.FromOutfitSet(set)
-                : ManualOutfitSnapshot.FromCurrentPlayer();
+                ? ManualOutfitSnapshot.FromOutfitSet(set, includeHair)
+                : ManualOutfitSnapshot.FromCurrentPlayer(includeHair);
             mod.GetScheduleEngine()?.SetManualOutfit(snapshot);
         }
 
@@ -73,7 +74,7 @@ namespace OutfitStudio
             dropdownManager = new OutfitDropdownManager(filterManager, categoryManager, state, uiBuilder);
             searchManager = new OutfitSearchManager(uiBuilder, state);
             tooltipRenderer = new OutfitTooltipRenderer(filterManager, categoryManager);
-            continuousScrollHandler = new ContinuousScrollHandler(initialDelay: 400, repeatDelay: 100);
+            continuousScrollHandler = new ContinuousScrollHandler(initialDelay: 200, repeatDelay: 100);
 
             itemListProvider = new OutfitItemListProvider(filterManager, categoryManager, state);
             drawingHelper = new OutfitDrawingHelper(uiBuilder, dropdownManager, state, mod);
@@ -91,6 +92,7 @@ namespace OutfitStudio
                 getCurrentShirtIds: () => itemListProvider.GetCurrentShirtIds(),
                 getCurrentPantsIds: () => itemListProvider.GetCurrentPantsIds(),
                 getCurrentHatIds: () => itemListProvider.GetCurrentHatIds(),
+                getCurrentHairIds: () => itemListProvider.GetCurrentHairIds(),
                 getCurrentAllItems: () => itemListProvider.GetCurrentAllItems(),
                 outfitSetStore: outfitSetStore,
                 showSavedMessage: () => uiBuilder.ShowSavedMessage(),
@@ -114,6 +116,7 @@ namespace OutfitStudio
                 {
                     OutfitCategoryManager.Category.Shirts => Game1.player.GetShirtColor(),
                     OutfitCategoryManager.Category.Pants => Game1.player.GetPantsColor(),
+                    OutfitCategoryManager.Category.Hair => Game1.player.hairstyleColor.Value,
                     _ => Color.White
                 };
                 Rectangle menuBounds = new Rectangle(uiBuilder.X, uiBuilder.Y, uiBuilder.Width, uiBuilder.Height);
@@ -124,6 +127,7 @@ namespace OutfitStudio
                 {
                     OutfitCategoryManager.Category.Shirts => Game1.player.CanDyeShirt(),
                     OutfitCategoryManager.Category.Pants => Game1.player.CanDyePants(),
+                    OutfitCategoryManager.Category.Hair => true,
                     _ => false
                 };
             }
@@ -183,7 +187,7 @@ namespace OutfitStudio
         private void ApplyOutfit()
         {
             state.SaveAppliedOutfit();
-            mod.GetScheduleEngine()?.SetManualOutfit(ManualOutfitSnapshot.FromCurrentPlayer());
+            mod.GetScheduleEngine()?.SetManualOutfit(ManualOutfitSnapshot.FromCurrentPlayer(ModEntry.Config.IncludeHairInOutfitSets));
         }
 
         private OutfitCategoryManager.Category GetActiveColorCategory()
@@ -250,14 +254,19 @@ namespace OutfitStudio
 
             uiBuilder.Update((float)time.ElapsedGameTime.TotalMilliseconds);
 
+            bool isHairTab = categoryManager.CurrentCategory == OutfitCategoryManager.Category.Hair;
+            uiBuilder.SetHideHat(isHairTab && state.HideHatInPreview);
+
             bool hasOverlay = IsOverlayBlocking;
-            searchManager.Update(allowFocus: !hasOverlay);
+            searchManager.Update(allowFocus: !hasOverlay && !dropdownManager.IsOpen);
 
             if (searchManager.HasSearchTextChanged)
             {
                 state.SetSearchText(categoryManager.CurrentCategory, searchManager.CurrentSearchText);
                 state.ScrollOffset = 0;
             }
+
+            dropdownManager.UpdateSearch();
 
             HandleItemInfoToggle();
 
@@ -296,10 +305,18 @@ namespace OutfitStudio
 
             UIHelpers.DrawTextureBox(b, xPositionOnScreen, yPositionOnScreen, width, height, Color.White);
 
+            if (categoryManager.CurrentCategory == OutfitCategoryManager.Category.Hair)
+                uiBuilder.DrawHideHatCheckbox(b, state.HideHatInPreview);
+
             uiBuilder.DrawPlayerPreview(b);
             uiBuilder.DrawLookupIcon(b);
             uiBuilder.DrawSavedMessage(b);
             uiBuilder.DrawLeftPanelButtons(b);
+
+            UIHelpers.DrawTabWithText(b, uiBuilder.HairTab, TranslationCache.TabHair,
+                categoryManager.CurrentCategory == OutfitCategoryManager.Category.Hair);
+
+            uiBuilder.DrawTabDivider(b);
 
             UIHelpers.DrawTabWithText(b, uiBuilder.AllTab, TranslationCache.TabAll,
                 categoryManager.CurrentCategory == OutfitCategoryManager.Category.All);
@@ -315,18 +332,20 @@ namespace OutfitStudio
 
             searchManager.Draw(b);
 
-            uiBuilder.DrawModFilterDropdown(b, state.GetModFilter(categoryManager.CurrentCategory), dropdownManager.IsOpen);
+            uiBuilder.DrawModFilterDropdown(b, state.GetModFilter(categoryManager.CurrentCategory), dropdownManager.IsOpen, dropdownManager.SearchText);
 
             var currentCategory = categoryManager.CurrentCategory;
             var allItems = currentCategory == OutfitCategoryManager.Category.All ? itemListProvider.GetCurrentAllItems() : null;
             var shirtIds = currentCategory != OutfitCategoryManager.Category.All ? itemListProvider.GetCurrentShirtIds() : null;
             var pantsIds = currentCategory != OutfitCategoryManager.Category.All ? itemListProvider.GetCurrentPantsIds() : null;
             var hatIds = currentCategory != OutfitCategoryManager.Category.All ? itemListProvider.GetCurrentHatIds() : null;
+            var hairIds = currentCategory == OutfitCategoryManager.Category.Hair ? itemListProvider.GetCurrentHairIds() : null;
             int listCount = allItems?.Count ?? itemListProvider.GetCurrentListCount();
 
             string equippedShirtId = OutfitState.GetClothingId(Game1.player.shirtItem.Value);
             string equippedPantsId = OutfitState.GetClothingId(Game1.player.pantsItem.Value);
             string equippedHatId = OutfitState.GetHatIdFromItem(Game1.player.hat.Value);
+            int equippedHairId = Game1.player.hair.Value;
 
             uiBuilder.DrawItemList(b, state.ScrollOffset, listCount);
 
@@ -353,6 +372,10 @@ namespace OutfitStudio
                         OutfitCategoryManager.Category.Hats => itemId == equippedHatId,
                         _ => false
                     };
+                }
+                else if (currentCategory == OutfitCategoryManager.Category.Hair)
+                {
+                    isSelected = hairIds != null && listIndex < hairIds.Count && hairIds[listIndex] == equippedHairId;
                 }
                 else
                 {
@@ -398,7 +421,7 @@ namespace OutfitStudio
                 }
                 else
                 {
-                    itemRenderer.DrawItemSprite(b, currentCategory, listIndex, slot, shirtIds!, pantsIds!, hatIds!);
+                    itemRenderer.DrawItemSprite(b, currentCategory, listIndex, slot, shirtIds!, pantsIds!, hatIds!, hairIds);
                 }
             }
 
@@ -421,7 +444,8 @@ namespace OutfitStudio
                     }
                 }
 
-                if (showItemInfo && hoveredIndex >= 0 && !dropdownManager.IsOpen)
+                if (showItemInfo && hoveredIndex >= 0 && !dropdownManager.IsOpen &&
+                    currentCategory != OutfitCategoryManager.Category.Hair)
                 {
                     if (allItems != null)
                     {
@@ -435,6 +459,14 @@ namespace OutfitStudio
                     {
                         tooltipRenderer.DrawTooltip(b, hoveredIndex, shirtIds!, pantsIds!, hatIds!);
                     }
+                }
+
+                if (showItemInfo && hoveredIndex >= 0 && !dropdownManager.IsOpen &&
+                    currentCategory == OutfitCategoryManager.Category.Hair &&
+                    hairIds != null && hoveredIndex < hairIds.Count)
+                {
+                    string tooltipText = TranslationCache.ItemHairIdTemplate.Replace("{{id}}", hairIds[hoveredIndex].ToString());
+                    IClickableMenu.drawToolTip(b, tooltipText, "", null);
                 }
 
                 if (uiBuilder.LookupButton != null && uiBuilder.LookupButton.containsPoint(Game1.getMouseX(), Game1.getMouseY()))

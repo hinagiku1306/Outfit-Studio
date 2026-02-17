@@ -82,6 +82,11 @@ namespace OutfitStudio
             return cacheService.GetFilteredAndSearchedHatIds(hatIds, modFilter, searchText);
         }
 
+        public List<int> GetFilteredAndSearchedHairIds(List<int> hairIds, string? filter, string? searchText)
+        {
+            return cacheService.GetFilteredAndSearchedHairIds(hairIds, filter, searchText);
+        }
+
         public int GetFilteredListCount(OutfitCategoryManager.Category category,
             List<string> shirtIds, List<string> pantsIds, List<string> hatIds, string? modFilter)
         {

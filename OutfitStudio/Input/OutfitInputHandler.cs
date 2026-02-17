@@ -29,6 +29,7 @@ namespace OutfitStudio
         private readonly Func<List<string>> getCurrentPantsIds;
         private readonly Func<List<string>> getCurrentHatIds;
         private readonly Func<List<(OutfitCategoryManager.Category, string)>> getCurrentAllItems;
+        private readonly Func<List<int>> getCurrentHairIds;
         private readonly Func<DyeColorManager> getDyeColorManager;
         private readonly Func<OutfitCategoryManager.Category> getLastColorCategory;
         private readonly Action<OutfitCategoryManager.Category> setLastColorCategory;
@@ -50,6 +51,7 @@ namespace OutfitStudio
             Func<List<string>> getCurrentPantsIds,
             Func<List<string>> getCurrentHatIds,
             Func<List<(OutfitCategoryManager.Category, string)>> getCurrentAllItems,
+            Func<List<int>> getCurrentHairIds,
             OutfitSetStore outfitSetStore,
             Action showSavedMessage,
             Func<DyeColorManager> getDyeColorManager,
@@ -73,6 +75,7 @@ namespace OutfitStudio
             this.getCurrentPantsIds = getCurrentPantsIds;
             this.getCurrentHatIds = getCurrentHatIds;
             this.getCurrentAllItems = getCurrentAllItems;
+            this.getCurrentHairIds = getCurrentHairIds;
             this.outfitSetStore = outfitSetStore;
             this.getDyeColorManager = getDyeColorManager;
             this.getLastColorCategory = getLastColorCategory;
@@ -105,15 +108,9 @@ namespace OutfitStudio
 
                 if (uiBuilder.FilterClearButton != null && uiBuilder.FilterClearButton.containsPoint(x, y))
                 {
-                    string? currentFilter = state.GetModFilter(categoryManager.CurrentCategory);
-                    if (!string.IsNullOrEmpty(currentFilter))
-                    {
-                        state.SetModFilter(categoryManager.CurrentCategory, null);
-                        state.ScrollOffset = 0;
-                        dropdownManager.Close();
-                        if (playSound) Game1.playSound("smallSelect");
-                        return true;
-                    }
+                    dropdownManager.ClearSearchText();
+                    if (playSound) Game1.playSound("smallSelect");
+                    return true;
                 }
 
                 if (uiBuilder.SearchClearButton != null && uiBuilder.SearchClearButton.containsPoint(x, y))
@@ -129,7 +126,15 @@ namespace OutfitStudio
                     }
                 }
 
-                if (uiBuilder.AllTab.containsPoint(x, y) ||
+                // Clicking the mod filter bar (now input bar) — absorb click, keep open
+                if (uiBuilder.ModFilterDropdown != null && uiBuilder.ModFilterDropdown.containsPoint(x, y))
+                {
+                    return true;
+                }
+
+                if (searchManager.IsPointInBounds(x, y) ||
+                    uiBuilder.HairTab.containsPoint(x, y) ||
+                    uiBuilder.AllTab.containsPoint(x, y) ||
                     uiBuilder.ShirtsTab.containsPoint(x, y) ||
                     uiBuilder.PantsTab.containsPoint(x, y) ||
                     uiBuilder.HatsTab.containsPoint(x, y) ||
@@ -197,6 +202,8 @@ namespace OutfitStudio
                 }
             }
 
+            if (HandleTabClick(uiBuilder.HairTab, OutfitCategoryManager.Category.Hair, x, y, playSound))
+                return true;
             if (HandleTabClick(uiBuilder.AllTab, OutfitCategoryManager.Category.All, x, y, playSound))
                 return true;
             if (HandleTabClick(uiBuilder.ShirtsTab, OutfitCategoryManager.Category.Shirts, x, y, playSound))
@@ -226,13 +233,20 @@ namespace OutfitStudio
             {
                 onApplyOutfit();
                 if (playSound) Game1.playSound("coin");
-                Game1.exitActiveMenu();
                 return true;
             }
 
             if (uiBuilder.ResetButton.containsPoint(x, y))
             {
                 onResetOutfit();
+                if (playSound) Game1.playSound("drumkit6");
+                return true;
+            }
+
+            if (categoryManager.CurrentCategory == OutfitCategoryManager.Category.Hair
+                && uiBuilder.HideHatCheckbox.containsPoint(x, y))
+            {
+                state.HideHatInPreview = !state.HideHatInPreview;
                 if (playSound) Game1.playSound("drumkit6");
                 return true;
             }
@@ -253,14 +267,17 @@ namespace OutfitStudio
             // Type B swap: opens SaveSet overlay
             if (uiBuilder.SaveButton.containsPoint(x, y))
             {
-                Game1.activeClickableMenu = new SaveSetOverlay(Game1.activeClickableMenu, outfitSetStore, () => showSavedMessage());
+                Game1.activeClickableMenu = new SaveSetOverlay(Game1.activeClickableMenu, outfitSetStore, () => showSavedMessage(),
+                    revertHairId: state.AppliedHair, revertHairColor: state.AppliedHairColor);
                 if (playSound) Game1.playSound("bigSelect");
                 return true;
             }
 
             if (uiBuilder.WardrobeButton.containsPoint(x, y))
             {
-                Game1.activeClickableMenu = new WardrobeOverlay(outfitSetStore, Game1.activeClickableMenu);
+                var outfitMenu = Game1.activeClickableMenu as OutfitMenu;
+                Game1.activeClickableMenu = new WardrobeOverlay(outfitSetStore, outfitMenu,
+                    onOutfitApplied: set => outfitMenu?.NotifyOutfitApplied(set));
                 if (playSound) Game1.playSound("bigSelect");
                 return true;
             }
@@ -370,7 +387,9 @@ namespace OutfitStudio
 
                             // Track color category and auto-apply dye color
                             var currentCat = categoryManager.CurrentCategory;
-                            if (currentCat == OutfitCategoryManager.Category.Shirts || currentCat == OutfitCategoryManager.Category.Pants)
+                            if (currentCat == OutfitCategoryManager.Category.Shirts ||
+                                currentCat == OutfitCategoryManager.Category.Pants ||
+                                currentCat == OutfitCategoryManager.Category.Hair)
                             {
                                 setLastColorCategory(currentCat);
                                 var slotDcm = getDyeColorManager();
@@ -416,7 +435,8 @@ namespace OutfitStudio
                 categoryManager.CurrentCategory,
                 getCurrentShirtIds(),
                 getCurrentPantsIds(),
-                getCurrentHatIds()
+                getCurrentHatIds(),
+                getCurrentHairIds()
             );
             onOutfitChanged();
         }
@@ -576,6 +596,7 @@ namespace OutfitStudio
             {
                 OutfitCategoryManager.Category.Shirts => Game1.player.GetShirtColor(),
                 OutfitCategoryManager.Category.Pants => Game1.player.GetPantsColor(),
+                OutfitCategoryManager.Category.Hair => Game1.player.hairstyleColor.Value,
                 _ => Color.White
             };
         }
@@ -598,6 +619,7 @@ namespace OutfitStudio
             {
                 OutfitCategoryManager.Category.Shirts => Game1.player.CanDyeShirt(),
                 OutfitCategoryManager.Category.Pants => Game1.player.CanDyePants(),
+                OutfitCategoryManager.Category.Hair => true,
                 _ => false
             };
         }

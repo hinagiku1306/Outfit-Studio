@@ -28,6 +28,7 @@ namespace OutfitStudio
         private bool autoOpenTagMenu;
         private bool autoFocusSearchBar;
         private bool arrowKeyScrolling;
+        private bool includeHairInOutfitSets;
         private bool autoOpenDyeColorMenu;
         private bool resetFilterOnTabSwitch;
         private bool resetSearchOnTabSwitch;
@@ -69,6 +70,7 @@ namespace OutfitStudio
             autoOpenTagMenu = config.AutoOpenTagMenu;
             autoFocusSearchBar = config.AutoFocusSearchBar;
             arrowKeyScrolling = config.ArrowKeyScrolling;
+            includeHairInOutfitSets = config.IncludeHairInOutfitSets;
             autoOpenDyeColorMenu = config.AutoOpenDyeColorMenu;
             resetFilterOnTabSwitch = config.ResetFilterOnTabSwitch;
             resetSearchOnTabSwitch = config.ResetSearchOnTabSwitch;
@@ -222,6 +224,7 @@ namespace OutfitStudio
             if (TryToggleCheckbox(uiBuilder.AutoOpenTagMenuCheckbox, x, y, ref autoOpenTagMenu, playSound)) return;
             if (TryToggleCheckbox(uiBuilder.AutoFocusSearchBarCheckbox, x, y, ref autoFocusSearchBar, playSound)) return;
             if (TryToggleCheckbox(uiBuilder.ArrowKeyScrollingCheckbox, x, y, ref arrowKeyScrolling, playSound)) return;
+            if (TryToggleCheckbox(uiBuilder.IncludeHairInOutfitSetsCheckbox, x, y, ref includeHairInOutfitSets, playSound)) return;
             if (TryToggleCheckbox(uiBuilder.AutoOpenDyeColorMenuCheckbox, x, y, ref autoOpenDyeColorMenu, playSound)) return;
             if (TryToggleCheckbox(uiBuilder.ResetFilterCheckbox, x, y, ref resetFilterOnTabSwitch, playSound)) return;
             if (TryToggleCheckbox(uiBuilder.ResetSearchCheckbox, x, y, ref resetSearchOnTabSwitch, playSound)) return;
@@ -430,6 +433,7 @@ namespace OutfitStudio
                 uiBuilder.ToggleWardrobeKeyArea, listeningForKeybind == "ToggleWardrobeKey");
             uiBuilder.DrawKeybindRow(b, TranslationCache.ConfigToggleScheduleKeyName, toggleScheduleKey,
                 uiBuilder.ToggleScheduleKeyArea, listeningForKeybind == "ToggleScheduleKey");
+            uiBuilder.DrawCheckboxRow(b, TranslationCache.ConfigIncludeHairInOutfitSetsName, includeHairInOutfitSets, uiBuilder.IncludeHairInOutfitSetsCheckbox);
             uiBuilder.DrawCheckboxRow(b, TranslationCache.ConfigShowTooltipName, showTooltip, uiBuilder.ShowTooltipCheckbox);
             uiBuilder.DrawCheckboxRow(b, TranslationCache.ConfigCloseOnClickOutsideName, closeOnClickOutside, uiBuilder.CloseOnClickOutsideCheckbox);
             uiBuilder.DrawCheckboxRow(b, TranslationCache.ConfigAutoOpenTagMenuName, autoOpenTagMenu, uiBuilder.AutoOpenTagMenuCheckbox);
@@ -585,6 +589,7 @@ namespace OutfitStudio
             config.AutoOpenTagMenu = autoOpenTagMenu;
             config.AutoFocusSearchBar = autoFocusSearchBar;
             config.ArrowKeyScrolling = arrowKeyScrolling;
+            config.IncludeHairInOutfitSets = includeHairInOutfitSets;
             config.AutoOpenDyeColorMenu = autoOpenDyeColorMenu;
             config.ResetFilterOnTabSwitch = resetFilterOnTabSwitch;
             config.ResetSearchOnTabSwitch = resetSearchOnTabSwitch;

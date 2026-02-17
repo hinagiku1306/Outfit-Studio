@@ -37,6 +37,7 @@ namespace OutfitStudio
                 OutfitCategoryManager.Category.Shirts => GetCurrentShirtIds().Count,
                 OutfitCategoryManager.Category.Pants => GetCurrentPantsIds().Count,
                 OutfitCategoryManager.Category.Hats => GetCurrentHatIds().Count,
+                OutfitCategoryManager.Category.Hair => GetCurrentHairIds().Count,
                 _ => 0
             };
         }
@@ -55,6 +56,11 @@ namespace OutfitStudio
             categoryManager.HatIds,
             state.GetModFilter(OutfitCategoryManager.Category.Hats),
             state.GetSearchText(OutfitCategoryManager.Category.Hats));
+
+        public List<int> GetCurrentHairIds() => filterManager.GetFilteredAndSearchedHairIds(
+            categoryManager.HairIds,
+            state.GetModFilter(OutfitCategoryManager.Category.Hair),
+            state.GetSearchText(OutfitCategoryManager.Category.Hair));
 
         public List<(OutfitCategoryManager.Category ItemCategory, string ItemId)> GetCurrentAllItems()
         {

@@ -5,9 +5,6 @@
     "common.reset": "Reset",
     "common.favorite": "Favorite",
     "common.none": "None",
-    "common.close": "Close",
-    "common.back": "Back",
-    "common.select-all": "Select All",
     // Configs
     "config.toggle-menu-key.name": "Toggle Menu Key",
     "config.toggle-menu-key.tooltip": "Press this key to open/close the menu.",
@@ -27,8 +24,8 @@
     "config.auto-focus-search-bar.tooltip": "If enabled, the search bar is automatically focused when the menu opens. Useful when your toggle key is a typeable character.",
     "config.arrow-key-scrolling.name": "Arrow Key Scrolling",
     "config.arrow-key-scrolling.tooltip": "If enabled, use arrow keys to scroll through items and outfit lists. Up/Down scrolls by one row, Left/Right scrolls by one page.",
-    "config.auto-open-dye-color-menu.name": "Auto-Open Dye Color Menu",
-    "config.auto-open-dye-color-menu.tooltip": "If enabled, the dye color menu automatically opens when the main menu opens.",
+    "config.auto-open-dye-color-menu.name": "Auto-Open Color Picker Menu", // v2.0.0
+    "config.auto-open-dye-color-menu.tooltip": "If enabled, color picker menu automatically opens when the main menu opens.", // v2.0.0
     "config.reset-match-all-on-open.name": "Reset Match All",
     "config.reset-match-all-on-open.tooltip": "Resets the \"Match All\" checkbox each time you open the Wardrobe. If disabled, it remembers your last choice.",
     "config.reset-show-invalid-on-open.name": "Reset Show Invalid",
@@ -46,8 +43,8 @@
     "config.slot-size.tooltip": "Size of each item slot in pixels.",
     "config.settings.title": "Outfit Studio Settings",
     "config.settings.keybind-listening": "Press a key...",
-    // Dye Color Panel
-    "dyecolor.title": "Dye Color",
+    // Color Picker Panel
+    "dyecolor.title": "Color Picker", // v2.0.0
     // Main Menu
     "menu.title": "Outfit Studio",
     "menu.tabs.all": "All",
@@ -112,6 +109,10 @@
     "wardrobe.delete.no": "No",
 
     // ==== v2.0.0 ====
+    // Common
+    "common.close": "Close",
+    "common.back": "Back",
+    "common.select-all": "Select All",
     // Configs
     "config.toggle-wardrobe-key.name": "Toggle Wardrobe Menu Key",
     "config.toggle-wardrobe-key.tooltip": "Press this key to open/close the Wardrobe menu directly.",
@@ -128,8 +129,14 @@
     "config.default-priority.tooltip": "Default priority level for new schedule rules.",
     "config.default-rotation.name": "Default Rotation",
     "config.default-rotation.tooltip": "Default rotation mode for new schedule rules.",
+    "config.include-hair-in-outfit-sets.name": "Include Hair in Outfit Sets",
+    "config.include-hair-in-outfit-sets.tooltip": "If enabled, hair is saved and applied as part of outfit sets. If disabled, hair is only changed via the main menu.",
     // Main Menu
+    "menu.tabs.hair": "Hair",
     "menu.buttons.schedules": "Schedules",
+    "menu.filter.modded": "Modded",
+    "menu.lookup.hair": "Hair",
+    "menu.hide-hat": "Hide Hat",
     // Schedule Menu
     "schedule.priority.placeholder": "Priority",
     "schedule.title": "Wardrobe Schedules",
@@ -208,5 +215,7 @@
     "schedule.debug.priority-group-high": "High Priority",
     "schedule.debug.priority-group-medium": "Medium Priority",
     "schedule.debug.priority-group-low": "Low Priority",
-    "schedule.manual-items": "Custom"
+    "schedule.manual-items": "Custom",
+    // Hair Tab
+    "menu.item.hair-id": "Hair #{{id}}"
 }

@@ -20,6 +20,7 @@ namespace OutfitStudio
         public static string TabShirts { get; private set; } = "";
         public static string TabPants { get; private set; } = "";
         public static string TabHats { get; private set; } = "";
+        public static string TabHair { get; private set; } = "";
         public static string ButtonApply { get; private set; } = "";
         public static string ButtonNewOutfit { get; private set; } = "";
         public static string ButtonOutfits { get; private set; } = "";
@@ -29,14 +30,18 @@ namespace OutfitStudio
 
         public static string FilterAll { get; private set; } = "";
         public static string FilterVanilla { get; private set; } = "";
+        public static string FilterModded { get; private set; } = "";
         public static string FilterUnknown { get; private set; } = "";
 
         public static string ItemNoHat { get; private set; } = "";
         public static string ItemModInfoTemplate { get; private set; } = ""; // "Mod: {{modName}}"
+        public static string ItemHairIdTemplate { get; private set; } = ""; // "Hair #{{id}}"
 
         public static string LookupShirt { get; private set; } = "";
         public static string LookupPants { get; private set; } = "";
         public static string LookupHat { get; private set; } = "";
+        public static string LookupHair { get; private set; } = "";
+        public static string HideHat { get; private set; } = "";
 
         public static string WardrobeSearch { get; private set; } = "";
         public static string WardrobeTags { get; private set; } = "";
@@ -104,6 +109,8 @@ namespace OutfitStudio
         public static string ConfigAutoFocusSearchBarTooltip { get; private set; } = "";
         public static string ConfigArrowKeyScrollingName { get; private set; } = "";
         public static string ConfigArrowKeyScrollingTooltip { get; private set; } = "";
+        public static string ConfigIncludeHairInOutfitSetsName { get; private set; } = "";
+        public static string ConfigIncludeHairInOutfitSetsTooltip { get; private set; } = "";
         public static string ConfigAutoOpenDyeColorMenuName { get; private set; } = "";
         public static string ConfigAutoOpenDyeColorMenuTooltip { get; private set; } = "";
         public static string ConfigResetMatchAllOnOpenName { get; private set; } = "";
@@ -235,6 +242,7 @@ namespace OutfitStudio
             TabShirts = i18n.Get("menu.tabs.shirts");
             TabPants = i18n.Get("menu.tabs.pants");
             TabHats = i18n.Get("menu.tabs.hats");
+            TabHair = i18n.Get("menu.tabs.hair");
             ButtonApply = i18n.Get("menu.buttons.apply");
             ButtonNewOutfit = i18n.Get("menu.buttons.new-outfit");
             ButtonOutfits = i18n.Get("menu.buttons.wardrobe");
@@ -244,14 +252,18 @@ namespace OutfitStudio
 
             FilterAll = i18n.Get("menu.filter.all");
             FilterVanilla = i18n.Get("menu.filter.vanilla");
+            FilterModded = i18n.Get("menu.filter.modded");
             FilterUnknown = i18n.Get("menu.filter.unknown");
 
             ItemNoHat = i18n.Get("menu.item.no-hat");
             ItemModInfoTemplate = i18n.Get("menu.item.mod-info");
+            ItemHairIdTemplate = i18n.Get("menu.item.hair-id");
 
             LookupShirt = i18n.Get("menu.lookup.shirt");
             LookupPants = i18n.Get("menu.lookup.pants");
             LookupHat = i18n.Get("menu.lookup.hat");
+            LookupHair = i18n.Get("menu.lookup.hair");
+            HideHat = i18n.Get("menu.hide-hat");
 
             WardrobeSearch = i18n.Get("wardrobe.search");
             WardrobeTags = i18n.Get("wardrobe.tags");
@@ -315,6 +327,8 @@ namespace OutfitStudio
             ConfigAutoFocusSearchBarTooltip = i18n.Get("config.auto-focus-search-bar.tooltip");
             ConfigArrowKeyScrollingName = i18n.Get("config.arrow-key-scrolling.name");
             ConfigArrowKeyScrollingTooltip = i18n.Get("config.arrow-key-scrolling.tooltip");
+            ConfigIncludeHairInOutfitSetsName = i18n.Get("config.include-hair-in-outfit-sets.name");
+            ConfigIncludeHairInOutfitSetsTooltip = i18n.Get("config.include-hair-in-outfit-sets.tooltip");
             ConfigAutoOpenDyeColorMenuName = i18n.Get("config.auto-open-dye-color-menu.name");
             ConfigAutoOpenDyeColorMenuTooltip = i18n.Get("config.auto-open-dye-color-menu.tooltip");
             ConfigResetMatchAllOnOpenName = i18n.Get("config.reset-match-all-on-open.name");

@@ -795,8 +795,7 @@ namespace OutfitStudio
             if (y < safeArea.Top)
                 y = safeArea.Top;
 
-            IClickableMenu.drawTextureBox(b, Game1.menuTexture, MenuBoxSourceRect,
-                x, y, width, height, Color.White, drawShadow: true);
+            DrawTextureBox(b, x, y, width, height, Color.White);
 
             int textY = y + 16;
             foreach (string line in lines)

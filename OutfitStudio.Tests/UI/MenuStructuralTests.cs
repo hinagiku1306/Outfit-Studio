@@ -1128,7 +1128,7 @@ namespace OutfitStudio.Tests.UI
             string source = SourceScanner.ReadSourceFile("Utilities/UIHelpers.cs");
             string body = SourceScanner.ExtractMethodBody(source, "void DrawWrappedTooltip");
             Assert.Contains("drawTextWithShadow", body);
-            Assert.Contains("drawTextureBox", body);
+            Assert.Contains("DrawTextureBox", body);
             Assert.DoesNotContain("drawHoverText", body);
         }
 
@@ -1675,6 +1675,54 @@ namespace OutfitStudio.Tests.UI
             string source = SourceScanner.ReadSourceFile("UI/WardrobeOverlay.cs");
             string body = SourceScanner.ExtractMethodBody(source, "void OpenEditOverlay");
             Assert.Contains("new SaveSetOverlay(this,", body);
+        }
+
+        [Fact]
+        // Expected: WardrobeOverlay has onOutfitApplied callback and invokes it on Apply
+        public void WardrobeOverlay_Apply_InvokesOnOutfitAppliedCallback()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/WardrobeOverlay.cs");
+            Assert.Contains("Action<OutfitSet>? onOutfitApplied", source);
+            Assert.Contains("onOutfitApplied?.Invoke(SelectedSet)", source);
+        }
+
+        [Fact]
+        // Expected: WardrobeOverlay.ShouldShowItemInfo falls back to config when no OutfitMenu parent
+        public void WardrobeOverlay_ShouldShowItemInfo_FallsBackToConfig()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/WardrobeOverlay.cs");
+            Assert.Contains("ShouldShowItemInfo", source);
+            Assert.Contains("ModEntry.Config.ShowItemInfo", source);
+        }
+
+        [Fact]
+        // Expected: WardrobeOverlay handles ToggleItemInfoKey directly when standalone (no OutfitMenu parent)
+        public void WardrobeOverlay_Update_HandlesToggleItemInfoKeyStandalone()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/WardrobeOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "override void update");
+            Assert.Contains("ToggleItemInfoKey.JustPressed()", body);
+            Assert.Contains("Config.ShowItemInfo", body);
+        }
+
+        [Fact]
+        // Expected: WardrobeOverlay Apply handler does NOT call NotifyOutfitApplied directly
+        public void WardrobeOverlay_Apply_DoesNotCallNotifyOutfitApplied()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/WardrobeOverlay.cs");
+            Assert.DoesNotContain("NotifyOutfitApplied", source);
+        }
+
+        [Fact]
+        // Expected: ModEntry hotkey path calls SetManualOutfit when parent is null (standalone wardrobe)
+        public void ModEntry_WardrobeHotkey_CallsSetManualOutfitWhenNoParent()
+        {
+            string source = SourceScanner.ReadSourceFile("Core/ModEntry.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void OnButtonsChanged");
+            int wardrobeIdx = body.IndexOf("new WardrobeOverlay(");
+            string afterWardrobe = body.Substring(wardrobeIdx, Math.Min(800, body.Length - wardrobeIdx));
+            Assert.Contains("SetManualOutfit", afterWardrobe);
+            Assert.Contains("FromOutfitSet", afterWardrobe);
         }
 
         // ----------------------------------------------------------------
@@ -2697,12 +2745,12 @@ namespace OutfitStudio.Tests.UI
         }
 
         [Fact]
-        // Expected: ManualOutfitSnapshot has FromCurrentPlayer and FromOutfitSet factory methods
+        // Expected: ManualOutfitSnapshot has FromCurrentPlayer and FromOutfitSet factory methods with includeHair param
         public void ManualOutfitSnapshot_HasFactoryMethods()
         {
             string source = SourceScanner.ReadSourceFile("Services/ScheduleEngine.cs");
-            Assert.Contains("FromCurrentPlayer()", source);
-            Assert.Contains("FromOutfitSet(OutfitSet set)", source);
+            Assert.Contains("FromCurrentPlayer(bool includeHair = true)", source);
+            Assert.Contains("FromOutfitSet(OutfitSet set, bool includeHair = true)", source);
         }
 
         [Fact]
@@ -2714,23 +2762,24 @@ namespace OutfitStudio.Tests.UI
         }
 
         [Fact]
-        // Expected: OutfitMenu.ApplyOutfit notifies schedule engine with snapshot from current player
+        // Expected: OutfitMenu.ApplyOutfit notifies schedule engine with snapshot gated by IncludeHairInOutfitSets
         public void OutfitMenu_ApplyOutfit_NotifiesScheduleEngine()
         {
             string source = SourceScanner.ReadSourceFile("UI/OutfitMenu.cs");
             string body = SourceScanner.ExtractMethodBody(source, "void ApplyOutfit");
-            Assert.Contains("ManualOutfitSnapshot.FromCurrentPlayer()", body);
+            Assert.Contains("ManualOutfitSnapshot.FromCurrentPlayer(", body);
+            Assert.Contains("IncludeHairInOutfitSets", body);
             Assert.Contains("SetManualOutfit", body);
         }
 
         [Fact]
-        // Expected: OutfitMenu.NotifyOutfitApplied creates snapshot from set or current player
+        // Expected: OutfitMenu.NotifyOutfitApplied creates snapshot from set or current player with includeHair
         public void OutfitMenu_NotifyOutfitApplied_CreatesSnapshotFromSetOrPlayer()
         {
             string source = SourceScanner.ReadSourceFile("UI/OutfitMenu.cs");
             string body = SourceScanner.ExtractMethodBody(source, "void NotifyOutfitApplied");
-            Assert.Contains("ManualOutfitSnapshot.FromOutfitSet(set)", body);
-            Assert.Contains("ManualOutfitSnapshot.FromCurrentPlayer()", body);
+            Assert.Contains("ManualOutfitSnapshot.FromOutfitSet(set, includeHair)", body);
+            Assert.Contains("ManualOutfitSnapshot.FromCurrentPlayer(includeHair)", body);
         }
 
         [Fact]
@@ -2837,11 +2886,12 @@ namespace OutfitStudio.Tests.UI
         // ----------------------------------------------------------------
 
         [Fact]
-        // Expected: ApplyButton click handler calls exitActiveMenu to close the menu
-        public void OutfitInputHandler_ApplyButton_ClosesMenu()
+        // Expected: ApplyButton click handler applies outfit without closing the menu
+        public void OutfitInputHandler_ApplyButton_DoesNotCloseMenu()
         {
             string source = SourceScanner.ReadSourceFile("Input/OutfitInputHandler.cs");
-            Assert.Contains("exitActiveMenu", source);
+            Assert.Contains("onApplyOutfit()", source);
+            Assert.DoesNotContain("exitActiveMenu", source);
         }
 
         // ----------------------------------------------------------------
@@ -3373,6 +3423,712 @@ namespace OutfitStudio.Tests.UI
             string afterKey = body.Substring(keyIndex, Math.Min(500, body.Length - keyIndex));
             Assert.Contains($"is {menuType}", afterKey);
             Assert.Contains("exitActiveMenu()", afterKey);
+        }
+
+        // ----------------------------------------------------------------
+        //  S10: Hair tab integration
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: OutfitMenu draws HairTab with DrawTabWithText
+        public void OutfitMenu_DrawsHairTab()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/OutfitMenu.cs");
+            Assert.Contains("TabHair", source);
+            Assert.Contains("DrawTabWithText", source);
+        }
+
+        [Fact]
+        // Expected: OutfitMenu draws tab divider between Hair and clothing tabs
+        public void OutfitMenu_DrawsTabDivider()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/OutfitMenu.cs");
+            Assert.Contains("DrawTabDivider", source);
+        }
+
+        [Fact]
+        // Expected: OutfitInputHandler includes HairTab in dropdown bypass list
+        public void InputHandler_HairTab_InDropdownBypass()
+        {
+            string source = SourceScanner.ReadSourceFile("Input/OutfitInputHandler.cs");
+            Assert.Contains("HairTab.containsPoint", source);
+        }
+
+        [Fact]
+        // Expected: OutfitInputHandler has HandleTabClick for Hair category
+        public void InputHandler_HasHairTabClick()
+        {
+            string source = SourceScanner.ReadSourceFile("Input/OutfitInputHandler.cs");
+            Assert.Contains("HandleTabClick(uiBuilder.HairTab", source);
+        }
+
+        [Fact]
+        // Expected: OutfitMenu skips item tooltip when category is Hair
+        public void OutfitMenu_SkipsTooltip_ForHairCategory()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/OutfitMenu.cs");
+            Assert.Contains("currentCategory != OutfitCategoryManager.Category.Hair", source);
+        }
+
+        [Fact]
+        // Expected: DyeColorManager has Hair case in ApplyToActiveItem
+        public void DyeColorManager_ApplyToActiveItem_HasHairCase()
+        {
+            string source = SourceScanner.ReadSourceFile("Managers/DyeColorManager.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void ApplyToActiveItem");
+            Assert.Contains("Category.Hair", body);
+            Assert.Contains("changeHairColor", body);
+        }
+
+        [Fact]
+        // Expected: Lookup tooltip includes hair line
+        public void DrawLookupTooltip_IncludesHairLine()
+        {
+            string source = SourceScanner.ReadSourceFile("Rendering/OutfitDrawingHelper.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void DrawLookupTooltip");
+            Assert.Contains("LookupHair", body);
+            Assert.Contains("IsHairUnsaved", body);
+        }
+
+        [Fact]
+        // Expected: TranslationCache has LookupHair property and i18n key
+        public void TranslationCache_HasLookupHair()
+        {
+            string source = SourceScanner.ReadSourceFile("Utilities/TranslationCache.cs");
+            Assert.Contains("LookupHair", source);
+            Assert.Contains("menu.lookup.hair", source);
+        }
+
+        [Fact]
+        // Expected: default.json has menu.lookup.hair key
+        public void DefaultJson_HasLookupHairKey()
+        {
+            string json = SourceScanner.ReadSourceFile("i18n/default.json");
+            Assert.Contains("\"menu.lookup.hair\"", json);
+        }
+
+        // ----------------------------------------------------------------
+        //  Hair in Outfit Sets — structural contracts
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: SaveSetOverlay has revertHairId/revertHairColor fields for preview revert
+        public void SaveSetOverlay_HasRevertHairFields()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/SaveSetOverlay.cs");
+            Assert.Contains("revertHairId", source);
+            Assert.Contains("revertHairColor", source);
+        }
+
+        [Fact]
+        // Expected: SaveSetOverlay RenderFarmerToTarget applies revert hair when includeHair is false
+        public void SaveSetOverlay_RenderFarmerToTarget_AppliesRevertHairWhenExcluded()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/SaveSetOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void RenderFarmerToTarget");
+            Assert.Contains("revertHairId", body);
+            Assert.Contains("revertHairColor", body);
+        }
+
+        [Fact]
+        // Expected: SaveSetOverlay constructor accepts revertHairId and revertHairColor parameters
+        public void SaveSetOverlay_Constructor_AcceptsRevertHairParams()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/SaveSetOverlay.cs");
+            Assert.Contains("int? revertHairId", source);
+            Assert.Contains("Color? revertHairColor", source);
+        }
+
+        [Fact]
+        // Expected: OutfitInputHandler passes applied hair to SaveSetOverlay constructor
+        public void OutfitInputHandler_PassesAppliedHairToSaveSetOverlay()
+        {
+            string source = SourceScanner.ReadSourceFile("Input/OutfitInputHandler.cs");
+            Assert.Contains("revertHairId:", source);
+            Assert.Contains("AppliedHair", source);
+        }
+
+        [Fact]
+        // Expected: SaveSetUIBuilder HairSlot is positioned to the LEFT of PreviewBox (lower X)
+        public void SaveSetUIBuilder_HairSlot_IsLeftOfPreview()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/SaveSetUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void CalculateLayout");
+            Assert.Contains("hairSlotX", body);
+            Assert.Contains("HairSlot = new Rectangle(hairSlotX", body);
+        }
+
+        [Fact]
+        // Expected: SaveSetUIBuilder right-side clothing slots have 3 items (hat/shirt/pants), not 4
+        public void SaveSetUIBuilder_ClothingSlots_ThreeItems()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/SaveSetUIBuilder.cs");
+            Assert.Contains("SaveSetItemSlotSize * 3", source);
+            Assert.DoesNotContain("SaveSetItemSlotSize * 4", source);
+        }
+
+        [Fact]
+        // Expected: ScheduleOutfitOverlay RenderPreviewToTarget saves and restores hair
+        public void ScheduleOutfitOverlay_RenderPreview_SavesAndRestoresHair()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleOutfitOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void RenderPreviewToTarget");
+            Assert.Contains("savedHair", body);
+            Assert.Contains("savedHairColor", body);
+            Assert.Contains("changeHairStyle(savedHair)", body);
+            Assert.Contains("changeHairColor(savedHairColor)", body);
+        }
+
+        [Fact]
+        // Expected: ScheduleOutfitOverlay RenderPreviewToTarget applies set hair when present
+        public void ScheduleOutfitOverlay_RenderPreview_AppliesSetHair()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleOutfitOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void RenderPreviewToTarget");
+            Assert.Contains("set.HairId.HasValue", body);
+            Assert.Contains("changeHairStyle(set.HairId.Value)", body);
+        }
+
+        [Fact]
+        // Expected: ManualOutfitSnapshot record includes HairId and HairColor fields
+        public void ManualOutfitSnapshot_IncludesHairFields()
+        {
+            string source = SourceScanner.ReadSourceFile("Services/ScheduleEngine.cs");
+            Assert.Contains("int? HairId", source);
+            Assert.Contains("string? HairColor", source);
+        }
+
+        [Fact]
+        // Expected: TryApplyManualOverride temp OutfitSet includes HairId and HairColor
+        public void ScheduleEngine_TryApplyManualOverride_IncludesHairInTempSet()
+        {
+            string source = SourceScanner.ReadSourceFile("Services/ScheduleEngine.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "bool TryApplyManualOverride");
+            Assert.Contains("HairId = snapshot.HairId", body);
+            Assert.Contains("HairColor = snapshot.HairColor", body);
+        }
+
+        [Fact]
+        // Expected: OutfitState exposes AppliedHairColor property
+        public void OutfitState_HasAppliedHairColorProperty()
+        {
+            string source = SourceScanner.ReadSourceFile("Managers/OutfitState.cs");
+            Assert.Contains("AppliedHairColor", source);
+        }
+
+        [Fact]
+        // Expected: SaveSetOverlay edit-mode falls back to player hair when set has no HairId
+        public void SaveSetOverlay_EditMode_FallsBackToPlayerHairWhenNull()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/SaveSetOverlay.cs");
+            // editingSet.HairId ?? Game1.player.hair.Value — fallback for old sets
+            Assert.Contains("editingSet.HairId ?? Game1.player.hair.Value", source);
+            Assert.Contains("editingSet.HairColor ?? ColorHelper.ToColorString", source);
+        }
+
+        [Fact]
+        // Expected: SaveSetOverlay forces includeHair=false only when config disables hair in sets
+        public void SaveSetOverlay_IncludeHair_GatedByConfig()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/SaveSetOverlay.cs");
+            Assert.DoesNotContain("includeHair = capturedHairId.HasValue", source);
+            Assert.Contains("IncludeHairInOutfitSets", source);
+        }
+
+        [Fact]
+        // Expected: OutfitSetStore.ApplySet gates hair application on IncludeHairInOutfitSets config
+        public void OutfitSetStore_ApplySet_GatesHairByConfig()
+        {
+            string source = SourceScanner.ReadSourceFile("Services/OutfitSetStore.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void ApplySet");
+            Assert.Contains("IncludeHairInOutfitSets", body);
+            Assert.Contains("ApplyHair", body);
+        }
+
+        [Fact]
+        // Expected: WardrobeOverlay.RenderPreviewToTarget gates hair on IncludeHairInOutfitSets config
+        public void WardrobeOverlay_RenderPreviewToTarget_GatesHairByConfig()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/WardrobeOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void RenderPreviewToTarget");
+            Assert.Contains("IncludeHairInOutfitSets", body);
+            Assert.Contains("changeHairStyle", body);
+        }
+
+        [Fact]
+        // Expected: SaveSetOverlay constructor forces includeHair=false when config disables hair
+        public void SaveSetOverlay_Constructor_ForcesIncludeHairWhenConfigDisabled()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/SaveSetOverlay.cs");
+            Assert.Contains("!ModEntry.Config.IncludeHairInOutfitSets", source);
+            Assert.Contains("includeHair = false", source);
+        }
+
+        [Fact]
+        // Expected: SaveSetOverlay hair slot click is gated by IncludeHairInOutfitSets config
+        public void SaveSetOverlay_HairSlotClick_GatedByConfig()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/SaveSetOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "override void receiveLeftClick");
+            Assert.Contains("IncludeHairInOutfitSets", body);
+        }
+
+        [Fact]
+        // Expected: ScheduleEngine.MatchesCurrentPlayer passes IncludeHairInOutfitSets to FromCurrentPlayer
+        public void ScheduleEngine_MatchesCurrentPlayer_GatesHairByConfig()
+        {
+            string source = SourceScanner.ReadSourceFile("Services/ScheduleEngine.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "bool MatchesCurrentPlayer");
+            Assert.Contains("IncludeHairInOutfitSets", body);
+        }
+
+        [Fact]
+        // Expected: WardrobeOverlay.DrawItemSprites dims hair sprite when config disables hair
+        public void WardrobeOverlay_DrawItemSprites_DimsHairWhenConfigDisabled()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/WardrobeOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void DrawItemSprites");
+            Assert.Contains("IncludeHairInOutfitSets", body);
+        }
+
+        [Fact]
+        // Expected: WardrobeUIBuilder dims hair slot box when config disables hair
+        public void WardrobeUIBuilder_HairSlot_DimsWhenConfigDisabled()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/WardrobeUIBuilder.cs");
+            Assert.Contains("IncludeHairInOutfitSets", source);
+        }
+
+        [Fact]
+        // Expected: ConfigOverlay has IncludeHairInOutfitSets state field and save handler
+        public void ConfigOverlay_HasIncludeHairInOutfitSets()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ConfigOverlay.cs");
+            Assert.Contains("includeHairInOutfitSets", source);
+            Assert.Contains("config.IncludeHairInOutfitSets = includeHairInOutfitSets", source);
+        }
+
+        [Fact]
+        // Expected: Apply button in main menu does not close menu
+        public void OutfitInputHandler_ApplyButton_StaysOpen()
+        {
+            string source = SourceScanner.ReadSourceFile("Input/OutfitInputHandler.cs");
+            Assert.Contains("onApplyOutfit()", source);
+            Assert.DoesNotContain("exitActiveMenu", source);
+        }
+
+        // ----------------------------------------------------------------
+        //  S45: Mod filter dropdown has typeable search bar
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: OutfitDropdownManager creates a TextBox when toggled open and destroys on close
+        public void OutfitDropdownManager_Toggle_CreatesAndDestroysSearchTextBox()
+        {
+            string source = SourceScanner.ReadSourceFile("Managers/OutfitDropdownManager.cs");
+            string toggleBody = SourceScanner.ExtractMethodBody(source, "void Toggle");
+            Assert.Contains("CreateSearchTextBox()", toggleBody);
+
+            string closeBody = SourceScanner.ExtractMethodBody(source, "void Close");
+            Assert.Contains("DestroySearchTextBox()", closeBody);
+        }
+
+        [Fact]
+        // Expected: OutfitDropdownManager.UpdateSearch forces TextBox.Selected = true to override hover focus
+        public void OutfitDropdownManager_UpdateSearch_ForcesTextBoxSelected()
+        {
+            string source = SourceScanner.ReadSourceFile("Managers/OutfitDropdownManager.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void UpdateSearch");
+            Assert.Contains("searchTextBox.Update()", body);
+            Assert.Contains("searchTextBox.Selected = true", body);
+        }
+
+        [Fact]
+        // Expected: OutfitDropdownManager.BuildOptions filters allMods by searchText
+        public void OutfitDropdownManager_BuildOptions_FiltersBySearchText()
+        {
+            string source = SourceScanner.ReadSourceFile("Managers/OutfitDropdownManager.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "public void BuildOptions");
+            Assert.Contains("searchText", body);
+            Assert.Contains("OrdinalIgnoreCase", body);
+        }
+
+        [Fact]
+        // Expected: OutfitDropdownManager.DestroySearchTextBox cleans up keyboard subscriber
+        public void OutfitDropdownManager_DestroySearchTextBox_CleansUpSubscriber()
+        {
+            string source = SourceScanner.ReadSourceFile("Managers/OutfitDropdownManager.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void DestroySearchTextBox");
+            Assert.Contains("keyboardDispatcher.Subscriber", body);
+            Assert.Contains("searchTextBox = null", body);
+        }
+
+        [Fact]
+        // Expected: OutfitUIBuilder.DrawModFilterDropdown uses DrawInputBar when open
+        public void OutfitUIBuilder_DrawModFilterDropdown_UsesDrawInputBarWhenOpen()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/OutfitUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void DrawModFilterDropdown");
+            Assert.Contains("isOpen", body);
+            Assert.Contains("DrawInputBar", body);
+            Assert.Contains("DrawDropdownButton", body);
+        }
+
+        [Fact]
+        // Expected: OutfitMenu.update calls dropdownManager.UpdateSearch and unfocuses search bar when dropdown open
+        public void OutfitMenu_Update_CallsDropdownUpdateSearch()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/OutfitMenu.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "override void update");
+            Assert.Contains("dropdownManager.UpdateSearch()", body);
+            Assert.Contains("dropdownManager.IsOpen", body);
+        }
+
+        [Fact]
+        // Expected: OutfitInputHandler closes dropdown when search bar is clicked while dropdown is open
+        public void OutfitInputHandler_DropdownOpen_SearchBarClosesDropdown()
+        {
+            string source = SourceScanner.ReadSourceFile("Input/OutfitInputHandler.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "bool HandleLeftClick");
+            // Search bar is in the exception list that closes the dropdown
+            Assert.Contains("searchManager.IsPointInBounds(x, y)", body);
+        }
+
+        [Fact]
+        // Expected: OutfitInputHandler absorbs click on mod filter bar when dropdown is already open
+        public void OutfitInputHandler_DropdownOpen_ModFilterBarAbsorbsClick()
+        {
+            string source = SourceScanner.ReadSourceFile("Input/OutfitInputHandler.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "bool HandleLeftClick");
+            Assert.Contains("ModFilterDropdown", body);
+            Assert.Contains("ClearSearchText", body);
+        }
+
+        // ----------------------------------------------------------------
+        //  S46: Tag filter dropdowns have typeable search bar
+        // ----------------------------------------------------------------
+
+        [Theory]
+        [InlineData("UI/WardrobeUIBuilder.cs")]
+        [InlineData("UI/ScheduleOutfitUIBuilder.cs")]
+        // Expected: UIBuilders create/destroy tag search TextBox on open/close
+        public void UIBuilder_TagSearch_CreatesAndDestroysTextBox(string file)
+        {
+            string source = SourceScanner.ReadSourceFile(file);
+            Assert.Contains("CreateTagSearchTextBox()", source);
+            Assert.Contains("DestroyTagSearchTextBox()", source);
+            string openBody = SourceScanner.ExtractMethodBody(source, "void OpenTagSearch");
+            Assert.Contains("CreateTagSearchTextBox()", openBody);
+        }
+
+        [Theory]
+        [InlineData("UI/WardrobeUIBuilder.cs")]
+        [InlineData("UI/ScheduleOutfitUIBuilder.cs")]
+        // Expected: UIBuilders filter tags by search text in BuildTagsOptions
+        public void UIBuilder_BuildTagsOptions_FiltersBySearchText(string file)
+        {
+            string source = SourceScanner.ReadSourceFile(file);
+            string body = SourceScanner.ExtractMethodBody(source, "void BuildTagsOptions");
+            Assert.Contains("tagSearchText", body);
+            Assert.Contains("OrdinalIgnoreCase", body);
+        }
+
+        [Theory]
+        [InlineData("UI/WardrobeUIBuilder.cs")]
+        [InlineData("UI/ScheduleOutfitUIBuilder.cs")]
+        // Expected: UIBuilders force tag TextBox.Selected = true in UpdateTagSearch
+        public void UIBuilder_UpdateTagSearch_ForcesTextBoxSelected(string file)
+        {
+            string source = SourceScanner.ReadSourceFile(file);
+            string body = SourceScanner.ExtractMethodBody(source, "bool UpdateTagSearch");
+            Assert.Contains("tagSearchTextBox.Update()", body);
+            Assert.Contains("tagSearchTextBox.Selected = true", body);
+        }
+
+        [Theory]
+        [InlineData("UI/WardrobeUIBuilder.cs")]
+        [InlineData("UI/ScheduleOutfitUIBuilder.cs")]
+        // Expected: UIBuilder DrawFilterBar uses DrawInputBar when tags dropdown is open
+        public void UIBuilder_DrawFilterBar_UsesDrawInputBarForTags(string file)
+        {
+            string source = SourceScanner.ReadSourceFile(file);
+            string body = SourceScanner.ExtractMethodBody(source, "void DrawFilterBar");
+            Assert.Contains("tagsOpen", body);
+            Assert.Contains("DrawInputBar", body);
+            Assert.Contains("tagSearchText", body);
+        }
+
+        [Theory]
+        [InlineData("UI/WardrobeOverlay.cs")]
+        [InlineData("UI/ScheduleOutfitOverlay.cs")]
+        // Expected: Overlays call CloseTagSearch in CloseAllDropdowns
+        public void Overlay_CloseAllDropdowns_ClosesTagSearch(string file)
+        {
+            string source = SourceScanner.ReadSourceFile(file);
+            string body = SourceScanner.ExtractMethodBody(source, "void CloseAllDropdowns");
+            Assert.Contains("CloseTagSearch()", body);
+        }
+
+        [Theory]
+        [InlineData("UI/WardrobeOverlay.cs")]
+        [InlineData("UI/ScheduleOutfitOverlay.cs")]
+        // Expected: Overlays defocus main search when tags dropdown is open
+        public void Overlay_Update_DefocusesSearchWhenTagsOpen(string file)
+        {
+            string source = SourceScanner.ReadSourceFile(file);
+            string body = SourceScanner.ExtractMethodBody(source, "override void update");
+            Assert.Contains("tagsDropdownOpen", body);
+            Assert.Contains("UpdateTagSearch", body);
+        }
+
+        [Theory]
+        [InlineData("UI/WardrobeOverlay.cs")]
+        [InlineData("UI/ScheduleOutfitOverlay.cs")]
+        // Expected: Overlays absorb click on tags bar when tags dropdown is already open
+        public void Overlay_DropdownOpen_TagsBarAbsorbsClick(string file)
+        {
+            string source = SourceScanner.ReadSourceFile(file);
+            Assert.Contains("ClearTagSearchText", source);
+        }
+
+        // ----------------------------------------------------------------
+        //  S47: Dropdown panels support arrow key scrolling
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: OutfitDropdownManager.HandleKeyPress scrolls on Up/Down when ArrowKeyScrolling enabled
+        public void OutfitDropdownManager_HandleKeyPress_ScrollsOnArrowKeys()
+        {
+            string source = SourceScanner.ReadSourceFile("Managers/OutfitDropdownManager.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "bool HandleKeyPress");
+            Assert.Contains("ArrowKeyScrolling", body);
+            Assert.Contains("Keys.Up", body);
+            Assert.Contains("Keys.Down", body);
+            Assert.Contains("HandleScrollWheel", body);
+        }
+
+        [Theory]
+        [InlineData("UI/WardrobeOverlay.cs")]
+        [InlineData("UI/ScheduleOutfitOverlay.cs")]
+        // Expected: Overlay receiveKeyPress scrolls tags dropdown on Up/Down arrow keys
+        public void Overlay_ReceiveKeyPress_ScrollsTagsDropdownOnArrowKeys(string file)
+        {
+            string source = SourceScanner.ReadSourceFile(file);
+            string body = SourceScanner.ExtractMethodBody(source, "override void receiveKeyPress");
+            Assert.Contains("tagsDropdownOpen", body);
+            Assert.Contains("ArrowKeyScrolling", body);
+            Assert.Contains("Keys.Up", body);
+            Assert.Contains("Keys.Down", body);
+            Assert.Contains("ScrollTagsDropdown", body);
+        }
+
+        // ----------------------------------------------------------------
+        //  S48: ScheduleMenu has floating debug log button
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: ScheduleMenuUIBuilder has DebugLogButton property positioned in CalculateLayout
+        public void ScheduleMenuUIBuilder_HasDebugLogButton()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleMenuUIBuilder.cs");
+            Assert.Contains("DebugLogButton", source);
+            Assert.Contains("DrawDebugLogButton", source);
+        }
+
+        [Fact]
+        // Expected: ScheduleMenu draws DebugLogButton gated on ShowScheduleDebugLog config
+        public void ScheduleMenu_DrawsDebugLogButton_GatedOnConfig()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleMenu.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "override void draw");
+            Assert.Contains("ShowScheduleDebugLog", body);
+            Assert.Contains("DrawDebugLogButton", body);
+        }
+
+        [Fact]
+        // Expected: ScheduleMenu handles DebugLogButton click to open ScheduleDebugLogOverlay
+        public void ScheduleMenu_HandlesDebugLogButtonClick()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleMenu.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "override void receiveLeftClick");
+            Assert.Contains("DebugLogButton.containsPoint", body);
+            Assert.Contains("ScheduleDebugLogOverlay", body);
+            Assert.Contains("ShowScheduleDebugLog", body);
+        }
+
+        // ----------------------------------------------------------------
+        //  S49: Hide Hat checkbox in Hair tab
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: OutfitUIBuilder has HideHatCheckbox component
+        public void OutfitUIBuilder_HasHideHatCheckbox()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/OutfitUIBuilder.cs");
+            Assert.Contains("HideHatCheckbox", source);
+            Assert.Contains("DrawHideHatCheckbox", source);
+        }
+
+        [Fact]
+        // Expected: OutfitUIBuilder.CalculateLeftPanelHeight includes HideHatRowHeight
+        public void OutfitUIBuilder_LeftPanelHeight_IncludesHideHatRowHeight()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/OutfitUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "int CalculateLeftPanelHeight");
+            Assert.Contains("HideHatRowHeight", body);
+        }
+
+        [Fact]
+        // Expected: OutfitUIBuilder.RenderFarmerToTarget temporarily nulls hat when hideHatInPreview
+        public void OutfitUIBuilder_RenderFarmer_HidesHatWhenFlagSet()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/OutfitUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void RenderFarmerToTarget");
+            Assert.Contains("hideHatInPreview", body);
+            Assert.Contains("hat.Value = null", body);
+        }
+
+        [Fact]
+        // Expected: OutfitInputHandler handles HideHatCheckbox click gated on Hair tab
+        public void OutfitInputHandler_HandlesHideHatCheckboxClick()
+        {
+            string source = SourceScanner.ReadSourceFile("Input/OutfitInputHandler.cs");
+            Assert.Contains("HideHatCheckbox.containsPoint", source);
+            Assert.Contains("HideHatInPreview", source);
+            Assert.Contains("Category.Hair", source);
+        }
+
+        [Fact]
+        // Expected: OutfitMenu draws HideHatCheckbox only when Hair tab is active
+        public void OutfitMenu_DrawsHideHatCheckbox_GatedOnHairTab()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/OutfitMenu.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "override void draw");
+            Assert.Contains("DrawHideHatCheckbox", body);
+            Assert.Contains("Category.Hair", body);
+        }
+
+        // ----------------------------------------------------------------
+        //  S55: ShowItemInfo toggle persistence in standalone mode
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: WardrobeOverlay standalone toggle persists config via PersistConfig
+        public void WardrobeOverlay_StandaloneToggle_PersistsConfig()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/WardrobeOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "override void update");
+            int toggleIdx = body.IndexOf("ToggleItemInfoKey.JustPressed()");
+            Assert.True(toggleIdx >= 0, "update must check ToggleItemInfoKey.JustPressed()");
+            string afterToggle = body.Substring(toggleIdx, Math.Min(300, body.Length - toggleIdx));
+            Assert.Contains("PersistConfig()", afterToggle);
+        }
+
+        [Fact]
+        // Expected: ModEntry exposes a static PersistConfig method for menus without a mod reference
+        public void ModEntry_HasStaticPersistConfig()
+        {
+            string source = SourceScanner.ReadSourceFile("Core/ModEntry.cs");
+            Assert.Contains("static void PersistConfig()", source);
+        }
+
+        [Fact]
+        // Expected: ModEntry initializes StaticHelper in Entry so PersistConfig can work
+        public void ModEntry_Entry_InitializesStaticHelper()
+        {
+            string source = SourceScanner.ReadSourceFile("Core/ModEntry.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "override void Entry");
+            Assert.Contains("StaticHelper = helper", body);
+        }
+
+        // ----------------------------------------------------------------
+        //  S56: ScheduleMenu debug log button uses CloseButtonEdgeMargin
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: ScheduleMenuUIBuilder positions DebugLogButton using CloseButtonEdgeMargin for consistent gap
+        public void ScheduleMenuUIBuilder_DebugLogButton_UsesCloseButtonEdgeMargin()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleMenuUIBuilder.cs");
+            int idx = source.IndexOf("DebugLogButton = new");
+            Assert.True(idx >= 0, "DebugLogButton must be created in ScheduleMenuUIBuilder");
+            string after = source.Substring(idx, Math.Min(300, source.Length - idx));
+            Assert.Contains("CloseButtonEdgeMargin", after);
+        }
+
+        // ----------------------------------------------------------------
+        //  S57: ScheduleOutfitOverlay queued outfits sorted to top
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: ScheduleOutfitOverlay computes remainingIds during RefreshDisplayedSets, not in draw
+        public void ScheduleOutfitOverlay_RefreshDisplayedSets_ComputesRemainingIds()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleOutfitOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void RefreshDisplayedSets");
+            Assert.Contains("ComputeRemainingIds()", body);
+        }
+
+        [Fact]
+        // Expected: ScheduleOutfitOverlay sorts displayedSets so queued (remaining) outfits appear first
+        public void ScheduleOutfitOverlay_RefreshDisplayedSets_SortsQueuedFirst()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleOutfitOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void RefreshDisplayedSets");
+            Assert.Contains("OrderByDescending", body);
+            Assert.Contains("remainingIds.Contains", body);
+        }
+
+        [Fact]
+        // Expected: ScheduleOutfitOverlay.draw does NOT recompute remainingIds (uses cached field)
+        public void ScheduleOutfitOverlay_Draw_UsesCachedRemainingIds()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ScheduleOutfitOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "override void draw");
+            Assert.DoesNotContain("SyncQueueWithSetIds", body);
+            Assert.DoesNotContain("new RotationState", body);
+        }
+
+        [Fact]
+        // Expected: HideHatCheckbox bounds include label text width for full-row click target
+        public void OutfitUIBuilder_HideHatCheckbox_IncludesLabelWidth()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/OutfitUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void PositionLeftPanel");
+            Assert.Contains("MeasureString(TranslationCache.HideHat)", body);
+            Assert.Contains("hitWidth", body);
+        }
+
+        // ── Hair color caching: no per-frame ParseColor in draw methods ──
+
+        [Fact]
+        // Expected: WardrobeOverlay.RenderPreviewToTarget uses cachedHairColor, not ParseColor
+        public void WardrobeOverlay_RenderPreview_UsesCachedHairColor()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/WardrobeOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void RenderPreviewToTarget");
+            Assert.DoesNotContain("ParseColor", body);
+            Assert.Contains("cachedHairColor", body);
+        }
+
+        [Fact]
+        // Expected: SaveSetOverlay.DrawItemSprites uses parsedHairColor, not ParseColor
+        public void SaveSetOverlay_DrawItemSprites_UsesCachedColor()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/SaveSetOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void DrawItemSprites");
+            Assert.DoesNotContain("ParseColor", body);
+            Assert.Contains("parsedHairColor", body);
+        }
+
+        [Fact]
+        // Expected: SaveSetOverlay.RenderFarmerToTarget uses parsedHairColor, not ParseColor
+        public void SaveSetOverlay_RenderFarmerToTarget_UsesCachedColor()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/SaveSetOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void RenderFarmerToTarget");
+            Assert.DoesNotContain("ParseColor", body);
+            Assert.Contains("parsedHairColor", body);
         }
     }
 }
