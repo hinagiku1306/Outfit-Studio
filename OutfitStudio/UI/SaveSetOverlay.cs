@@ -33,12 +33,18 @@ namespace OutfitStudio
         private bool includeShirt = true;
         private bool includePants = true;
         private bool includeHat = true;
+        private bool includeHair = true;
 
         private readonly string? capturedShirtId;
         private readonly string? capturedPantsId;
         private readonly string? capturedHatId;
         private readonly string? capturedShirtColor;
         private readonly string? capturedPantsColor;
+        private readonly int? capturedHairId;
+        private readonly string? capturedHairColor;
+        private readonly Color? parsedHairColor;
+        private readonly int revertHairId;
+        private readonly Color revertHairColor;
 
         private RenderTarget2D? farmerRenderTarget;
         private SpriteBatch? farmerSpriteBatch;
@@ -59,7 +65,7 @@ namespace OutfitStudio
 
         public bool IsEditing => editingSet != null;
 
-        public SaveSetOverlay(IClickableMenu parentMenu, OutfitSetStore store, Action onSaveComplete, OutfitSet? editingSet = null, Action? onClose = null)
+        public SaveSetOverlay(IClickableMenu parentMenu, OutfitSetStore store, Action onSaveComplete, OutfitSet? editingSet = null, Action? onClose = null, int? revertHairId = null, Color? revertHairColor = null)
         {
             this.parentMenu = parentMenu ?? throw new ArgumentNullException(nameof(parentMenu));
             this.store = store ?? throw new ArgumentNullException(nameof(store));
@@ -84,6 +90,8 @@ namespace OutfitStudio
                 capturedHatId = editingSet.HatId;
                 capturedShirtColor = editingSet.ShirtColor;
                 capturedPantsColor = editingSet.PantsColor;
+                capturedHairId = editingSet.HairId ?? Game1.player.hair.Value;
+                capturedHairColor = editingSet.HairColor ?? ColorHelper.ToColorString(Game1.player.hairstyleColor.Value);
 
                 includeShirt = !string.IsNullOrEmpty(capturedShirtId);
                 includePants = !string.IsNullOrEmpty(capturedPantsId);
@@ -105,11 +113,20 @@ namespace OutfitStudio
                 capturedPantsColor = Game1.player.CanDyePants()
                     ? ColorHelper.ToColorString(Game1.player.GetPantsColor())
                     : null;
+                capturedHairId = Game1.player.hair.Value;
+                capturedHairColor = ColorHelper.ToColorString(Game1.player.hairstyleColor.Value);
 
                 includeShirt = !string.IsNullOrEmpty(capturedShirtId) && capturedShirtId != NoShirtId;
                 includePants = !string.IsNullOrEmpty(capturedPantsId) && capturedPantsId != NoPantsId;
                 includeHat = !string.IsNullOrEmpty(capturedHatId) && capturedHatId != NoHatId;
             }
+
+            if (!ModEntry.Config.IncludeHairInOutfitSets)
+                includeHair = false;
+
+            this.revertHairId = revertHairId ?? Game1.player.hair.Value;
+            this.revertHairColor = revertHairColor ?? Game1.player.hairstyleColor.Value;
+            parsedHairColor = ColorHelper.ParseColor(capturedHairColor);
 
             nameTextBox = new TextBox(
                 Game1.content.Load<Texture2D>("LooseSprites\\textBox"),
@@ -270,6 +287,14 @@ namespace OutfitStudio
                 return;
             }
 
+            if (uiBuilder.HairSlot.Contains(x, y) && HasHair() && ModEntry.Config.IncludeHairInOutfitSets)
+            {
+                includeHair = !includeHair;
+                previewDirty = true;
+                if (playSound) Game1.playSound("smallSelect");
+                return;
+            }
+
             if (uiBuilder.NameRandomButton.containsPoint(x, y))
             {
                 nameTextBox.Text = Dialogue.randomName();
@@ -409,6 +434,8 @@ namespace OutfitStudio
             string? hatId = includeHat ? capturedHatId : null;
             string? shirtColor = includeShirt ? capturedShirtColor : null;
             string? pantsColor = includePants ? capturedPantsColor : null;
+            int? hairId = includeHair ? capturedHairId : null;
+            string? hairColor = includeHair ? capturedHairColor : null;
 
             if (editingSet != null)
             {
@@ -421,6 +448,8 @@ namespace OutfitStudio
                 editingSet.HatId = hatId;
                 editingSet.ShirtColor = shirtColor;
                 editingSet.PantsColor = pantsColor;
+                editingSet.HairId = hairId;
+                editingSet.HairColor = hairColor;
                 store.Update(editingSet);
             }
             else
@@ -435,6 +464,8 @@ namespace OutfitStudio
                     hatId,
                     shirtColor,
                     pantsColor,
+                    hairId,
+                    hairColor,
                     useCurrentOutfit: false
                 );
             }
@@ -453,6 +484,7 @@ namespace OutfitStudio
         private bool HasShirt() => !string.IsNullOrEmpty(capturedShirtId) && capturedShirtId != NoShirtId;
         private bool HasPants() => !string.IsNullOrEmpty(capturedPantsId) && capturedPantsId != NoPantsId;
         private bool HasHat() => !string.IsNullOrEmpty(capturedHatId) && capturedHatId != NoHatId;
+        private bool HasHair() => capturedHairId.HasValue;
 
         public override void draw(SpriteBatch b)
         {
@@ -496,7 +528,10 @@ namespace OutfitStudio
             uiBuilder.DrawItemSlot(b, uiBuilder.HatSlot, includeHat, HasHat(), mouseX, mouseY);
             uiBuilder.DrawItemSlot(b, uiBuilder.ShirtSlot, includeShirt, HasShirt(), mouseX, mouseY);
             uiBuilder.DrawItemSlot(b, uiBuilder.PantsSlot, includePants, HasPants(), mouseX, mouseY);
-            DrawItemSprites(b, includeShirt, includePants, includeHat);
+            bool hairInteractive = ModEntry.Config.IncludeHairInOutfitSets;
+            uiBuilder.DrawItemSlot(b, uiBuilder.HairSlot, includeHair, HasHair(),
+                hairInteractive ? mouseX : -1, hairInteractive ? mouseY : -1);
+            DrawItemSprites(b, includeShirt, includePants, includeHat, includeHair);
 
             uiBuilder.DrawTagsRow(b, tagPickerManager.IsOpen);
             uiBuilder.DrawFavoriteCheckbox(b, isFavorite, uiBuilder.FavoriteCheckbox.containsPoint(mouseX, mouseY));
@@ -573,6 +608,8 @@ namespace OutfitStudio
             var savedShirt = Game1.player.shirtItem.Value;
             var savedPants = Game1.player.pantsItem.Value;
             var savedHat = Game1.player.hat.Value;
+            int savedHair = Game1.player.hair.Value;
+            Color savedHairColor = Game1.player.hairstyleColor.Value;
 
             try
             {
@@ -598,6 +635,18 @@ namespace OutfitStudio
                     Game1.player.hat.Value = ItemRegistry.Create<Hat>("(H)" + capturedHatId);
                 else
                     Game1.player.hat.Value = null;
+
+                if (includeHair && capturedHairId.HasValue)
+                {
+                    Game1.player.changeHairStyle(capturedHairId.Value);
+                    if (parsedHairColor.HasValue)
+                        Game1.player.changeHairColor(parsedHairColor.Value);
+                }
+                else
+                {
+                    Game1.player.changeHairStyle(revertHairId);
+                    Game1.player.changeHairColor(revertHairColor);
+                }
 
                 Game1.player.FarmerRenderer.MarkSpriteDirty();
 
@@ -628,6 +677,8 @@ namespace OutfitStudio
                 Game1.player.shirtItem.Value = savedShirt;
                 Game1.player.pantsItem.Value = savedPants;
                 Game1.player.hat.Value = savedHat;
+                Game1.player.changeHairStyle(savedHair);
+                Game1.player.changeHairColor(savedHairColor);
                 Game1.player.FarmerRenderer.MarkSpriteDirty();
             }
 
@@ -636,7 +687,7 @@ namespace OutfitStudio
             Game1.graphics.GraphicsDevice.SetRenderTargets(renderTargets);
         }
 
-        private void DrawItemSprites(SpriteBatch b, bool shirtIncluded, bool pantsIncluded, bool hatIncluded)
+        private void DrawItemSprites(SpriteBatch b, bool shirtIncluded, bool pantsIncluded, bool hatIncluded, bool hairIncluded)
         {
             const float excludedTransparency = 0.4f;
             if (HasHat() && cachedHat != null)
@@ -645,6 +696,14 @@ namespace OutfitStudio
                 UIHelpers.DrawItemInSlot(b, uiBuilder.ShirtSlot, cachedShirt, shirtIncluded ? 1f : excludedTransparency);
             if (HasPants() && cachedPants != null)
                 UIHelpers.DrawItemInSlot(b, uiBuilder.PantsSlot, cachedPants, pantsIncluded ? 1f : excludedTransparency);
+            if (HasHair() && capturedHairId.HasValue)
+            {
+                float opacity = hairIncluded ? 1f : excludedTransparency;
+                Color? tint = parsedHairColor.HasValue
+                    ? parsedHairColor.Value * opacity
+                    : (Game1.player.prismaticHair.Value ? Utility.GetPrismaticColor() : Game1.player.hairstyleColor.Value) * opacity;
+                OutfitItemRenderer.DrawHairSprite(b, capturedHairId.Value, uiBuilder.HairSlot, tint);
+            }
         }
 
         private void DrawItemTooltips(SpriteBatch b, int mouseX, int mouseY)
@@ -664,6 +723,10 @@ namespace OutfitStudio
             else if (uiBuilder.HatSlot.Contains(mouseX, mouseY) && HasHat() && cachedHat != null)
             {
                 IClickableMenu.drawToolTip(b, cachedHat.getDescription(), cachedHat.DisplayName, cachedHat);
+            }
+            else if (uiBuilder.HairSlot.Contains(mouseX, mouseY) && HasHair() && capturedHairId.HasValue)
+            {
+                IClickableMenu.drawHoverText(b, $"Hair #{capturedHairId.Value}", Game1.smallFont);
             }
         }
 

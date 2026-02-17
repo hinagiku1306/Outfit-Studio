@@ -1,13 +1,8 @@
-7. Total number of sets
+
 8. Hovering color rectangle
 
 10. Ctrl+A to select all text in input box
 
-15. Toggleable button to open wardrobe menu directly
-16. Remove a set from a rule permanently or temporarily
-17. Remaining rotating sets
 18. Config option for concise item info (only name)
 
-20. Tutorial
 21. Exclude a filter
-22. Hair

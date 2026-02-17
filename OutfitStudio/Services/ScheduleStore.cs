@@ -144,7 +144,7 @@ namespace OutfitStudio.Services
             rotState.Queue.RemoveAll(id => !newSet.Contains(id));
         }
 
-        private void PruneStaleSelectedSetIds()
+        internal void PruneStaleSelectedSetIds()
         {
             foreach (var rule in data.Rules)
             {

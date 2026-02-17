@@ -182,6 +182,17 @@ namespace OutfitStudio
                 return;
             }
 
+            if (ModEntry.Config.ShowScheduleDebugLog && uiBuilder.DebugLogButton.containsPoint(x, y))
+            {
+                var evalLog = mod.GetScheduleEvalLog();
+                if (evalLog != null)
+                {
+                    Game1.activeClickableMenu = new ScheduleDebugLogOverlay(Game1.activeClickableMenu, evalLog);
+                    if (playSound) Game1.playSound("bigSelect");
+                }
+                return;
+            }
+
             if (!isWithinBounds(x, y) && ModEntry.Config.CloseOnClickOutside)
             {
                 bool clickedDropdownPanel = priorityDropdownOpen &&
@@ -211,7 +222,7 @@ namespace OutfitStudio
                 return;
             }
 
-            // When master is disabled, only Close button works (floating log handled above)
+            // When master is disabled, only Close + floating debug log work (handled above)
             if (!masterEnabled)
             {
                 if (uiBuilder.CloseMenuButton.containsPoint(x, y))
@@ -587,6 +598,9 @@ namespace OutfitStudio
             uiBuilder.DrawScrollIndicators(b);
             uiBuilder.DrawButtons(b, masterEnabled);
             uiBuilder.DrawCloseButton(b);
+
+            if (ModEntry.Config.ShowScheduleDebugLog)
+                uiBuilder.DrawDebugLogButton(b);
 
             // Priority dropdown options (drawn on top)
             if (priorityDropdownOpen && masterEnabled)

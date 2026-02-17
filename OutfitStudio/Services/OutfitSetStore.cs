@@ -305,6 +305,7 @@ namespace OutfitStudio.Services
         public OutfitSet CreateFromCurrentOutfit(string name, List<string> tags, bool isFavorite, bool isGlobal,
             string? shirtId = null, string? pantsId = null, string? hatId = null,
             string? shirtColor = null, string? pantsColor = null,
+            int? hairId = null, string? hairColor = null,
             bool useCurrentOutfit = true)
         {
             var set = new OutfitSet
@@ -317,7 +318,9 @@ namespace OutfitStudio.Services
                 PantsId = useCurrentOutfit ? OutfitState.GetClothingId(Game1.player.pantsItem.Value) : pantsId,
                 HatId = useCurrentOutfit ? OutfitState.GetHatIdFromItem(Game1.player.hat.Value) : hatId,
                 ShirtColor = shirtColor,
-                PantsColor = pantsColor
+                PantsColor = pantsColor,
+                HairId = useCurrentOutfit ? Game1.player.hair.Value : hairId,
+                HairColor = hairColor
             };
 
             Add(set);
@@ -350,6 +353,17 @@ namespace OutfitStudio.Services
                 if (color.HasValue)
                 {
                     Game1.player.changePantsColor(color.Value);
+                }
+            }
+
+            if (ModEntry.Config.IncludeHairInOutfitSets && set.HairId.HasValue)
+            {
+                OutfitState.ApplyHair(set.HairId.Value);
+                if (set.HairColor != null)
+                {
+                    var color = ColorHelper.ParseColor(set.HairColor);
+                    if (color.HasValue)
+                        Game1.player.changeHairColor(color.Value);
                 }
             }
         }

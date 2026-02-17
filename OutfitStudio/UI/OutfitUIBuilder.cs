@@ -17,10 +17,12 @@ namespace OutfitStudio
         public int VISIBLE_ROWS { get; private set; }
         public int COLUMNS { get; private set; }
 
+        public ClickableComponent HairTab { get; private set; } = null!;
         public ClickableComponent AllTab { get; private set; } = null!;
         public ClickableComponent ShirtsTab { get; private set; } = null!;
         public ClickableComponent PantsTab { get; private set; } = null!;
         public ClickableComponent HatsTab { get; private set; } = null!;
+        private int tabDividerX;
         public ClickableComponent ResetButton { get; private set; } = null!;
         public ClickableComponent ApplyButton { get; private set; } = null!;
         public ClickableTextureComponent CloseButton { get; private set; } = null!;
@@ -40,6 +42,7 @@ namespace OutfitStudio
         public ClickableTextureComponent GearButton { get; private set; } = null!;
         public ClickableComponent ScheduleButton { get; private set; } = null!;
         public ClickableComponent DebugLogButton { get; private set; } = null!;
+        public ClickableComponent HideHatCheckbox { get; private set; } = null!;
 
         public ClickableTextureComponent LeftArrowButton { get; private set; } = null!;
         public ClickableTextureComponent RightArrowButton { get; private set; } = null!;
@@ -87,7 +90,8 @@ namespace OutfitStudio
         private int CalculateLeftPanelHeight()
         {
             int arrowHeight = (int)(ArrowNativeHeight * ArrowScale);
-            return CharacterPreviewHeight + ElementGap + arrowHeight
+            return HideHatRowHeight + 8
+                + CharacterPreviewHeight + ElementGap + arrowHeight
                 + GapBetweenPortraitAndButtons
                 + TabAndButtonHeight + ElementGap + TabAndButtonHeight;
         }
@@ -153,29 +157,41 @@ namespace OutfitStudio
 
         private void PositionTabs(int tabY)
         {
-            int maxTabWidth = (Width - TabAndButtonGap * 3) / 4;
+            // 5 tabs: [Hair] | divider | [All] [Shirts] [Pants] [Hats]
+            int maxTabWidth = (Width - TabAndButtonGap * 3 - TabDividerGap * 2 - TabDividerWidth) / 5;
+            int hairTabWidth = UIHelpers.CalculateButtonWidth(TranslationCache.TabHair, maxTabWidth);
             int allTabWidth = UIHelpers.CalculateButtonWidth(TranslationCache.TabAll, maxTabWidth);
             int shirtTabWidth = UIHelpers.CalculateButtonWidth(TranslationCache.TabShirts, maxTabWidth);
             int pantsTabWidth = UIHelpers.CalculateButtonWidth(TranslationCache.TabPants, maxTabWidth);
             int hatsTabWidth = UIHelpers.CalculateButtonWidth(TranslationCache.TabHats, maxTabWidth);
 
-            int totalTabsWidth = allTabWidth + shirtTabWidth + pantsTabWidth + hatsTabWidth + TabAndButtonGap * 3;
+            int dividerSpace = TabDividerGap * 2 + TabDividerWidth;
+            int totalTabsWidth = hairTabWidth + dividerSpace + allTabWidth + shirtTabWidth + pantsTabWidth + hatsTabWidth + TabAndButtonGap * 3;
             int tabsStartX = X + (Width - totalTabsWidth) / 2;
 
+            HairTab = new ClickableComponent(
+                new Rectangle(tabsStartX, tabY, hairTabWidth, TabAndButtonHeight),
+                TranslationCache.TabHair
+            );
+
+            tabDividerX = HairTab.bounds.Right + TabDividerGap;
+
+            int clothingTabsStartX = tabDividerX + TabDividerWidth + TabDividerGap;
+
             AllTab = new ClickableComponent(
-                new Rectangle(tabsStartX, tabY, allTabWidth, TabAndButtonHeight),
+                new Rectangle(clothingTabsStartX, tabY, allTabWidth, TabAndButtonHeight),
                 TranslationCache.TabAll
             );
             ShirtsTab = new ClickableComponent(
-                new Rectangle(tabsStartX + allTabWidth + TabAndButtonGap, tabY, shirtTabWidth, TabAndButtonHeight),
+                new Rectangle(clothingTabsStartX + allTabWidth + TabAndButtonGap, tabY, shirtTabWidth, TabAndButtonHeight),
                 TranslationCache.TabShirts
             );
             PantsTab = new ClickableComponent(
-                new Rectangle(tabsStartX + allTabWidth + shirtTabWidth + TabAndButtonGap * 2, tabY, pantsTabWidth, TabAndButtonHeight),
+                new Rectangle(clothingTabsStartX + allTabWidth + shirtTabWidth + TabAndButtonGap * 2, tabY, pantsTabWidth, TabAndButtonHeight),
                 TranslationCache.TabPants
             );
             HatsTab = new ClickableComponent(
-                new Rectangle(tabsStartX + allTabWidth + shirtTabWidth + pantsTabWidth + TabAndButtonGap * 3, tabY, hatsTabWidth, TabAndButtonHeight),
+                new Rectangle(clothingTabsStartX + allTabWidth + shirtTabWidth + pantsTabWidth + TabAndButtonGap * 3, tabY, hatsTabWidth, TabAndButtonHeight),
                 TranslationCache.TabHats
             );
         }
@@ -201,9 +217,20 @@ namespace OutfitStudio
 
         private void PositionLeftPanel(int centerX, int startY)
         {
+            int checkboxSize = (int)(9 * ConfigCheckboxScale);
+            int labelWidth = (int)Game1.smallFont.MeasureString(TranslationCache.HideHat).X;
+            int hitWidth = checkboxSize + 8 + labelWidth;
+            HideHatCheckbox = new ClickableComponent(
+                new Rectangle(
+                    centerX - CharacterPreviewWidth / 2 + 3,
+                    startY + (HideHatRowHeight - checkboxSize) / 2 - 2,
+                    hitWidth, checkboxSize),
+                "HideHat");
+
+            int portraitY = startY + HideHatRowHeight + 8;
             PortraitBox = new Rectangle(
                 centerX - CharacterPreviewWidth / 2,
-                startY,
+                portraitY,
                 CharacterPreviewWidth,
                 CharacterPreviewHeight
             );
@@ -246,13 +273,13 @@ namespace OutfitStudio
             int wardrobeButtonY = arrowY + arrowHeight + GapBetweenPortraitAndButtons;
             int scheduleButtonY = wardrobeButtonY + TabAndButtonHeight + ElementGap;
 
-            WardrobeButton = new ClickableComponent(
-                new Rectangle(leftButtonsStartX, wardrobeButtonY, leftButtonWidth, TabAndButtonHeight),
-                TranslationCache.ButtonOutfits
-            );
             ScheduleButton = new ClickableComponent(
-                new Rectangle(leftButtonsStartX, scheduleButtonY, leftButtonWidth, TabAndButtonHeight),
+                new Rectangle(leftButtonsStartX, wardrobeButtonY, leftButtonWidth, TabAndButtonHeight),
                 TranslationCache.ButtonSchedules
+            );
+            WardrobeButton = new ClickableComponent(
+                new Rectangle(leftButtonsStartX, scheduleButtonY, leftButtonWidth, TabAndButtonHeight),
+                TranslationCache.ButtonOutfits
             );
         }
 
@@ -412,6 +439,30 @@ namespace OutfitStudio
             b.Draw(farmerRenderTarget, PortraitBox, null, Color.White, 0f, Vector2.Zero, SpriteEffects.None, 0.5f);
         }
 
+        public void DrawHideHatCheckbox(SpriteBatch b, bool isChecked)
+        {
+            Rectangle sourceRect = isChecked ? UIHelpers.CheckedSourceRect : UIHelpers.UncheckedSourceRect;
+            b.Draw(Game1.mouseCursors,
+                new Vector2(HideHatCheckbox.bounds.X, HideHatCheckbox.bounds.Y),
+                sourceRect, Color.White, 0f, Vector2.Zero, ConfigCheckboxScale, SpriteEffects.None, 1f);
+
+            int labelX = HideHatCheckbox.bounds.X + (int)(9 * ConfigCheckboxScale) + 8;
+            int labelY = HideHatCheckbox.bounds.Y + (HideHatCheckbox.bounds.Height - (int)Game1.smallFont.MeasureString("T").Y) / 2;
+            Utility.drawTextWithShadow(b, TranslationCache.HideHat, Game1.smallFont,
+                new Vector2(labelX, labelY), Game1.textColor);
+        }
+
+        private bool hideHatInPreview;
+
+        public void SetHideHat(bool value)
+        {
+            if (hideHatInPreview != value)
+            {
+                hideHatInPreview = value;
+                previewDirty = true;
+            }
+        }
+
         private void RenderFarmerToTarget()
         {
             var renderTargets = Game1.graphics.GraphicsDevice.GetRenderTargets();
@@ -427,6 +478,13 @@ namespace OutfitStudio
             int originalEyes = Game1.player.currentEyes;
             Game1.player.currentEyes = 0;
 
+            StardewValley.Objects.Hat? savedHat = null;
+            if (hideHatInPreview)
+            {
+                savedHat = Game1.player.hat.Value;
+                Game1.player.hat.Value = null;
+            }
+
             farmerSpriteBatch!.Begin(SpriteSortMode.FrontToBack, BlendState.AlphaBlend, SamplerState.PointClamp, null, null);
 
             FarmerRenderer.isDrawingForUI = true;
@@ -435,6 +493,9 @@ namespace OutfitStudio
             FarmerRenderer.isDrawingForUI = false;
 
             farmerSpriteBatch.End();
+
+            if (hideHatInPreview)
+                Game1.player.hat.Value = savedHat;
 
             Game1.player.currentEyes = originalEyes;
 
@@ -515,8 +576,8 @@ namespace OutfitStudio
             UIHelpers.DrawTextureButton(b, LeftArrowButton);
             UIHelpers.DrawTextureButton(b, RightArrowButton);
 
-            UIHelpers.DrawTextButton(b, WardrobeButton, TranslationCache.ButtonOutfits);
             UIHelpers.DrawTextButton(b, ScheduleButton, TranslationCache.ButtonSchedules);
+            UIHelpers.DrawTextButton(b, WardrobeButton, TranslationCache.ButtonOutfits);
         }
 
         public void DrawBottomButtons(SpriteBatch b)
@@ -598,6 +659,13 @@ namespace OutfitStudio
             UIHelpers.DrawTextureButton(b, CloseButton);
         }
 
+        public void DrawTabDivider(SpriteBatch b)
+        {
+            b.Draw(Game1.staminaRect,
+                new Rectangle(tabDividerX, HairTab.bounds.Y, TabDividerWidth, TabAndButtonHeight),
+                Color.Gray * 0.5f);
+        }
+
         public void DrawGearButton(SpriteBatch b)
         {
             bool isHovered = !UIHelpers.SuppressHover && GearButton.containsPoint(Game1.getMouseX(), Game1.getMouseY());
@@ -674,22 +742,33 @@ namespace OutfitStudio
         /// <summary>
         /// Draws the mod filter dropdown button.
         /// </summary>
-        public void DrawModFilterDropdown(SpriteBatch b, string? currentFilter, bool isOpen)
+        public void DrawModFilterDropdown(SpriteBatch b, string? currentFilter, bool isOpen, string searchText = "")
         {
             if (ModFilterDropdown == null)
                 return;
 
-            bool hasFilter = !string.IsNullOrEmpty(currentFilter);
-            string displayText = hasFilter ? currentFilter! : TranslationCache.FilterAll;
+            if (isOpen)
+            {
+                bool hasSearchText = !string.IsNullOrEmpty(searchText);
+                UIHelpers.DrawInputBar(b, ModFilterDropdown.bounds,
+                    searchText, isFocused: true,
+                    placeholder: TranslationCache.FilterAll,
+                    clearButton: hasSearchText ? FilterClearButton : null);
+            }
+            else
+            {
+                bool hasFilter = !string.IsNullOrEmpty(currentFilter);
+                string displayText = hasFilter ? currentFilter! : TranslationCache.FilterAll;
 
-            UIHelpers.DrawDropdownButton(
-                b,
-                ModFilterDropdown.bounds,
-                displayText,
-                isOpen,
-                clearButton: FilterClearButton,
-                hasValue: hasFilter
-            );
+                UIHelpers.DrawDropdownButton(
+                    b,
+                    ModFilterDropdown.bounds,
+                    displayText,
+                    isOpen: false,
+                    clearButton: FilterClearButton,
+                    hasValue: hasFilter
+                );
+            }
         }
 
         /// <summary>Draws the lookup icon on the character preview.</summary>
@@ -722,7 +801,8 @@ namespace OutfitStudio
         /// </summary>
         public bool IsHoveringClickable(int mouseX, int mouseY)
         {
-            if (AllTab.containsPoint(mouseX, mouseY) ||
+            if (HairTab.containsPoint(mouseX, mouseY) ||
+                AllTab.containsPoint(mouseX, mouseY) ||
                 ShirtsTab.containsPoint(mouseX, mouseY) ||
                 PantsTab.containsPoint(mouseX, mouseY) ||
                 HatsTab.containsPoint(mouseX, mouseY) ||

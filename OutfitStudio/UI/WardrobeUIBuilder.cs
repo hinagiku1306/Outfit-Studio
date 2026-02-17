@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using OutfitStudio.Managers;
 using OutfitStudio.Models;
 using OutfitStudio.Services;
@@ -37,6 +38,7 @@ namespace OutfitStudio
         public Rectangle HatSlot { get; private set; }
         public Rectangle ShirtSlot { get; private set; }
         public Rectangle PantsSlot { get; private set; }
+        public Rectangle HairSlot { get; private set; }
 
         public ClickableComponent ApplyCloseButton { get; private set; } = null!;
         public ClickableComponent EditButton { get; private set; } = null!;
@@ -56,6 +58,11 @@ namespace OutfitStudio
 
         private int tagsFirstVisible;
         public int TagsFirstVisible => tagsFirstVisible;
+
+        private TextBox? tagSearchTextBox;
+        private string tagSearchText = "";
+        public string TagSearchText => tagSearchText;
+        public bool IsTagSearchActive => tagSearchTextBox != null;
 
         // Cached calculated widths for components
         private int searchScopeWidth;
@@ -109,7 +116,7 @@ namespace OutfitStudio
             float showInvalidLabelWidth = Game1.smallFont.MeasureString(TranslationCache.WardrobeFilterShowInvalid).X;
             int row3Width = WardrobeCheckboxSize + checkboxLabelGap + (int)matchAllLabelWidth + checkboxGap + WardrobeCheckboxSize + checkboxLabelGap + (int)showInvalidLabelWidth;
 
-            int panelContentWidth = Math.Max(row1Width, row3Width) + ContentBoxPadding;
+            int panelContentWidth = Math.Max(row1Width, row3Width) + ContentBoxPadding + 20;
 
             // Row 2: Tags and Filter split the full width equally
             tagsDropdownWidth = (panelContentWidth - WardrobeFilterGap) / 2;
@@ -120,7 +127,7 @@ namespace OutfitStudio
 
         private int CalculatePreviewPanelWidth()
         {
-            int previewGroupWidth = SaveSetPreviewWidth + SaveSetPreviewToSlotsGap + SaveSetItemSlotSize;
+            int previewGroupWidth = SaveSetItemSlotSize + SaveSetPreviewToSlotsGap + SaveSetPreviewWidth + SaveSetPreviewToSlotsGap + SaveSetItemSlotSize;
             return previewGroupWidth + ContentBoxPadding * 2;
         }
 
@@ -311,17 +318,21 @@ namespace OutfitStudio
             int detailsHeight = 32 * 2;
             int totalPreviewContentHeight = previewSectionHeight + ContentBoxPadding + detailsHeight;
 
-            int previewGroupWidth = SaveSetPreviewWidth + SaveSetPreviewToSlotsGap + SaveSetItemSlotSize;
+            int previewGroupWidth = SaveSetItemSlotSize + SaveSetPreviewToSlotsGap + SaveSetPreviewWidth + SaveSetPreviewToSlotsGap + SaveSetItemSlotSize;
             int previewGroupX = LeftPanel.X + (LeftPanel.Width - previewGroupWidth) / 2;
             int previewStartY = LeftPanel.Y + (LeftPanel.Height - totalPreviewContentHeight) / 2 + 10;
 
+            int hairSlotX = previewGroupX;
+            int previewStartX = previewGroupX + SaveSetItemSlotSize + SaveSetPreviewToSlotsGap;
+            int itemSlotsX = previewStartX + SaveSetPreviewWidth + SaveSetPreviewToSlotsGap;
+
             int previewColumnY = previewStartY + (previewSectionHeight - previewColumnHeight) / 2;
-            PreviewBox = new Rectangle(previewGroupX, previewColumnY, SaveSetPreviewWidth, SaveSetPreviewHeight);
+            PreviewBox = new Rectangle(previewStartX, previewColumnY, SaveSetPreviewWidth, SaveSetPreviewHeight);
 
             // Direction arrows centered below preview
             int arrowY = PreviewBox.Bottom + ElementGap;
             int totalArrowsWidth = arrowWidth * 2 + ArrowGap;
-            int arrowsCenterX = PreviewBox.X + SaveSetPreviewWidth / 2;
+            int arrowsCenterX = previewStartX + SaveSetPreviewWidth / 2;
             int arrowsStartX = arrowsCenterX - totalArrowsWidth / 2;
 
             LeftArrowButton = new ClickableTextureComponent(
@@ -337,12 +348,14 @@ namespace OutfitStudio
                 WardrobeArrowScale
             );
 
-            int itemSlotsX = previewGroupX + SaveSetPreviewWidth + SaveSetPreviewToSlotsGap;
             int itemSlotsY = PreviewBox.Y + (SaveSetPreviewHeight - itemSlotsHeight) / 2;
 
             HatSlot = new Rectangle(itemSlotsX, itemSlotsY, SaveSetItemSlotSize, SaveSetItemSlotSize);
             ShirtSlot = new Rectangle(itemSlotsX, itemSlotsY + SaveSetItemSlotSize + SaveSetItemSlotGap, SaveSetItemSlotSize, SaveSetItemSlotSize);
             PantsSlot = new Rectangle(itemSlotsX, itemSlotsY + (SaveSetItemSlotSize + SaveSetItemSlotGap) * 2, SaveSetItemSlotSize, SaveSetItemSlotSize);
+
+            int hairSlotY = PreviewBox.Y + (SaveSetPreviewHeight - SaveSetItemSlotSize) / 2;
+            HairSlot = new Rectangle(hairSlotX, hairSlotY, SaveSetItemSlotSize, SaveSetItemSlotSize);
 
             // Button row is below panels with SectionGap
             int panelRowBottom = Math.Max(LeftPanelBox.Bottom, RightPanelBox.Bottom);
@@ -405,17 +418,92 @@ namespace OutfitStudio
             }
         }
 
+        public void OpenTagSearch(List<string> allTags, HashSet<string> selectedTags)
+        {
+            tagsFirstVisible = 0;
+            tagSearchText = "";
+            CreateTagSearchTextBox();
+            BuildTagsOptions(allTags, selectedTags);
+        }
+
+        public void CloseTagSearch()
+        {
+            DestroyTagSearchTextBox();
+        }
+
+        public void ClearTagSearchText(List<string> allTags, HashSet<string> selectedTags)
+        {
+            if (tagSearchTextBox != null)
+            {
+                tagSearchTextBox.Text = "";
+                tagSearchText = "";
+                tagsFirstVisible = 0;
+                BuildTagsOptions(allTags, selectedTags);
+            }
+        }
+
+        public bool UpdateTagSearch(List<string> allTags, HashSet<string> selectedTags)
+        {
+            if (tagSearchTextBox == null)
+                return false;
+
+            tagSearchTextBox.Update();
+            tagSearchTextBox.Selected = true;
+
+            if (tagSearchTextBox.Text != tagSearchText)
+            {
+                tagSearchText = tagSearchTextBox.Text;
+                tagsFirstVisible = 0;
+                BuildTagsOptions(allTags, selectedTags);
+                return true;
+            }
+            return false;
+        }
+
+        private void CreateTagSearchTextBox()
+        {
+            var bounds = TagsDropdown.bounds;
+            tagSearchTextBox = new TextBox(
+                Game1.content.Load<Texture2D>("LooseSprites\\textBox"),
+                null,
+                Game1.smallFont,
+                Game1.textColor)
+            {
+                Text = "",
+                Selected = true,
+                X = bounds.X + 16,
+                Y = bounds.Y + ((bounds.Height - 48) / 2),
+                Width = bounds.Width - 32
+            };
+            Game1.keyboardDispatcher.Subscriber = tagSearchTextBox;
+        }
+
+        private void DestroyTagSearchTextBox()
+        {
+            if (tagSearchTextBox != null)
+            {
+                if (Game1.keyboardDispatcher.Subscriber == tagSearchTextBox)
+                    Game1.keyboardDispatcher.Subscriber = null;
+                tagSearchTextBox = null;
+            }
+            tagSearchText = "";
+        }
+
         public void BuildTagsOptions(List<string> allTags, HashSet<string> selectedTags)
         {
             TagsOptions.Clear();
             float textHeight = Game1.smallFont.MeasureString("A").Y;
             int optionHeight = (int)Math.Ceiling(textHeight) + 16;
 
-            int maxVisible = Math.Min(WardrobeDropdownMaxVisible, allTags.Count);
-            int maxFirst = Math.Max(0, allTags.Count - maxVisible);
+            List<string> filteredTags = string.IsNullOrEmpty(tagSearchText)
+                ? allTags
+                : allTags.Where(t => t.Contains(tagSearchText, StringComparison.OrdinalIgnoreCase)).ToList();
+
+            int maxVisible = Math.Min(WardrobeDropdownMaxVisible, filteredTags.Count);
+            int maxFirst = Math.Max(0, filteredTags.Count - maxVisible);
             tagsFirstVisible = Math.Clamp(tagsFirstVisible, 0, maxFirst);
 
-            for (int i = 0; i < allTags.Count; i++)
+            for (int i = 0; i < filteredTags.Count; i++)
             {
                 bool isVisible = i >= tagsFirstVisible && i < tagsFirstVisible + maxVisible;
                 int visualIndex = i - tagsFirstVisible;
@@ -427,7 +515,7 @@ namespace OutfitStudio
                         TagsDropdown.bounds.Width,
                         optionHeight
                     ),
-                    allTags[i]
+                    filteredTags[i]
                 ) { visible = isVisible };
 
                 TagsOptions.Add(option);
@@ -629,11 +717,22 @@ namespace OutfitStudio
                 clearButton: !string.IsNullOrEmpty(searchText) ? SearchClearButton : null);
 
             bool hasTags = filter.SelectedTags.Count > 0;
-            string tagsLabel = hasTags
-                ? $"{TranslationCache.WardrobeFilterTags} ({filter.SelectedTags.Count})"
-                : TranslationCache.WardrobeFilterTags;
-            UIHelpers.DrawDropdownButton(b, TagsDropdown.bounds, tagsLabel, tagsOpen,
-                clearButton: TagsClearButton, hasValue: hasTags);
+            if (tagsOpen)
+            {
+                bool hasTagSearchText = !string.IsNullOrEmpty(tagSearchText);
+                UIHelpers.DrawInputBar(b, TagsDropdown.bounds,
+                    tagSearchText, isFocused: true,
+                    placeholder: TranslationCache.WardrobeFilterTags,
+                    clearButton: hasTagSearchText ? TagsClearButton : null);
+            }
+            else
+            {
+                string tagsLabel = hasTags
+                    ? $"{TranslationCache.WardrobeFilterTags} ({filter.SelectedTags.Count})"
+                    : TranslationCache.WardrobeFilterTags;
+                UIHelpers.DrawDropdownButton(b, TagsDropdown.bounds, tagsLabel, isOpen: false,
+                    clearButton: TagsClearButton, hasValue: hasTags);
+            }
 
             bool hasFilters = filter.FavoritesOnly || !filter.ShowGlobal || !filter.ShowLocal || filter.InvalidOnly;
             string filterLabel = TranslationCache.WardrobeFilterFilter;
@@ -713,12 +812,20 @@ namespace OutfitStudio
                 DrawItemSlot(b, HatSlot, set.HatId, "(H)", store);
                 DrawItemSlot(b, ShirtSlot, set.ShirtId, "(S)", store);
                 DrawItemSlot(b, PantsSlot, set.PantsId, "(P)", store);
+
+                bool hairActive = ModEntry.Config.IncludeHairInOutfitSets;
+                UIHelpers.DrawTextureBoxNoShadow(b, HairSlot.X - 4, HairSlot.Y - 4, HairSlot.Width + 8, HairSlot.Height + 8,
+                    hairActive ? Color.White : Color.White * 0.6f);
+                if (hairActive && !set.HairId.HasValue)
+                    b.Draw(Game1.staminaRect, HairSlot, SaveSetExcludedItemSlotColor);
             }
             else
             {
                 UIHelpers.DrawTextureBoxNoShadow(b, HatSlot.X - 4, HatSlot.Y - 4, HatSlot.Width + 8, HatSlot.Height + 8, Color.White);
                 UIHelpers.DrawTextureBoxNoShadow(b, ShirtSlot.X - 4, ShirtSlot.Y - 4, ShirtSlot.Width + 8, ShirtSlot.Height + 8, Color.White);
                 UIHelpers.DrawTextureBoxNoShadow(b, PantsSlot.X - 4, PantsSlot.Y - 4, PantsSlot.Width + 8, PantsSlot.Height + 8, Color.White);
+                UIHelpers.DrawTextureBoxNoShadow(b, HairSlot.X - 4, HairSlot.Y - 4, HairSlot.Width + 8, HairSlot.Height + 8,
+                    ModEntry.Config.IncludeHairInOutfitSets ? Color.White : Color.White * 0.6f);
             }
 
             if (set == null)

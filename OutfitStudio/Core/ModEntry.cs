@@ -14,6 +14,7 @@ namespace OutfitStudio
         private OutfitMenu? menu;
 
         public static ModConfig Config { get; private set; } = null!;
+        private static IModHelper StaticHelper = null!;
 
         private OutfitFilterManager? filterManager;
         private OutfitCategoryManager? categoryManager;
@@ -26,6 +27,7 @@ namespace OutfitStudio
         {
             config = helper.ReadConfig<ModConfig>();
             Config = config;
+            StaticHelper = helper;
 
             DebugLogger.Initialize(Monitor, config);
             TranslationCache.Initialize(helper.Translation);
@@ -72,14 +74,18 @@ namespace OutfitStudio
             scheduleEvalLog = new ScheduleEvalLog();
             scheduleEngine = new ScheduleEngine(scheduleStore, outfitSetStore, scheduleEvalLog, () => Config.ConsistentTiebreaks, () => Config.LockManualOutfit);
             scheduleStore.OnRulesChanged = (ruleId) => scheduleEngine.InvalidateForRule(ruleId);
-            outfitSetStore.OnSetsChanged = () => scheduleEngine.InvalidateForSetsChanged();
+            outfitSetStore.OnSetsChanged = () =>
+            {
+                scheduleStore.PruneStaleSelectedSetIds();
+                scheduleEngine.InvalidateForSetsChanged();
+            };
 
             var gmcmApi = Helper.ModRegistry.GetApi<IGenericModConfigMenuApi>("spacechase0.GenericModConfigMenu");
             if (gmcmApi != null)
             {
                 gmcmApi.Register(
                     mod: ModManifest,
-                    reset: () => config = new ModConfig(),
+                    reset: () => { config = new ModConfig(); Config = config; },
                     save: () => Helper.WriteConfig(config)
                 );
 
@@ -158,6 +164,14 @@ namespace OutfitStudio
                     tooltip: () => TranslationCache.ConfigArrowKeyScrollingTooltip,
                     getValue: () => config.ArrowKeyScrolling,
                     setValue: value => config.ArrowKeyScrolling = value
+                );
+
+                gmcmApi.AddBoolOption(
+                    mod: ModManifest,
+                    name: () => TranslationCache.ConfigIncludeHairInOutfitSetsName,
+                    tooltip: () => TranslationCache.ConfigIncludeHairInOutfitSetsTooltip,
+                    getValue: () => config.IncludeHairInOutfitSets,
+                    setValue: value => config.IncludeHairInOutfitSets = value
                 );
 
                 gmcmApi.AddSectionTitle(
@@ -377,7 +391,19 @@ namespace OutfitStudio
                         return;
 
                     var parent = Game1.activeClickableMenu as OutfitMenu;
-                    Game1.activeClickableMenu = new WardrobeOverlay(outfitSetStore, parent);
+                    Game1.activeClickableMenu = new WardrobeOverlay(outfitSetStore, parent,
+                        onOutfitApplied: set =>
+                        {
+                            if (parent != null)
+                            {
+                                parent.NotifyOutfitApplied(set);
+                            }
+                            else
+                            {
+                                bool includeHair = Config.IncludeHairInOutfitSets;
+                                scheduleEngine?.SetManualOutfit(ManualOutfitSnapshot.FromOutfitSet(set, includeHair));
+                            }
+                        });
                     Game1.playSound("bigSelect");
                 }
             }
@@ -425,5 +451,7 @@ namespace OutfitStudio
             config.ShowItemInfo = value;
             Helper.WriteConfig(config);
         }
+
+        internal static void PersistConfig() => StaticHelper.WriteConfig(Config);
     }
 }

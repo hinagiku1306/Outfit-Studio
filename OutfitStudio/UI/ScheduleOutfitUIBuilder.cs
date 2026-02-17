@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using OutfitStudio.Managers;
 using OutfitStudio.Models;
 using OutfitStudio.Services;
@@ -50,6 +51,11 @@ namespace OutfitStudio
 
         private int tagsFirstVisible;
         public int TagsFirstVisible => tagsFirstVisible;
+
+        private TextBox? tagSearchTextBox;
+        private string tagSearchText = "";
+        public string TagSearchText => tagSearchText;
+        public bool IsTagSearchActive => tagSearchTextBox != null;
 
         private int searchScopeWidth;
         private int outfitListPanelWidth;
@@ -347,7 +353,76 @@ namespace OutfitStudio
             }
         }
 
-        public void ResetTagsScroll() => tagsFirstVisible = 0;
+        public void OpenTagSearch(List<string> allTags, HashSet<string> selectedTags)
+        {
+            tagsFirstVisible = 0;
+            tagSearchText = "";
+            CreateTagSearchTextBox();
+            BuildTagsOptions(allTags, selectedTags);
+        }
+
+        public void CloseTagSearch()
+        {
+            DestroyTagSearchTextBox();
+        }
+
+        public void ClearTagSearchText(List<string> allTags, HashSet<string> selectedTags)
+        {
+            if (tagSearchTextBox != null)
+            {
+                tagSearchTextBox.Text = "";
+                tagSearchText = "";
+                tagsFirstVisible = 0;
+                BuildTagsOptions(allTags, selectedTags);
+            }
+        }
+
+        public bool UpdateTagSearch(List<string> allTags, HashSet<string> selectedTags)
+        {
+            if (tagSearchTextBox == null)
+                return false;
+
+            tagSearchTextBox.Update();
+            tagSearchTextBox.Selected = true;
+
+            if (tagSearchTextBox.Text != tagSearchText)
+            {
+                tagSearchText = tagSearchTextBox.Text;
+                tagsFirstVisible = 0;
+                BuildTagsOptions(allTags, selectedTags);
+                return true;
+            }
+            return false;
+        }
+
+        private void CreateTagSearchTextBox()
+        {
+            var bounds = TagsDropdown.bounds;
+            tagSearchTextBox = new TextBox(
+                Game1.content.Load<Texture2D>("LooseSprites\\textBox"),
+                null,
+                Game1.smallFont,
+                Game1.textColor)
+            {
+                Text = "",
+                Selected = true,
+                X = bounds.X + 16,
+                Y = bounds.Y + ((bounds.Height - 48) / 2),
+                Width = bounds.Width - 32
+            };
+            Game1.keyboardDispatcher.Subscriber = tagSearchTextBox;
+        }
+
+        private void DestroyTagSearchTextBox()
+        {
+            if (tagSearchTextBox != null)
+            {
+                if (Game1.keyboardDispatcher.Subscriber == tagSearchTextBox)
+                    Game1.keyboardDispatcher.Subscriber = null;
+                tagSearchTextBox = null;
+            }
+            tagSearchText = "";
+        }
 
         public void BuildTagsOptions(List<string> allTags, HashSet<string> selectedTags)
         {
@@ -355,11 +430,15 @@ namespace OutfitStudio
             float textHeight = Game1.smallFont.MeasureString("A").Y;
             int optionHeight = (int)Math.Ceiling(textHeight) + 16;
 
-            int maxVisible = Math.Min(WardrobeDropdownMaxVisible, allTags.Count);
-            int maxFirst = Math.Max(0, allTags.Count - maxVisible);
+            List<string> filteredTags = string.IsNullOrEmpty(tagSearchText)
+                ? allTags
+                : allTags.Where(t => t.Contains(tagSearchText, StringComparison.OrdinalIgnoreCase)).ToList();
+
+            int maxVisible = Math.Min(WardrobeDropdownMaxVisible, filteredTags.Count);
+            int maxFirst = Math.Max(0, filteredTags.Count - maxVisible);
             tagsFirstVisible = Math.Clamp(tagsFirstVisible, 0, maxFirst);
 
-            for (int i = 0; i < allTags.Count; i++)
+            for (int i = 0; i < filteredTags.Count; i++)
             {
                 bool isVisible = i >= tagsFirstVisible && i < tagsFirstVisible + maxVisible;
                 int visualIndex = i - tagsFirstVisible;
@@ -371,7 +450,7 @@ namespace OutfitStudio
                         TagsDropdown.bounds.Width,
                         optionHeight
                     ),
-                    allTags[i]
+                    filteredTags[i]
                 ) { visible = isVisible };
 
                 TagsOptions.Add(option);
@@ -513,7 +592,7 @@ namespace OutfitStudio
                 int textX = hasAnyIcon ? iconX + iconGap : item.bounds.X + leftMargin;
                 string truncatedText = UIHelpers.TruncateText(set.Name, maxTextWidth);
                 bool isRemaining = remainingSetIds != null && remainingSetIds.Contains(set.Id);
-                Color textColor = isRemaining ? Color.DarkOrange : Game1.textColor;
+                Color textColor = isRemaining ? Color.DarkOrange * 0.8f : Game1.textColor;
                 Utility.drawTextWithShadow(b, truncatedText, Game1.smallFont,
                     new Vector2(textX, item.bounds.Y + 12), textColor * opacity);
 
@@ -585,11 +664,22 @@ namespace OutfitStudio
                 clearButton: !string.IsNullOrEmpty(searchText) ? SearchClearButton : null);
 
             bool hasTags = filter.SelectedTags.Count > 0;
-            string tagsLabel = hasTags
-                ? $"{TranslationCache.WardrobeFilterTags} ({filter.SelectedTags.Count})"
-                : TranslationCache.WardrobeFilterTags;
-            UIHelpers.DrawDropdownButton(b, TagsDropdown.bounds, tagsLabel, tagsOpen,
-                clearButton: TagsClearButton, hasValue: hasTags);
+            if (tagsOpen)
+            {
+                bool hasTagSearchText = !string.IsNullOrEmpty(tagSearchText);
+                UIHelpers.DrawInputBar(b, TagsDropdown.bounds,
+                    tagSearchText, isFocused: true,
+                    placeholder: TranslationCache.WardrobeFilterTags,
+                    clearButton: hasTagSearchText ? TagsClearButton : null);
+            }
+            else
+            {
+                string tagsLabel = hasTags
+                    ? $"{TranslationCache.WardrobeFilterTags} ({filter.SelectedTags.Count})"
+                    : TranslationCache.WardrobeFilterTags;
+                UIHelpers.DrawDropdownButton(b, TagsDropdown.bounds, tagsLabel, isOpen: false,
+                    clearButton: TagsClearButton, hasValue: hasTags);
+            }
 
             bool hasFilters = filter.FavoritesOnly || !filter.ShowGlobal || !filter.ShowLocal || filter.InvalidOnly;
             string filterLabel = TranslationCache.WardrobeFilterFilter;

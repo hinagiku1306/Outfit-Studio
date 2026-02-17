@@ -21,6 +21,7 @@ namespace OutfitStudio
         public Rectangle ShirtSlot { get; private set; }
         public Rectangle PantsSlot { get; private set; }
         public Rectangle HatSlot { get; private set; }
+        public Rectangle HairSlot { get; private set; }
         public ClickableComponent NameInputArea { get; private set; } = null!;
         public ClickableComponent NameClearButton { get; private set; } = null!;
         public ClickableComponent NameRandomButton { get; private set; } = null!;
@@ -134,18 +135,24 @@ namespace OutfitStudio
             currentY += SaveSetSectionPadding * 2;
 
             int itemSlotsHeight = (SaveSetItemSlotSize * 3) + (SaveSetItemSlotGap * 2);
-            int previewGroupWidth = SaveSetPreviewWidth + SaveSetPreviewToSlotsGap + SaveSetItemSlotSize;
+            int previewGroupWidth = SaveSetItemSlotSize + SaveSetPreviewToSlotsGap + SaveSetPreviewWidth + SaveSetPreviewToSlotsGap + SaveSetItemSlotSize;
             int previewGroupX = contentX + (contentWidth - previewGroupWidth) / 2;
 
-            int previewY = currentY + (PreviewSectionHeight - SaveSetPreviewHeight) / 2;
-            PreviewBox = new Rectangle(previewGroupX, previewY, SaveSetPreviewWidth, SaveSetPreviewHeight);
+            int hairSlotX = previewGroupX;
+            int previewStartX = previewGroupX + SaveSetItemSlotSize + SaveSetPreviewToSlotsGap;
+            int itemSlotsX = previewStartX + SaveSetPreviewWidth + SaveSetPreviewToSlotsGap;
 
-            int itemSlotsX = previewGroupX + SaveSetPreviewWidth + SaveSetPreviewToSlotsGap;
+            int previewY = currentY + (PreviewSectionHeight - SaveSetPreviewHeight) / 2;
+            PreviewBox = new Rectangle(previewStartX, previewY, SaveSetPreviewWidth, SaveSetPreviewHeight);
+
             int itemSlotsY = currentY + (PreviewSectionHeight - itemSlotsHeight) / 2;
 
             HatSlot = new Rectangle(itemSlotsX, itemSlotsY, SaveSetItemSlotSize, SaveSetItemSlotSize);
             ShirtSlot = new Rectangle(itemSlotsX, itemSlotsY + SaveSetItemSlotSize + SaveSetItemSlotGap, SaveSetItemSlotSize, SaveSetItemSlotSize);
             PantsSlot = new Rectangle(itemSlotsX, itemSlotsY + (SaveSetItemSlotSize + SaveSetItemSlotGap) * 2, SaveSetItemSlotSize, SaveSetItemSlotSize);
+
+            int hairSlotY = PreviewBox.Y + (SaveSetPreviewHeight - SaveSetItemSlotSize) / 2;
+            HairSlot = new Rectangle(hairSlotX, hairSlotY, SaveSetItemSlotSize, SaveSetItemSlotSize);
 
             currentY += PreviewSectionHeight;
             currentY += SaveSetSectionPadding * 2;

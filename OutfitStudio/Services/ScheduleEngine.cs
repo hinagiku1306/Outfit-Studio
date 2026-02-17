@@ -16,10 +16,12 @@ namespace OutfitStudio.Services
         string? HatId,
         string? ShirtColor,
         string? PantsColor,
+        int? HairId = null,
+        string? HairColor = null,
         string? SourceSetId = null,
         string? SourceSetName = null)
     {
-        internal static ManualOutfitSnapshot FromCurrentPlayer()
+        internal static ManualOutfitSnapshot FromCurrentPlayer(bool includeHair = true)
         {
             return new ManualOutfitSnapshot(
                 OutfitState.GetClothingId(Game1.player.shirtItem.Value),
@@ -27,16 +29,21 @@ namespace OutfitStudio.Services
                 OutfitState.GetHatIdFromItem(Game1.player.hat.Value),
                 Game1.player.shirtItem.Value != null ? ColorHelper.ToColorString(Game1.player.GetShirtColor()) : null,
                 ColorHelper.ToColorString(Game1.player.GetPantsColor()),
+                HairId: includeHair ? Game1.player.hair.Value : null,
+                HairColor: includeHair ? ColorHelper.ToColorString(Game1.player.hairstyleColor.Value) : null,
                 SourceSetId: null,
                 SourceSetName: null);
         }
 
-        internal static ManualOutfitSnapshot FromOutfitSet(OutfitSet set)
+        internal static ManualOutfitSnapshot FromOutfitSet(OutfitSet set, bool includeHair = true)
         {
             return new ManualOutfitSnapshot(
                 set.ShirtId, set.PantsId, set.HatId,
                 set.ShirtColor, set.PantsColor,
-                set.Id, set.Name);
+                HairId: includeHair ? set.HairId : null,
+                HairColor: includeHair ? set.HairColor : null,
+                SourceSetId: set.Id,
+                SourceSetName: set.Name);
         }
 
         internal bool EquipmentEquals(ManualOutfitSnapshot other) =>
@@ -44,11 +51,13 @@ namespace OutfitStudio.Services
             && PantsId == other.PantsId
             && HatId == other.HatId
             && ShirtColor == other.ShirtColor
-            && PantsColor == other.PantsColor;
+            && PantsColor == other.PantsColor
+            && HairId == other.HairId
+            && HairColor == other.HairColor;
 
         internal bool MatchesCurrentPlayer()
         {
-            return EquipmentEquals(FromCurrentPlayer());
+            return EquipmentEquals(FromCurrentPlayer(ModEntry.Config.IncludeHairInOutfitSets));
         }
     }
 
@@ -198,7 +207,9 @@ namespace OutfitStudio.Services
                     PantsId = snapshot.PantsId,
                     HatId = snapshot.HatId,
                     ShirtColor = snapshot.ShirtColor,
-                    PantsColor = snapshot.PantsColor
+                    PantsColor = snapshot.PantsColor,
+                    HairId = snapshot.HairId,
+                    HairColor = snapshot.HairColor
                 };
                 outfitSetStore.ApplySet(tempSet);
                 lastAppliedOutfitId = snapshot.SourceSetId;
@@ -993,17 +1004,23 @@ namespace OutfitStudio.Services
 
             string locationName = Game1.currentLocation.Name;
 
-            foreach (var (_, data) in cachedPassiveFestivals)
+            foreach (string festivalId in Game1.netWorldState.Value.ActivePassiveFestivals)
             {
-                if (data.Season != Game1.season ||
-                    Game1.dayOfMonth < data.StartDay ||
-                    Game1.dayOfMonth > data.EndDay)
+                if (!cachedPassiveFestivals.TryGetValue(festivalId, out var data))
                     continue;
 
-                if (Game1.timeOfDay >= data.StartTime &&
-                    data.MapReplacements != null &&
-                    data.MapReplacements.Keys.Any(k => k.Equals(locationName, StringComparison.OrdinalIgnoreCase)))
+                if (Game1.timeOfDay < data.StartTime)
+                    continue;
+
+                if (data.MapReplacements != null && data.MapReplacements.Count > 0)
+                {
+                    if (data.MapReplacements.Keys.Any(k => k.Equals(locationName, StringComparison.OrdinalIgnoreCase)))
+                        return true;
+                }
+                else
+                {
                     return true;
+                }
             }
 
             return false;

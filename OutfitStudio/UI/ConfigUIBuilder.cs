@@ -26,6 +26,7 @@ namespace OutfitStudio
         public ClickableComponent AutoOpenTagMenuCheckbox { get; private set; } = null!;
         public ClickableComponent AutoFocusSearchBarCheckbox { get; private set; } = null!;
         public ClickableComponent ArrowKeyScrollingCheckbox { get; private set; } = null!;
+        public ClickableComponent IncludeHairInOutfitSetsCheckbox { get; private set; } = null!;
         public ClickableComponent AutoOpenDyeColorMenuCheckbox { get; private set; } = null!;
         public ClickableComponent ResetFilterCheckbox { get; private set; } = null!;
         public ClickableComponent ResetSearchCheckbox { get; private set; } = null!;
@@ -93,7 +94,7 @@ namespace OutfitStudio
 
         public void Recalculate()
         {
-            int totalRows = 23;
+            int totalRows = 24;
             int totalSections = 4;
 
             int scrollableContentNatural = (ConfigSectionHeaderHeight * totalSections)
@@ -178,6 +179,12 @@ namespace OutfitStudio
             labelsList.Add(TranslationCache.ConfigToggleScheduleKeyName);
             tooltipsList.Add(TranslationCache.ConfigToggleScheduleKeyTooltip);
             ToggleScheduleKeyArea = CreateKeybindArea(currentY, "ToggleScheduleKey");
+            currentY += ConfigRowHeight;
+
+            rowYList.Add(currentY);
+            labelsList.Add(TranslationCache.ConfigIncludeHairInOutfitSetsName);
+            tooltipsList.Add(TranslationCache.ConfigIncludeHairInOutfitSetsTooltip);
+            IncludeHairInOutfitSetsCheckbox = CreateCheckbox(currentY, "IncludeHairInOutfitSets");
             currentY += ConfigRowHeight;
 
             rowYList.Add(currentY);

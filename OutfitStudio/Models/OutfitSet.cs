@@ -12,6 +12,8 @@ namespace OutfitStudio.Models
         public string? HatId { get; set; }
         public string? ShirtColor { get; set; }
         public string? PantsColor { get; set; }
+        public int? HairId { get; set; }
+        public string? HairColor { get; set; }
         public List<string> Tags { get; set; } = new();
         public bool IsFavorite { get; set; }
         public bool IsGlobal { get; set; } = true;

@@ -18,6 +18,7 @@ namespace OutfitStudio
         private readonly WardrobeUIBuilder uiBuilder;
         private readonly OutfitSetStore store;
         private readonly IClickableMenu? parentMenu;
+        private readonly Action<OutfitSet>? onOutfitApplied;
 
         private List<OutfitSet> displayedSets = new();
         private int selectedIndex = -1;
@@ -61,12 +62,15 @@ namespace OutfitStudio
         private Clothing? cachedShirt;
         private Clothing? cachedPants;
         private Hat? cachedHat;
+        private int? cachedHairId;
+        private Color? cachedHairColor;
         private string? cachedSetId;
 
-        public WardrobeOverlay(OutfitSetStore store, IClickableMenu? parentMenu)
+        public WardrobeOverlay(OutfitSetStore store, IClickableMenu? parentMenu, Action<OutfitSet>? onOutfitApplied = null)
         {
             this.store = store;
             this.parentMenu = parentMenu;
+            this.onOutfitApplied = onOutfitApplied;
 
             uiBuilder = new WardrobeUIBuilder();
             width = uiBuilder.Width;
@@ -162,6 +166,8 @@ namespace OutfitStudio
             cachedShirt = null;
             cachedPants = null;
             cachedHat = null;
+            cachedHairId = null;
+            cachedHairColor = null;
             cachedSetId = targetId;
 
             if (set == null)
@@ -169,6 +175,8 @@ namespace OutfitStudio
                 cachedShirt = Game1.player.shirtItem.Value;
                 cachedPants = Game1.player.pantsItem.Value;
                 cachedHat = Game1.player.hat.Value;
+                cachedHairId = Game1.player.hair.Value;
+                cachedHairColor = Game1.player.hairstyleColor.Value;
                 return;
             }
 
@@ -186,11 +194,16 @@ namespace OutfitStudio
 
             if (!string.IsNullOrEmpty(set.HatId) && store.IsItemValid(set.HatId, "(H)"))
                 cachedHat = ItemRegistry.Create<Hat>("(H)" + set.HatId);
+
+            cachedHairId = set.HairId;
+            cachedHairColor = set.HairColor != null ? ColorHelper.ParseColor(set.HairColor) : null;
         }
 
         private void CloseAllDropdowns()
         {
             searchScopeOpen = false;
+            if (tagsDropdownOpen)
+                uiBuilder.CloseTagSearch();
             tagsDropdownOpen = false;
             filterDropdownOpen = false;
         }
@@ -258,13 +271,22 @@ namespace OutfitStudio
                     if (playSound) Game1.playSound("smallSelect");
                     return;
                 }
-                if (uiBuilder.TagsClearButton.containsPoint(x, y) && filterState.SelectedTags.Count > 0)
+                if (uiBuilder.TagsClearButton.containsPoint(x, y))
                 {
-                    CloseAllDropdowns();
-                    filterState.ClearTags();
-                    RefreshDisplayedSets();
-                    if (playSound) Game1.playSound("smallSelect");
-                    return;
+                    if (tagsDropdownOpen)
+                    {
+                        uiBuilder.ClearTagSearchText(allTags, filterState.SelectedTags);
+                        if (playSound) Game1.playSound("smallSelect");
+                        return;
+                    }
+                    if (filterState.SelectedTags.Count > 0)
+                    {
+                        CloseAllDropdowns();
+                        filterState.ClearTags();
+                        RefreshDisplayedSets();
+                        if (playSound) Game1.playSound("smallSelect");
+                        return;
+                    }
                 }
                 if (uiBuilder.FilterClearButton.containsPoint(x, y) && (filterState.FavoritesOnly || !filterState.ShowGlobal || !filterState.ShowLocal || filterState.InvalidOnly))
                 {
@@ -291,6 +313,11 @@ namespace OutfitStudio
                 {
                     return;
                 }
+                // Tags bar when tags dropdown open = input bar — absorb click
+                else if (tagsDropdownOpen && uiBuilder.TagsDropdown.containsPoint(x, y))
+                {
+                    return;
+                }
                 // Other dropdown bars: close current and open new (fall through to HandleFilterBarClick)
                 else if (uiBuilder.SearchScopeDropdown.containsPoint(x, y) ||
                          uiBuilder.TagsDropdown.containsPoint(x, y) ||
@@ -299,7 +326,6 @@ namespace OutfitStudio
                 {
                     bool clickedSameDropdown =
                         (searchScopeOpen && uiBuilder.SearchScopeDropdown.containsPoint(x, y)) ||
-                        (tagsDropdownOpen && uiBuilder.TagsDropdown.containsPoint(x, y)) ||
                         (filterDropdownOpen && uiBuilder.FilterDropdown.containsPoint(x, y));
 
                     CloseAllDropdowns();
@@ -367,7 +393,7 @@ namespace OutfitStudio
                 if (SelectedSet != null)
                 {
                     store.ApplySet(SelectedSet);
-                    (parentMenu as OutfitMenu)?.NotifyOutfitApplied(SelectedSet);
+                    onOutfitApplied?.Invoke(SelectedSet);
                     if (playSound) Game1.playSound("coin");
                 }
                 CloseOverlay();
@@ -587,7 +613,7 @@ namespace OutfitStudio
                 {
                     CloseAllDropdowns();
                     tagsDropdownOpen = true;
-                    uiBuilder.BuildTagsOptions(allTags, filterState.SelectedTags);
+                    uiBuilder.OpenTagSearch(allTags, filterState.SelectedTags);
                     if (playSound) Game1.playSound("smallSelect");
                 }
                 return true;
@@ -720,6 +746,16 @@ namespace OutfitStudio
                     CloseAllDropdowns();
                     Game1.playSound("bigDeSelect");
                 }
+                else if (tagsDropdownOpen && ModEntry.Config.ArrowKeyScrolling
+                    && (key == Keys.Up || key == Keys.Down))
+                {
+                    int direction = key == Keys.Up ? 1 : -1;
+                    if (uiBuilder.ScrollTagsDropdown(direction))
+                    {
+                        uiBuilder.BuildTagsOptions(allTags, filterState.SelectedTags);
+                        Game1.playSound("shiny4");
+                    }
+                }
                 return;
             }
 
@@ -804,14 +840,28 @@ namespace OutfitStudio
         {
             base.update(time);
 
-            (parentMenu as OutfitMenu)?.HandleItemInfoToggle();
+            if (parentMenu is OutfitMenu outfitMenu)
+                outfitMenu.HandleItemInfoToggle();
+            else if (ModEntry.Config.ToggleItemInfoKey.JustPressed())
+            {
+                ModEntry.Config.ShowItemInfo = !ModEntry.Config.ShowItemInfo;
+                ModEntry.PersistConfig();
+                Game1.playSound(ModEntry.Config.ShowItemInfo ? "bigSelect" : "bigDeSelect");
+            }
 
             if (searchTextBox != null)
             {
-                searchTextBox.Update();
+                if (!tagsDropdownOpen)
+                {
+                    searchTextBox.Update();
 
-                if (!showDeleteConfirmation)
-                    searchTextBox.Selected = true;
+                    if (!showDeleteConfirmation)
+                        searchTextBox.Selected = true;
+                }
+                else
+                {
+                    searchTextBox.Selected = false;
+                }
 
                 if (searchTextBox.Text != filterState.SearchText)
                 {
@@ -820,19 +870,35 @@ namespace OutfitStudio
                 }
             }
 
+            if (tagsDropdownOpen)
+            {
+                uiBuilder.UpdateTagSearch(allTags, filterState.SelectedTags);
+            }
+
             if (ModEntry.Config.ArrowKeyScrolling && !showDeleteConfirmation
-                && !searchScopeOpen && !tagsDropdownOpen && !filterDropdownOpen)
+                && !searchScopeOpen && !filterDropdownOpen)
             {
                 int maxVisible = uiBuilder.OutfitListItems.Count;
                 int scrollAmount = scrollHandler.Update(time, maxVisible, out bool shouldPlaySound);
                 if (scrollAmount != 0)
                 {
-                    int maxScroll = Math.Max(0, displayedSets.Count - maxVisible);
-                    int newOffset = Math.Clamp(listScrollOffset + scrollAmount, 0, maxScroll);
-                    if (newOffset != listScrollOffset)
+                    if (tagsDropdownOpen)
                     {
-                        listScrollOffset = newOffset;
-                        if (shouldPlaySound) Game1.playSound("shiny4");
+                        if (uiBuilder.ScrollTagsDropdown(-scrollAmount))
+                        {
+                            uiBuilder.BuildTagsOptions(allTags, filterState.SelectedTags);
+                            if (shouldPlaySound) Game1.playSound("shiny4");
+                        }
+                    }
+                    else
+                    {
+                        int maxScroll = Math.Max(0, displayedSets.Count - maxVisible);
+                        int newOffset = Math.Clamp(listScrollOffset + scrollAmount, 0, maxScroll);
+                        if (newOffset != listScrollOffset)
+                        {
+                            listScrollOffset = newOffset;
+                            if (shouldPlaySound) Game1.playSound("shiny4");
+                        }
                     }
                 }
             }
@@ -875,6 +941,8 @@ namespace OutfitStudio
             var savedShirt = Game1.player.shirtItem.Value;
             var savedPants = Game1.player.pantsItem.Value;
             var savedHat = Game1.player.hat.Value;
+            int savedHair = Game1.player.hair.Value;
+            Color savedHairColor = Game1.player.hairstyleColor.Value;
             int originalEyes = Game1.player.currentEyes;
 
             try
@@ -905,6 +973,13 @@ namespace OutfitStudio
                         Game1.player.hat.Value = ItemRegistry.Create<Hat>("(H)" + set.HatId);
                     else
                         Game1.player.hat.Value = null;
+
+                    if (ModEntry.Config.IncludeHairInOutfitSets && set.HairId.HasValue)
+                    {
+                        Game1.player.changeHairStyle(set.HairId.Value);
+                        if (cachedHairColor.HasValue)
+                            Game1.player.changeHairColor(cachedHairColor.Value);
+                    }
                 }
 
                 Game1.player.FarmerRenderer.MarkSpriteDirty();
@@ -949,6 +1024,8 @@ namespace OutfitStudio
                 Game1.player.shirtItem.Value = savedShirt;
                 Game1.player.pantsItem.Value = savedPants;
                 Game1.player.hat.Value = savedHat;
+                Game1.player.changeHairStyle(savedHair);
+                Game1.player.changeHairColor(savedHairColor);
                 Game1.player.currentEyes = originalEyes;
                 Game1.player.FarmerRenderer.MarkSpriteDirty();
             }
@@ -961,11 +1038,21 @@ namespace OutfitStudio
             if (cachedHat != null)   UIHelpers.DrawItemInSlot(b, uiBuilder.HatSlot, cachedHat);
             if (cachedShirt != null) UIHelpers.DrawItemInSlot(b, uiBuilder.ShirtSlot, cachedShirt);
             if (cachedPants != null) UIHelpers.DrawItemInSlot(b, uiBuilder.PantsSlot, cachedPants);
+            if (cachedHairId.HasValue)
+            {
+                Color? tint = cachedHairColor;
+                if (!ModEntry.Config.IncludeHairInOutfitSets)
+                    tint = (tint ?? Color.White) * 0.4f;
+                OutfitItemRenderer.DrawHairSprite(b, cachedHairId.Value, uiBuilder.HairSlot, tint);
+            }
         }
+
+        private bool ShouldShowItemInfo =>
+            parentMenu is OutfitMenu om ? om.ShowItemInfo : ModEntry.Config.ShowItemInfo;
 
         private void DrawItemTooltips(SpriteBatch b, int mouseX, int mouseY)
         {
-            if (parentMenu is OutfitMenu om && !om.ShowItemInfo)
+            if (!ShouldShowItemInfo)
                 return;
 
             if (uiBuilder.ShirtSlot.Contains(mouseX, mouseY) && cachedShirt != null)
@@ -979,6 +1066,10 @@ namespace OutfitStudio
             else if (uiBuilder.HatSlot.Contains(mouseX, mouseY) && cachedHat != null)
             {
                 IClickableMenu.drawToolTip(b, cachedHat.getDescription(), cachedHat.DisplayName, cachedHat);
+            }
+            else if (uiBuilder.HairSlot.Contains(mouseX, mouseY) && cachedHairId.HasValue)
+            {
+                IClickableMenu.drawHoverText(b, $"Hair #{cachedHairId.Value}", Game1.smallFont);
             }
         }
 
