@@ -16,6 +16,7 @@ namespace OutfitStudio
         public static string CommonSelectAll { get; private set; } = "";
 
         public static string MenuTitle { get; private set; } = "";
+        public static string EditOutfitTitle { get; private set; } = "";
         public static string TabAll { get; private set; } = "";
         public static string TabShirts { get; private set; } = "";
         public static string TabPants { get; private set; } = "";
@@ -103,8 +104,6 @@ namespace OutfitStudio
         public static string ConfigShowTooltipTooltip { get; private set; } = "";
         public static string ConfigCloseOnClickOutsideName { get; private set; } = "";
         public static string ConfigCloseOnClickOutsideTooltip { get; private set; } = "";
-        public static string ConfigAutoOpenTagMenuName { get; private set; } = "";
-        public static string ConfigAutoOpenTagMenuTooltip { get; private set; } = "";
         public static string ConfigAutoFocusSearchBarName { get; private set; } = "";
         public static string ConfigAutoFocusSearchBarTooltip { get; private set; } = "";
         public static string ConfigArrowKeyScrollingName { get; private set; } = "";
@@ -238,6 +237,7 @@ namespace OutfitStudio
             CommonSelectAll = i18n.Get("common.select-all");
 
             MenuTitle = i18n.Get("menu.title");
+            EditOutfitTitle = i18n.Get("editoutfit.title");
             TabAll = i18n.Get("menu.tabs.all");
             TabShirts = i18n.Get("menu.tabs.shirts");
             TabPants = i18n.Get("menu.tabs.pants");
@@ -321,8 +321,6 @@ namespace OutfitStudio
             ConfigShowTooltipTooltip = i18n.Get("config.show-tooltip.tooltip");
             ConfigCloseOnClickOutsideName = i18n.Get("config.close-on-click-outside.name");
             ConfigCloseOnClickOutsideTooltip = i18n.Get("config.close-on-click-outside.tooltip");
-            ConfigAutoOpenTagMenuName = i18n.Get("config.auto-open-tag-menu.name");
-            ConfigAutoOpenTagMenuTooltip = i18n.Get("config.auto-open-tag-menu.tooltip");
             ConfigAutoFocusSearchBarName = i18n.Get("config.auto-focus-search-bar.name");
             ConfigAutoFocusSearchBarTooltip = i18n.Get("config.auto-focus-search-bar.tooltip");
             ConfigArrowKeyScrollingName = i18n.Get("config.arrow-key-scrolling.name");

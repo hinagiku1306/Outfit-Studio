@@ -23,7 +23,7 @@ namespace OutfitStudio
         private readonly Action onSaveComplete;
         private readonly Action? onClose;
         private readonly OutfitSet? editingSet;
-
+        private readonly ModEntry? mod;
         private readonly TextBox nameTextBox;
         private bool nameBoxFocused = true;
         private bool isFavorite;
@@ -35,26 +35,43 @@ namespace OutfitStudio
         private bool includeHat = true;
         private bool includeHair = true;
 
-        private readonly string? capturedShirtId;
-        private readonly string? capturedPantsId;
-        private readonly string? capturedHatId;
-        private readonly string? capturedShirtColor;
-        private readonly string? capturedPantsColor;
-        private readonly int? capturedHairId;
-        private readonly string? capturedHairColor;
-        private readonly Color? parsedHairColor;
+        private string? capturedShirtId;
+        private string? capturedPantsId;
+        private string? capturedHatId;
+        private string? capturedShirtColor;
+        private string? capturedPantsColor;
+        private int? capturedHairId;
+        private string? capturedHairColor;
+        private Color? parsedHairColor;
         private readonly int revertHairId;
         private readonly Color revertHairColor;
+
+        // Initial set values — used to revert editingSet on close-without-save
+        private readonly string? initialSetShirtId;
+        private readonly string? initialSetPantsId;
+        private readonly string? initialSetHatId;
+        private readonly string? initialSetShirtColor;
+        private readonly string? initialSetPantsColor;
+        private readonly int? initialSetHairId;
+        private readonly string? initialSetHairColor;
 
         private RenderTarget2D? farmerRenderTarget;
         private SpriteBatch? farmerSpriteBatch;
         private bool previewDirty = true;
 
+        private bool didSave;
         private float nameBoxJiggleTimer;
         private const float NameBoxJiggleDuration = 300f;
         private const float NameBoxJiggleIntensity = 4f;
 
-        private static readonly FarmerSprite.AnimationFrame FrontFacingFrame = new(0, 0, secondaryArm: false, flip: false);
+        private static readonly FarmerSprite.AnimationFrame[] DirectionFrames = new[]
+        {
+            new FarmerSprite.AnimationFrame(12, 0, secondaryArm: false, flip: false), // Up
+            new FarmerSprite.AnimationFrame(6, 0, secondaryArm: false, flip: false),  // Right
+            new FarmerSprite.AnimationFrame(0, 0, secondaryArm: false, flip: false),  // Down
+            new FarmerSprite.AnimationFrame(6, 0, secondaryArm: false, flip: true),   // Left
+        };
+        private int previewDirection = 2;
         private const int FarmerSpriteWidth = 16;
         private const int FarmerSpriteHeight = 32;
         private const int FarmerRenderScale = 4;
@@ -65,21 +82,21 @@ namespace OutfitStudio
 
         public bool IsEditing => editingSet != null;
 
-        public SaveSetOverlay(IClickableMenu parentMenu, OutfitSetStore store, Action onSaveComplete, OutfitSet? editingSet = null, Action? onClose = null, int? revertHairId = null, Color? revertHairColor = null)
+        public SaveSetOverlay(IClickableMenu parentMenu, OutfitSetStore store, Action onSaveComplete, OutfitSet? editingSet = null, Action? onClose = null, int? revertHairId = null, Color? revertHairColor = null, ModEntry? mod = null)
         {
             this.parentMenu = parentMenu ?? throw new ArgumentNullException(nameof(parentMenu));
             this.store = store ?? throw new ArgumentNullException(nameof(store));
             this.onSaveComplete = onSaveComplete ?? throw new ArgumentNullException(nameof(onSaveComplete));
             this.onClose = onClose;
             this.editingSet = editingSet;
+            this.mod = mod;
 
             tagPickerManager = new TagPickerManager(store);
 
             width = SaveSetOverlayWidth;
             height = SaveSetUIBuilder.CalculateRequiredHeight();
 
-            uiBuilder = new SaveSetUIBuilder(width, height);
-            uiBuilder.UpdateTagsRowLayout();
+            uiBuilder = new SaveSetUIBuilder(width, height, isEditMode: editingSet != null);
             xPositionOnScreen = uiBuilder.X;
             yPositionOnScreen = uiBuilder.Y;
 
@@ -90,12 +107,22 @@ namespace OutfitStudio
                 capturedHatId = editingSet.HatId;
                 capturedShirtColor = editingSet.ShirtColor;
                 capturedPantsColor = editingSet.PantsColor;
-                capturedHairId = editingSet.HairId ?? Game1.player.hair.Value;
-                capturedHairColor = editingSet.HairColor ?? ColorHelper.ToColorString(Game1.player.hairstyleColor.Value);
+                capturedHairId = editingSet.HairId;
+                capturedHairColor = editingSet.HairColor;
+
+                // Snapshot initial values to revert if closed without saving
+                initialSetShirtId = editingSet.ShirtId;
+                initialSetPantsId = editingSet.PantsId;
+                initialSetHatId = editingSet.HatId;
+                initialSetShirtColor = editingSet.ShirtColor;
+                initialSetPantsColor = editingSet.PantsColor;
+                initialSetHairId = editingSet.HairId;
+                initialSetHairColor = editingSet.HairColor;
 
                 includeShirt = !string.IsNullOrEmpty(capturedShirtId);
                 includePants = !string.IsNullOrEmpty(capturedPantsId);
                 includeHat = !string.IsNullOrEmpty(capturedHatId);
+                includeHair = capturedHairId.HasValue;
 
                 isFavorite = editingSet.IsFavorite;
                 isLocalOnly = !editingSet.IsGlobal;
@@ -141,10 +168,7 @@ namespace OutfitStudio
 
             CacheItemObjects();
 
-            if (ModEntry.Config.AutoOpenTagMenu)
-            {
-                OpenTagPicker();
-            }
+            OpenTagPicker();
         }
 
         public override void gameWindowSizeChanged(Rectangle oldBounds, Rectangle newBounds)
@@ -154,7 +178,6 @@ namespace OutfitStudio
             parentMenu.gameWindowSizeChanged(oldBounds, newBounds);
 
             uiBuilder.Recalculate();
-            uiBuilder.UpdateTagsRowLayout();
             xPositionOnScreen = uiBuilder.X;
             yPositionOnScreen = uiBuilder.Y;
 
@@ -219,6 +242,13 @@ namespace OutfitStudio
                 return;
             }
 
+            if (uiBuilder.ScissorsButton != null && uiBuilder.ScissorsButton.containsPoint(x, y))
+            {
+                OpenEditOutfitMenu();
+                if (playSound) Game1.playSound("bigSelect");
+                return;
+            }
+
             if (uiBuilder.CloseButton.containsPoint(x, y))
             {
                 CloseOverlay();
@@ -236,13 +266,6 @@ namespace OutfitStudio
             if (uiBuilder.SaveButton.containsPoint(x, y))
             {
                 HandleSave(playSound);
-                return;
-            }
-
-            if (uiBuilder.AddTagsButton != null && uiBuilder.AddTagsButton.containsPoint(x, y))
-            {
-                ToggleTagPicker();
-                if (playSound) Game1.playSound("smallSelect");
                 return;
             }
 
@@ -295,6 +318,22 @@ namespace OutfitStudio
                 return;
             }
 
+            if (uiBuilder.LeftArrowButton.containsPoint(x, y))
+            {
+                previewDirection = (previewDirection + 1) % 4;
+                previewDirty = true;
+                if (playSound) Game1.playSound("smallSelect");
+                return;
+            }
+
+            if (uiBuilder.RightArrowButton.containsPoint(x, y))
+            {
+                previewDirection = (previewDirection + 3) % 4;
+                previewDirty = true;
+                if (playSound) Game1.playSound("smallSelect");
+                return;
+            }
+
             if (uiBuilder.NameRandomButton.containsPoint(x, y))
             {
                 nameTextBox.Text = Dialogue.randomName();
@@ -327,19 +366,6 @@ namespace OutfitStudio
         {
             Rectangle overlayBounds = new Rectangle(xPositionOnScreen, yPositionOnScreen, width, height);
             tagPickerManager.Open(overlayBounds, selectedTags, OnTagsChanged);
-        }
-
-        private void ToggleTagPicker()
-        {
-            if (tagPickerManager.IsOpen)
-            {
-                tagPickerManager.Close();
-                nameBoxFocused = true;
-            }
-            else
-            {
-                OpenTagPicker();
-            }
         }
 
         private void OnTagsChanged(HashSet<string> newTags)
@@ -394,9 +420,11 @@ namespace OutfitStudio
             tagPickerManager.Update();
 
             // Allow item info toggle keybind to work in overlay
-            if (parentMenu is OutfitMenu outfitMenu)
+            if (ModEntry.Config.ToggleItemInfoKey.JustPressed())
             {
-                outfitMenu.HandleItemInfoToggle();
+                ModEntry.Config.ShowItemInfo = !ModEntry.Config.ShowItemInfo;
+                ModEntry.PersistConfig();
+                Game1.playSound(ModEntry.Config.ShowItemInfo ? "bigSelect" : "bigDeSelect");
             }
 
             if (nameBoxJiggleTimer > 0)
@@ -472,19 +500,79 @@ namespace OutfitStudio
 
             if (playSound) Game1.playSound("coin");
             onSaveComplete();
+            didSave = true;
             CloseOverlay();
         }
 
         private void CloseOverlay()
         {
+            if (!didSave && editingSet != null)
+            {
+                editingSet.ShirtId = initialSetShirtId;
+                editingSet.PantsId = initialSetPantsId;
+                editingSet.HatId = initialSetHatId;
+                editingSet.ShirtColor = initialSetShirtColor;
+                editingSet.PantsColor = initialSetPantsColor;
+                editingSet.HairId = initialSetHairId;
+                editingSet.HairColor = initialSetHairColor;
+            }
             onClose?.Invoke();
             Game1.activeClickableMenu = parentMenu;
+        }
+
+        private void OpenEditOutfitMenu()
+        {
+            if (editingSet == null || mod == null) return;
+            var categoryManager = mod.GetCategoryManager();
+            var filterManager = mod.GetFilterManager();
+            if (categoryManager == null || filterManager == null) return;
+
+            Game1.activeClickableMenu = new EditOutfitMenu(
+                this, editingSet, store, mod, categoryManager, filterManager,
+                onClose: RefreshCapturedItems);
+        }
+
+        private void RefreshCapturedItems()
+        {
+            if (editingSet == null) return;
+
+            bool hadShirt = !string.IsNullOrEmpty(capturedShirtId);
+            bool hadPants = !string.IsNullOrEmpty(capturedPantsId);
+            bool hadHat = !string.IsNullOrEmpty(capturedHatId);
+            bool hadHair = capturedHairId.HasValue;
+
+            capturedShirtId = editingSet.ShirtId;
+            capturedPantsId = editingSet.PantsId;
+            capturedHatId = editingSet.HatId;
+            capturedShirtColor = editingSet.ShirtColor;
+            capturedPantsColor = editingSet.PantsColor;
+            capturedHairId = editingSet.HairId;
+            capturedHairColor = editingSet.HairColor;
+            parsedHairColor = ColorHelper.ParseColor(capturedHairColor);
+
+            bool hasShirt = !string.IsNullOrEmpty(capturedShirtId);
+            bool hasPants = !string.IsNullOrEmpty(capturedPantsId);
+            bool hasHat = !string.IsNullOrEmpty(capturedHatId);
+            bool hasHair = capturedHairId.HasValue;
+
+            if (hadShirt != hasShirt) includeShirt = hasShirt;
+            if (hadPants != hasPants) includePants = hasPants;
+            if (hadHat != hasHat) includeHat = hasHat;
+            if (hadHair != hasHair)
+            {
+                includeHair = hasHair;
+                if (!ModEntry.Config.IncludeHairInOutfitSets)
+                    includeHair = false;
+            }
+
+            CacheItemObjects();
+            previewDirty = true;
         }
 
         private bool HasShirt() => !string.IsNullOrEmpty(capturedShirtId) && capturedShirtId != NoShirtId;
         private bool HasPants() => !string.IsNullOrEmpty(capturedPantsId) && capturedPantsId != NoPantsId;
         private bool HasHat() => !string.IsNullOrEmpty(capturedHatId) && capturedHatId != NoHatId;
-        private bool HasHair() => capturedHairId.HasValue;
+        private bool HasHair() => capturedHairId.HasValue && OutfitSetStore.IsHairIdValid(capturedHairId);
 
         public override void draw(SpriteBatch b)
         {
@@ -521,6 +609,7 @@ namespace OutfitStudio
 
             uiBuilder.DrawPreviewBackground(b);
             DrawCharacterPreview(b);
+            uiBuilder.DrawArrows(b);
 
             int mouseX = Game1.getMouseX();
             int mouseY = Game1.getMouseY();
@@ -533,7 +622,9 @@ namespace OutfitStudio
                 hairInteractive ? mouseX : -1, hairInteractive ? mouseY : -1);
             DrawItemSprites(b, includeShirt, includePants, includeHat, includeHair);
 
-            uiBuilder.DrawTagsRow(b, tagPickerManager.IsOpen);
+            if (editingSet != null)
+                uiBuilder.DrawEditOutfitButton(b);
+
             uiBuilder.DrawFavoriteCheckbox(b, isFavorite, uiBuilder.FavoriteCheckbox.containsPoint(mouseX, mouseY));
             uiBuilder.DrawLocalOnlyCheckbox(b, isLocalOnly, Context.IsWorldReady,
                 uiBuilder.LocalOnlyCheckbox?.containsPoint(mouseX, mouseY) ?? false);
@@ -592,8 +683,11 @@ namespace OutfitStudio
             Game1.graphics.GraphicsDevice.SetRenderTarget(farmerRenderTarget);
             Game1.graphics.GraphicsDevice.Clear(Color.Transparent);
 
+            int frameIndex = DirectionFrames[previewDirection].frame;
             int baseY = Game1.player.bathingClothes.Value ? 576 : 0;
-            Rectangle sourceRect = new Rectangle(0, baseY, FarmerSpriteWidth, FarmerSpriteHeight);
+            int sourceX = (frameIndex * 16) % 96;
+            int sourceY = baseY + (frameIndex * 16) / 96 * 32;
+            Rectangle sourceRect = new Rectangle(sourceX, sourceY, FarmerSpriteWidth, FarmerSpriteHeight);
 
             int scaledWidth = FarmerSpriteWidth * FarmerRenderScale;
             int scaledHeight = FarmerSpriteHeight * FarmerRenderScale;
@@ -636,7 +730,7 @@ namespace OutfitStudio
                 else
                     Game1.player.hat.Value = null;
 
-                if (includeHair && capturedHairId.HasValue)
+                if (includeHair && capturedHairId.HasValue && OutfitSetStore.IsHairIdValid(capturedHairId))
                 {
                     Game1.player.changeHairStyle(capturedHairId.Value);
                     if (parsedHairColor.HasValue)
@@ -655,13 +749,13 @@ namespace OutfitStudio
                 FarmerRenderer.isDrawingForUI = true;
                 Game1.player.FarmerRenderer.draw(
                     farmerSpriteBatch,
-                    FrontFacingFrame,
-                    0,
+                    DirectionFrames[previewDirection],
+                    DirectionFrames[previewDirection].frame,
                     sourceRect,
                     centeredPosition,
                     Vector2.Zero,
                     0.8f,
-                    2,
+                    previewDirection,
                     Color.White,
                     0f,
                     1f,
@@ -708,8 +802,7 @@ namespace OutfitStudio
 
         private void DrawItemTooltips(SpriteBatch b, int mouseX, int mouseY)
         {
-            // Respect the ShowItemInfo config from parent menu
-            if (parentMenu is OutfitMenu outfitMenu && !outfitMenu.ShowItemInfo)
+            if (!ModEntry.Config.ShowItemInfo)
                 return;
 
             if (uiBuilder.ShirtSlot.Contains(mouseX, mouseY) && HasShirt() && cachedShirt != null)

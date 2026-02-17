@@ -25,7 +25,6 @@ namespace OutfitStudio
         private KeybindList toggleScheduleKey;
         private bool showTooltip;
         private bool closeOnClickOutside;
-        private bool autoOpenTagMenu;
         private bool autoFocusSearchBar;
         private bool arrowKeyScrolling;
         private bool includeHairInOutfitSets;
@@ -67,7 +66,6 @@ namespace OutfitStudio
             toggleScheduleKey = KeybindList.Parse(config.ToggleScheduleKey.ToString());
             showTooltip = config.ShowTooltip;
             closeOnClickOutside = config.CloseOnClickOutside;
-            autoOpenTagMenu = config.AutoOpenTagMenu;
             autoFocusSearchBar = config.AutoFocusSearchBar;
             arrowKeyScrolling = config.ArrowKeyScrolling;
             includeHairInOutfitSets = config.IncludeHairInOutfitSets;
@@ -221,7 +219,6 @@ namespace OutfitStudio
 
             if (TryToggleCheckbox(uiBuilder.ShowTooltipCheckbox, x, y, ref showTooltip, playSound)) return;
             if (TryToggleCheckbox(uiBuilder.CloseOnClickOutsideCheckbox, x, y, ref closeOnClickOutside, playSound)) return;
-            if (TryToggleCheckbox(uiBuilder.AutoOpenTagMenuCheckbox, x, y, ref autoOpenTagMenu, playSound)) return;
             if (TryToggleCheckbox(uiBuilder.AutoFocusSearchBarCheckbox, x, y, ref autoFocusSearchBar, playSound)) return;
             if (TryToggleCheckbox(uiBuilder.ArrowKeyScrollingCheckbox, x, y, ref arrowKeyScrolling, playSound)) return;
             if (TryToggleCheckbox(uiBuilder.IncludeHairInOutfitSetsCheckbox, x, y, ref includeHairInOutfitSets, playSound)) return;
@@ -436,7 +433,6 @@ namespace OutfitStudio
             uiBuilder.DrawCheckboxRow(b, TranslationCache.ConfigIncludeHairInOutfitSetsName, includeHairInOutfitSets, uiBuilder.IncludeHairInOutfitSetsCheckbox);
             uiBuilder.DrawCheckboxRow(b, TranslationCache.ConfigShowTooltipName, showTooltip, uiBuilder.ShowTooltipCheckbox);
             uiBuilder.DrawCheckboxRow(b, TranslationCache.ConfigCloseOnClickOutsideName, closeOnClickOutside, uiBuilder.CloseOnClickOutsideCheckbox);
-            uiBuilder.DrawCheckboxRow(b, TranslationCache.ConfigAutoOpenTagMenuName, autoOpenTagMenu, uiBuilder.AutoOpenTagMenuCheckbox);
             uiBuilder.DrawCheckboxRow(b, TranslationCache.ConfigAutoFocusSearchBarName, autoFocusSearchBar, uiBuilder.AutoFocusSearchBarCheckbox);
             uiBuilder.DrawCheckboxRow(b, TranslationCache.ConfigArrowKeyScrollingName, arrowKeyScrolling, uiBuilder.ArrowKeyScrollingCheckbox);
 
@@ -586,7 +582,6 @@ namespace OutfitStudio
             config.ToggleScheduleKey = toggleScheduleKey;
             config.ShowTooltip = showTooltip;
             config.CloseOnClickOutside = closeOnClickOutside;
-            config.AutoOpenTagMenu = autoOpenTagMenu;
             config.AutoFocusSearchBar = autoFocusSearchBar;
             config.ArrowKeyScrolling = arrowKeyScrolling;
             config.IncludeHairInOutfitSets = includeHairInOutfitSets;

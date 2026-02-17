@@ -16,6 +16,7 @@ namespace OutfitStudio.Tests.UI
             "UI/ScheduleEditOverlay.cs",
             "UI/ScheduleOutfitOverlay.cs",
             "UI/ScheduleDebugLogOverlay.cs",
+            "UI/EditOutfitMenu.cs",
         };
 
         // Type B overlays that swap Game1.activeClickableMenu and must forward resize to parent
@@ -27,6 +28,7 @@ namespace OutfitStudio.Tests.UI
             "UI/ScheduleMenu.cs",
             "UI/ScheduleEditOverlay.cs",
             "UI/ScheduleDebugLogOverlay.cs",
+            "UI/EditOutfitMenu.cs",
         };
 
         // ----------------------------------------------------------------
@@ -42,6 +44,7 @@ namespace OutfitStudio.Tests.UI
         [InlineData("UI/ScheduleEditOverlay.cs")]
         [InlineData("UI/ScheduleOutfitOverlay.cs")]
         [InlineData("UI/ScheduleDebugLogOverlay.cs")]
+        [InlineData("UI/EditOutfitMenu.cs")]
         // Expected: Every menu class overrides gameWindowSizeChanged to stay anchored on window resize
         public void Menu_Overrides_GameWindowSizeChanged(string sourceFile)
         {
@@ -61,6 +64,7 @@ namespace OutfitStudio.Tests.UI
         [InlineData("UI/ScheduleMenu.cs")]
         [InlineData("UI/ScheduleEditOverlay.cs")]
         [InlineData("UI/ScheduleOutfitOverlay.cs")]
+        [InlineData("UI/EditOutfitMenu.cs")]
         // Expected: Every gameWindowSizeChanged body calls Recalculate (with or without args) to recompute layout
         public void GameWindowSizeChanged_CallsRecalculate(string sourceFile)
         {
@@ -82,6 +86,7 @@ namespace OutfitStudio.Tests.UI
         [InlineData("UI/ScheduleMenu.cs")]
         [InlineData("UI/ScheduleEditOverlay.cs")]
         [InlineData("UI/ScheduleDebugLogOverlay.cs")]
+        [InlineData("UI/EditOutfitMenu.cs")]
         // Expected: Type B overlays forward gameWindowSizeChanged to parentMenu so the parent stays in sync
         public void TypeBOverlay_ForwardsResize_ToParent(string sourceFile)
         {
@@ -107,6 +112,7 @@ namespace OutfitStudio.Tests.UI
         [InlineData("UI/ScheduleEditOverlay.cs")]
         [InlineData("UI/ScheduleOutfitOverlay.cs")]
         [InlineData("UI/ScheduleDebugLogOverlay.cs")]
+        [InlineData("UI/EditOutfitMenu.cs")]
         // Expected: Every receiveLeftClick checks isWithinBounds for close-on-outside-bounds
         public void Menu_HandlesCloseOnClickOutside(string sourceFile)
         {
@@ -907,12 +913,11 @@ namespace OutfitStudio.Tests.UI
         }
 
         [Fact]
-        // Expected: SaveSetUIBuilder.DrawTagsRow delegates to UIHelpers.DrawToggleButton
-        public void SaveSetUIBuilder_DrawTagsRow_UsesDrawToggleButton()
+        // Expected: SaveSetUIBuilder no longer has DrawTagsRow (tags row removed)
+        public void SaveSetUIBuilder_NoDrawTagsRow()
         {
             string source = SourceScanner.ReadSourceFile("UI/SaveSetUIBuilder.cs");
-            string body = SourceScanner.ExtractMethodBody(source, "void DrawTagsRow");
-            Assert.Contains("UIHelpers.DrawToggleButton", body);
+            Assert.DoesNotContain("void DrawTagsRow", source);
         }
 
 
@@ -1086,6 +1091,7 @@ namespace OutfitStudio.Tests.UI
         [InlineData("UI/WardrobeOverlay.cs")]
         [InlineData("UI/SaveSetOverlay.cs")]
         [InlineData("UI/ScheduleOutfitOverlay.cs")]
+        [InlineData("UI/EditOutfitMenu.cs")]
         // Expected: Overlays with render targets override cleanupBeforeExit to prevent GPU leaks
         public void Overlay_WithRenderTarget_OverridesCleanupBeforeExit(string sourceFile)
         {
@@ -3617,21 +3623,20 @@ namespace OutfitStudio.Tests.UI
         }
 
         [Fact]
-        // Expected: SaveSetOverlay edit-mode falls back to player hair when set has no HairId
-        public void SaveSetOverlay_EditMode_FallsBackToPlayerHairWhenNull()
+        // Expected: SaveSetOverlay edit-mode uses set's HairId directly, no player fallback
+        public void SaveSetOverlay_EditMode_UsesSetHairIdDirectly()
         {
             string source = SourceScanner.ReadSourceFile("UI/SaveSetOverlay.cs");
-            // editingSet.HairId ?? Game1.player.hair.Value — fallback for old sets
-            Assert.Contains("editingSet.HairId ?? Game1.player.hair.Value", source);
-            Assert.Contains("editingSet.HairColor ?? ColorHelper.ToColorString", source);
+            Assert.Contains("capturedHairId = editingSet.HairId;", source);
+            Assert.DoesNotContain("editingSet.HairId ?? Game1.player.hair", source);
         }
 
         [Fact]
-        // Expected: SaveSetOverlay forces includeHair=false only when config disables hair in sets
+        // Expected: SaveSetOverlay gates includeHair by config AND by set data in edit mode
         public void SaveSetOverlay_IncludeHair_GatedByConfig()
         {
             string source = SourceScanner.ReadSourceFile("UI/SaveSetOverlay.cs");
-            Assert.DoesNotContain("includeHair = capturedHairId.HasValue", source);
+            Assert.Contains("includeHair = capturedHairId.HasValue", source);
             Assert.Contains("IncludeHairInOutfitSets", source);
         }
 
@@ -4046,14 +4051,12 @@ namespace OutfitStudio.Tests.UI
         // ----------------------------------------------------------------
 
         [Fact]
-        // Expected: ScheduleMenuUIBuilder positions DebugLogButton using CloseButtonEdgeMargin for consistent gap
-        public void ScheduleMenuUIBuilder_DebugLogButton_UsesCloseButtonEdgeMargin()
+        // Expected: ScheduleMenuUIBuilder positions DebugLogButton outside right edge, same as main menu
+        public void ScheduleMenuUIBuilder_DebugLogButton_FloatsOutsideRightEdge()
         {
             string source = SourceScanner.ReadSourceFile("UI/ScheduleMenuUIBuilder.cs");
-            int idx = source.IndexOf("DebugLogButton = new");
-            Assert.True(idx >= 0, "DebugLogButton must be created in ScheduleMenuUIBuilder");
-            string after = source.Substring(idx, Math.Min(300, source.Length - idx));
-            Assert.Contains("CloseButtonEdgeMargin", after);
+            Assert.Contains("DebugLogButton = new", source);
+            Assert.Contains("X + Width + 5", source);
         }
 
         // ----------------------------------------------------------------
@@ -4129,6 +4132,962 @@ namespace OutfitStudio.Tests.UI
             string body = SourceScanner.ExtractMethodBody(source, "void RenderFarmerToTarget");
             Assert.DoesNotContain("ParseColor", body);
             Assert.Contains("parsedHairColor", body);
+        }
+
+        // ----------------------------------------------------------------
+        //  Tag picker: search filtering
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: TagPickerManager.BuildOptions filters tags by custom input text
+        public void TagPickerManager_BuildOptions_FiltersTagsBySearchText()
+        {
+            string source = SourceScanner.ReadSourceFile("Managers/TagPickerManager.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void BuildOptions");
+            Assert.Contains("customTagTextBox?.Text", body);
+            Assert.Contains(".Contains(searchText", body);
+            Assert.Contains("GetTagDisplayName", body);
+        }
+
+        [Fact]
+        // Expected: TagPickerManager.Update detects text changes and rebuilds options
+        public void TagPickerManager_Update_DetectsTextChangesAndRebuilds()
+        {
+            string source = SourceScanner.ReadSourceFile("Managers/TagPickerManager.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void Update");
+            Assert.Contains("lastSearchText", body);
+            Assert.Contains("BuildOptions()", body);
+            Assert.Contains("firstVisibleIndex = 0", body);
+        }
+
+        [Fact]
+        // Expected: TagPickerManager.TotalOptionCount reads from filtered tagOptions, not raw store
+        public void TagPickerManager_TotalOptionCount_UsesFilteredCount()
+        {
+            string source = SourceScanner.ReadSourceFile("Managers/TagPickerManager.cs");
+            Assert.Contains("TotalOptionCount => tagOptions.Count", source);
+            Assert.DoesNotContain("TotalOptionCount => store.GetAllTags()", source);
+        }
+
+        // ----------------------------------------------------------------
+        //  Tag picker: clear button
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: TagPickerManager has a clear button for the custom input field
+        public void TagPickerManager_HasCustomInputClearButton()
+        {
+            string source = SourceScanner.ReadSourceFile("Managers/TagPickerManager.cs");
+            Assert.Contains("customInputClearButton", source);
+        }
+
+        [Fact]
+        // Expected: TagPickerManager.HandleClick handles clear button
+        public void TagPickerManager_HandleClick_ClearButtonBeforeAddButton()
+        {
+            string source = SourceScanner.ReadSourceFile("Managers/TagPickerManager.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "bool HandleClick");
+            Assert.Contains("customInputClearButton", body);
+        }
+
+        [Fact]
+        // Expected: TagPickerManager.DrawCustomSection uses DrawInputBar with conditional clear button
+        public void TagPickerManager_DrawCustomSection_UsesDrawInputBar()
+        {
+            string source = SourceScanner.ReadSourceFile("Managers/TagPickerManager.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void DrawCustomSection");
+            Assert.Contains("DrawInputBar", body);
+            Assert.Contains("customInputClearButton", body);
+        }
+
+        [Fact]
+        // Expected: TagPickerManager.InitializeCustomTagInput creates clear button and adjusts layout
+        public void TagPickerManager_InitializeCustomTagInput_CreatessClearButton()
+        {
+            string source = SourceScanner.ReadSourceFile("Managers/TagPickerManager.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void InitializeCustomTagInput");
+            Assert.Contains("customInputClearButton", body);
+            Assert.Contains("ClearButtonSize", body);
+        }
+
+        // ----------------------------------------------------------------
+        //  Tag picker: no tag cap
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: TagPickerManager does not have a MaxTagsPerSet constant (cap removed)
+        public void TagPickerManager_NoMaxTagsPerSetCap()
+        {
+            string source = SourceScanner.ReadSourceFile("Managers/TagPickerManager.cs");
+            Assert.DoesNotContain("MaxTagsPerSet", source);
+        }
+
+        // ----------------------------------------------------------------
+        //  Tag picker: search cleared on close and tag add
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: TagPickerManager.Close resets lastSearchText
+        public void TagPickerManager_Close_ResetsSearchText()
+        {
+            string source = SourceScanner.ReadSourceFile("Managers/TagPickerManager.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void Close");
+            Assert.Contains("lastSearchText", body);
+        }
+
+        [Fact]
+        // Expected: TagPickerManager.TryAddCustomTag clears text and rebuilds options
+        public void TagPickerManager_TryAddCustomTag_ClearsSearchAndRebuilds()
+        {
+            string source = SourceScanner.ReadSourceFile("Managers/TagPickerManager.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void TryAddCustomTag");
+            Assert.Contains("lastSearchText = \"\"", body);
+            Assert.Contains("firstVisibleIndex = 0", body);
+            Assert.Contains("BuildOptions()", body);
+        }
+
+        // ----------------------------------------------------------------
+        //  SaveSetOverlay: edit mode hair slot
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: SaveSetOverlay edit branch uses editingSet.HairId directly without fallback to Game1.player
+        public void SaveSetOverlay_EditMode_HairIdNoPlayerFallback()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/SaveSetOverlay.cs");
+            // The edit branch should assign HairId directly, not use ?? fallback
+            Assert.Contains("capturedHairId = editingSet.HairId;", source);
+            Assert.DoesNotContain("editingSet.HairId ?? Game1.player.hair", source);
+        }
+
+        [Fact]
+        // Expected: SaveSetOverlay edit branch sets includeHair based on capturedHairId.HasValue
+        public void SaveSetOverlay_EditMode_IncludeHairFromCapturedId()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/SaveSetOverlay.cs");
+            Assert.Contains("includeHair = capturedHairId.HasValue", source);
+        }
+
+        [Fact]
+        // Expected: SaveSetOverlay edit branch uses editingSet.HairColor directly without fallback
+        public void SaveSetOverlay_EditMode_HairColorNoPlayerFallback()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/SaveSetOverlay.cs");
+            Assert.Contains("capturedHairColor = editingSet.HairColor;", source);
+            Assert.DoesNotContain("editingSet.HairColor ?? ColorHelper.ToColorString", source);
+        }
+
+        // ----------------------------------------------------------------
+        //  SaveSetOverlay: tooltip toggle key
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: SaveSetOverlay handles tooltip toggle key directly via ModEntry.Config
+        public void SaveSetOverlay_HandlesTooltipToggleDirectly()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/SaveSetOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "override void update");
+            Assert.Contains("ToggleItemInfoKey.JustPressed()", body);
+            Assert.Contains("ModEntry.Config.ShowItemInfo", body);
+            Assert.Contains("ModEntry.PersistConfig()", body);
+        }
+
+        [Fact]
+        // Expected: SaveSetOverlay does not delegate tooltip toggle to OutfitMenu
+        public void SaveSetOverlay_NoParentDelegateForTooltipToggle()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/SaveSetOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "override void update");
+            Assert.DoesNotContain("outfitMenu.HandleItemInfoToggle", body);
+        }
+
+        [Fact]
+        // Expected: SaveSetOverlay.DrawItemTooltips uses ModEntry.Config.ShowItemInfo directly
+        public void SaveSetOverlay_DrawItemTooltips_UsesConfigDirectly()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/SaveSetOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void DrawItemTooltips");
+            Assert.Contains("ModEntry.Config.ShowItemInfo", body);
+            Assert.DoesNotContain("parentMenu is OutfitMenu", body);
+        }
+
+        // ----------------------------------------------------------------
+        //  OutfitMenu: ShowItemInfo reads from config
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: OutfitMenu.ShowItemInfo reads from ModEntry.Config, not a local field
+        public void OutfitMenu_ShowItemInfo_ReadsFromConfig()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/OutfitMenu.cs");
+            Assert.Contains("ShowItemInfo => ModEntry.Config.ShowItemInfo", source);
+            Assert.DoesNotContain("private bool showItemInfo", source);
+        }
+
+        // ----------------------------------------------------------------
+        //  AutoOpenTagMenu config removal
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: ModConfig does NOT have AutoOpenTagMenu property
+        public void ModConfig_DoesNotHave_AutoOpenTagMenu()
+        {
+            string source = SourceScanner.ReadSourceFile("Core/ModConfig.cs");
+            Assert.DoesNotContain("AutoOpenTagMenu", source);
+        }
+
+        [Fact]
+        // Expected: ConfigOverlay does NOT reference autoOpenTagMenu
+        public void ConfigOverlay_DoesNotReference_AutoOpenTagMenu()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ConfigOverlay.cs");
+            Assert.DoesNotContain("autoOpenTagMenu", source);
+            Assert.DoesNotContain("AutoOpenTagMenu", source);
+        }
+
+        [Fact]
+        // Expected: ConfigUIBuilder does NOT have AutoOpenTagMenuCheckbox
+        public void ConfigUIBuilder_DoesNotHave_AutoOpenTagMenuCheckbox()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/ConfigUIBuilder.cs");
+            Assert.DoesNotContain("AutoOpenTagMenu", source);
+        }
+
+        [Fact]
+        // Expected: ModEntry GMCM does NOT register AutoOpenTagMenu
+        public void ModEntry_GMCM_DoesNotRegister_AutoOpenTagMenu()
+        {
+            string source = SourceScanner.ReadSourceFile("Core/ModEntry.cs");
+            Assert.DoesNotContain("AutoOpenTagMenu", source);
+        }
+
+        [Fact]
+        // Expected: TranslationCache does NOT have AutoOpenTagMenu properties
+        public void TranslationCache_DoesNotHave_AutoOpenTagMenu()
+        {
+            string source = SourceScanner.ReadSourceFile("Utilities/TranslationCache.cs");
+            Assert.DoesNotContain("AutoOpenTagMenu", source);
+            Assert.DoesNotContain("auto-open-tag-menu", source);
+        }
+
+        [Fact]
+        // Expected: SaveSetOverlay always opens tag picker (no config gate)
+        public void SaveSetOverlay_AlwaysOpensTagPicker()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/SaveSetOverlay.cs");
+            Assert.DoesNotContain("AutoOpenTagMenu", source);
+            Assert.Contains("OpenTagPicker()", source);
+        }
+
+        // ----------------------------------------------------------------
+        //  SaveSetOverlay: Direction arrows
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: SaveSetOverlay has DirectionFrames and previewDirection for direction-aware preview
+        public void SaveSetOverlay_HasDirectionFrames_AndPreviewDirection()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/SaveSetOverlay.cs");
+            Assert.Contains("DirectionFrames", source);
+            Assert.Contains("previewDirection", source);
+            Assert.DoesNotContain("FrontFacingFrame", source);
+        }
+
+        [Fact]
+        // Expected: SaveSetOverlay handles arrow button clicks to change preview direction
+        public void SaveSetOverlay_HandlesArrowClicks()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/SaveSetOverlay.cs");
+            Assert.Contains("LeftArrowButton.containsPoint(x, y)", source);
+            Assert.Contains("RightArrowButton.containsPoint(x, y)", source);
+        }
+
+        [Fact]
+        // Expected: SaveSetOverlay renders farmer using previewDirection, not hardcoded direction
+        public void SaveSetOverlay_RenderUsesPreviewDirection()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/SaveSetOverlay.cs");
+            Assert.Contains("DirectionFrames[previewDirection]", source);
+        }
+
+        [Fact]
+        // Expected: SaveSetUIBuilder has LeftArrowButton and RightArrowButton
+        public void SaveSetUIBuilder_HasArrowButtons()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/SaveSetUIBuilder.cs");
+            Assert.Contains("LeftArrowButton", source);
+            Assert.Contains("RightArrowButton", source);
+        }
+
+        [Fact]
+        // Expected: SaveSetUIBuilder draws arrows
+        public void SaveSetUIBuilder_DrawsArrows()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/SaveSetUIBuilder.cs");
+            Assert.Contains("DrawArrows", source);
+        }
+
+        [Fact]
+        // Expected: SaveSetOverlay draw method calls DrawArrows
+        public void SaveSetOverlay_DrawCallsDrawArrows()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/SaveSetOverlay.cs");
+            Assert.Contains("DrawArrows(b)", source);
+        }
+
+        // ----------------------------------------------------------------
+        //  S66: EditOutfitMenu structural contracts
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: EditOutfitMenu restores parentMenu on close
+        public void EditOutfitMenu_CloseMenu_RestoresParentMenu()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/EditOutfitMenu.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void CloseMenu");
+            Assert.Contains("Game1.activeClickableMenu = parentMenu", body);
+        }
+
+        [Fact]
+        // Expected: EditOutfitMenu captures pre-menu snapshot before equipping set items
+        public void EditOutfitMenu_Constructor_CapturesPreMenuSnapshot()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/EditOutfitMenu.cs");
+            Assert.Contains("preMenuShirtId", source);
+            Assert.Contains("preMenuPantsId", source);
+            Assert.Contains("preMenuHatId", source);
+            Assert.Contains("preMenuHairId", source);
+        }
+
+        [Fact]
+        // Expected: EditOutfitMenu reverts player to pre-menu snapshot on close
+        public void EditOutfitMenu_RevertToPreMenuSnapshot_RestoresEquipment()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/EditOutfitMenu.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void RevertToPreMenuSnapshot");
+            Assert.Contains("ApplyShirt(preMenuShirtId)", body);
+            Assert.Contains("ApplyPants(preMenuPantsId)", body);
+            Assert.Contains("ApplyHat(preMenuHatId)", body);
+            Assert.Contains("ApplyHair(preMenuHairId)", body);
+        }
+
+        [Fact]
+        // Expected: EditOutfitMenu SaveOutfit writes items to editingSet but does NOT persist (SaveSetOverlay does)
+        public void EditOutfitMenu_SaveOutfit_UpdatesSetWithoutPersisting()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/EditOutfitMenu.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void SaveOutfit");
+            Assert.Contains("editingSet.ShirtId", body);
+            Assert.Contains("editingSet.PantsId", body);
+            Assert.Contains("editingSet.HatId", body);
+            Assert.DoesNotContain("store.Update", body);
+        }
+
+        [Fact]
+        // Expected: EditOutfitMenu blocks hair tab when IncludeHairInOutfitSets is disabled
+        public void EditOutfitMenu_ReceiveLeftClick_BlocksHairTabWhenConfigDisabled()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/EditOutfitMenu.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "override void receiveLeftClick");
+            Assert.Contains("IncludeHairInOutfitSets", body);
+            Assert.Contains("HairTab.containsPoint", body);
+        }
+
+        [Fact]
+        // Expected: EditOutfitMenu uses IOutfitUIBuilder interface through managers
+        public void EditOutfitMenu_Uses_IOutfitUIBuilder()
+        {
+            string source = SourceScanner.ReadSourceFile("Input/OutfitInputHandler.cs");
+            Assert.Contains("IOutfitUIBuilder uiBuilder", source);
+        }
+
+        [Fact]
+        // Expected: EditOutfitUIBuilder implements IOutfitUIBuilder
+        public void EditOutfitUIBuilder_Implements_IOutfitUIBuilder()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/EditOutfitUIBuilder.cs");
+            Assert.Contains("EditOutfitUIBuilder : IOutfitUIBuilder", source);
+        }
+
+        [Fact]
+        // Expected: EditOutfitUIBuilder has null stubs for buttons not present in EditOutfitMenu
+        public void EditOutfitUIBuilder_HasNullStubs_ForMissingButtons()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/EditOutfitUIBuilder.cs");
+            Assert.Contains("SaveButton => null", source);
+            Assert.Contains("WardrobeButton => null", source);
+            Assert.Contains("GearButton => null", source);
+            Assert.Contains("ScheduleButton => null", source);
+            Assert.Contains("DebugLogButton => null", source);
+        }
+
+        [Fact]
+        // Expected: SaveSetOverlay has scissors button for edit mode
+        public void SaveSetOverlay_HasScissorsButton()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/SaveSetUIBuilder.cs");
+            Assert.Contains("ScissorsButton", source);
+        }
+
+        [Fact]
+        // Expected: SaveSetOverlay opens EditOutfitMenu on scissors click
+        public void SaveSetOverlay_OpensEditOutfitMenu_OnScissorsClick()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/SaveSetOverlay.cs");
+            Assert.Contains("new EditOutfitMenu(", source);
+            Assert.Contains("OpenEditOutfitMenu", source);
+        }
+
+        [Fact]
+        // Expected: SaveSetOverlay refreshes captured items when returning from EditOutfitMenu
+        public void SaveSetOverlay_RefreshCapturedItems_OnEditReturn()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/SaveSetOverlay.cs");
+            Assert.Contains("RefreshCapturedItems", source);
+        }
+
+        // ----------------------------------------------------------------
+        //  Tags row removed from SaveSet menu
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: SaveSetUIBuilder no longer has AddTagsButton or TagSectionHeight
+        public void SaveSetUIBuilder_NoAddTagsButton()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/SaveSetUIBuilder.cs");
+            Assert.DoesNotContain("AddTagsButton", source);
+            Assert.DoesNotContain("TagSectionHeight", source);
+            Assert.DoesNotContain("TagRowBounds", source);
+        }
+
+        [Fact]
+        // Expected: SaveSetUIBuilder no longer has UpdateTagsRowLayout method
+        public void SaveSetUIBuilder_NoUpdateTagsRowLayout()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/SaveSetUIBuilder.cs");
+            Assert.DoesNotContain("UpdateTagsRowLayout", source);
+        }
+
+        [Fact]
+        // Expected: SaveSetOverlay no longer has ToggleTagPicker method
+        public void SaveSetOverlay_NoToggleTagPicker()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/SaveSetOverlay.cs");
+            Assert.DoesNotContain("ToggleTagPicker", source);
+        }
+
+        [Fact]
+        // Expected: SaveSetOverlay does not call UpdateTagsRowLayout or DrawTagsRow
+        public void SaveSetOverlay_NoTagsRowReferences()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/SaveSetOverlay.cs");
+            Assert.DoesNotContain("UpdateTagsRowLayout", source);
+            Assert.DoesNotContain("DrawTagsRow", source);
+        }
+
+        // ----------------------------------------------------------------
+        //  Tag count removed from Tags picker
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: TagPickerManager.Draw no longer shows selectedTags.Count
+        public void TagPickerManager_Draw_NoTagCount()
+        {
+            string source = SourceScanner.ReadSourceFile("Managers/TagPickerManager.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "public void Draw");
+            Assert.DoesNotContain("selectedTags.Count", body);
+        }
+
+        // ----------------------------------------------------------------
+        //  Custom input bar contains clear button inside
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: TagPickerManager has customInputBarBounds field for wider visual bar
+        public void TagPickerManager_HasCustomInputBarBounds()
+        {
+            string source = SourceScanner.ReadSourceFile("Managers/TagPickerManager.cs");
+            Assert.Contains("customInputBarBounds", source);
+        }
+
+        [Fact]
+        // Expected: TagPickerManager.InitializeCustomTagInput calculates separate textBoxWidth and inputBarWidth
+        public void TagPickerManager_InitializeCustomTagInput_SeparateBarAndTextWidths()
+        {
+            string source = SourceScanner.ReadSourceFile("Managers/TagPickerManager.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void InitializeCustomTagInput");
+            Assert.Contains("textBoxWidth", body);
+            Assert.Contains("inputBarWidth", body);
+            Assert.Contains("customInputBarBounds", body);
+        }
+
+        [Fact]
+        // Expected: TagPickerManager click detection uses customInputBarBounds instead of textbox bounds
+        public void TagPickerManager_HandleClick_UsesInputBarBounds()
+        {
+            string source = SourceScanner.ReadSourceFile("Managers/TagPickerManager.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "public bool HandleClick");
+            Assert.Contains("customInputBarBounds.Contains", body);
+        }
+
+        // ----------------------------------------------------------------
+        //  Edit outfit button uses crafting icon with texture box
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: SaveSetUIBuilder.DrawEditOutfitButton draws texture box background and crafting icon
+        public void SaveSetUIBuilder_DrawEditOutfitButton_UsesCraftingIcon()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/SaveSetUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void DrawEditOutfitButton");
+            Assert.Contains("DrawTextureBox", body);
+            Assert.Contains("268, 1436, 11, 13", body);
+            Assert.Contains("Game1.mouseCursors", body);
+        }
+
+        [Fact]
+        // Expected: SaveSetUIBuilder positions edit button offset from hat slot
+        public void SaveSetUIBuilder_EditButton_TopAlignedWithHatSlot()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/SaveSetUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void CalculateLayout");
+            Assert.Contains("itemSlotsX + SaveSetItemSlotSize + 23", body);
+            Assert.Contains("editBtnY = itemSlotsY + 15", body);
+        }
+
+        [Fact]
+        // Expected: SaveSetOverlay no longer loads tailoring texture
+        public void SaveSetOverlay_NoTailoringTexture()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/SaveSetOverlay.cs");
+            Assert.DoesNotContain("tailoringTexture", source);
+            Assert.DoesNotContain("LooseSprites\\\\tailoring", source);
+        }
+
+        [Fact]
+        // Expected: SaveSetOverlay draws edit outfit button based on editingSet, not tailoringTexture
+        public void SaveSetOverlay_DrawsEditButton_BasedOnEditingSet()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/SaveSetOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "override void draw");
+            Assert.Contains("DrawEditOutfitButton", body);
+            Assert.DoesNotContain("DrawScissorsButton", body);
+        }
+
+        // ----------------------------------------------------------------
+        //  Edit Outfit menu buttons right-aligned
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: EditOutfitUIBuilder positions Save+Reset right-aligned to grid
+        public void EditOutfitUIBuilder_BottomButtons_RightAligned()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/EditOutfitUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void PositionRightPanel");
+            Assert.Contains("buttonsEndX", body);
+            Assert.Contains("panelX + gridWidth", body);
+            Assert.DoesNotContain("Width - totalButtonsWidth) / 2", body);
+        }
+
+        // ----------------------------------------------------------------
+        //  EditOutfitMenu: cleanupBeforeExit disposes and clears caches
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: EditOutfitMenu.cleanupBeforeExit calls SafeDispose to release render target
+        public void EditOutfitMenu_CleanupBeforeExit_CallsSafeDispose()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/EditOutfitMenu.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "override void cleanupBeforeExit");
+            Assert.Contains("uiBuilder.SafeDispose()", body);
+        }
+
+        [Fact]
+        // Expected: EditOutfitMenu.cleanupBeforeExit clears filter, item, and tooltip caches
+        public void EditOutfitMenu_CleanupBeforeExit_ClearsCaches()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/EditOutfitMenu.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "override void cleanupBeforeExit");
+            Assert.Contains("filterManager.ClearSearchCaches()", body);
+            Assert.Contains("itemRenderer.ClearCache()", body);
+            Assert.Contains("tooltipRenderer.ClearCache()", body);
+        }
+
+        // ----------------------------------------------------------------
+        //  ModEntry: shortcut key passes mod to WardrobeOverlay
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: ModEntry shortcut key path passes mod: this when creating WardrobeOverlay
+        public void ModEntry_ShortcutKey_PassesModToWardrobeOverlay()
+        {
+            string source = SourceScanner.ReadSourceFile("Core/ModEntry.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void OnButtonsChanged");
+            Assert.Contains("new WardrobeOverlay(", body);
+            Assert.Contains("mod: this", body);
+        }
+
+        // ----------------------------------------------------------------
+        //  EditOutfitMenu: invalid items unequipped after ApplySet
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: EditOutfitMenu constructor checks IsItemValid and nulls invalid slots
+        public void EditOutfitMenu_Constructor_UnequipsInvalidItems()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/EditOutfitMenu.cs");
+            Assert.Contains("store.IsItemValid(editingSet.ShirtId", source);
+            Assert.Contains("store.IsItemValid(editingSet.PantsId", source);
+            Assert.Contains("store.IsItemValid(editingSet.HatId", source);
+            Assert.Contains("Game1.player.shirtItem.Value = null", source);
+            Assert.Contains("Game1.player.pantsItem.Value = null", source);
+            Assert.Contains("Game1.player.hat.Value = null", source);
+        }
+
+        // ----------------------------------------------------------------
+        //  SaveSetOverlay: RefreshCapturedItems preserves include flags
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: RefreshCapturedItems only changes include flags when item presence changed
+        public void SaveSetOverlay_RefreshCapturedItems_PreservesIncludeFlags()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/SaveSetOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void RefreshCapturedItems");
+            Assert.Contains("hadShirt", body);
+            Assert.Contains("hasShirt", body);
+            Assert.Contains("hadShirt != hasShirt", body);
+            Assert.Contains("hadPants != hasPants", body);
+            Assert.Contains("hadHat != hasHat", body);
+            Assert.Contains("hadHair != hasHair", body);
+        }
+
+        // ----------------------------------------------------------------
+        //  EditOutfitMenu: ResetOutfit restores pre-menu hair when set has none
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: ResetOutfit restores pre-menu hair when set has no HairId
+        public void EditOutfitMenu_ResetOutfit_RestoresPreMenuHairWhenSetHasNone()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/EditOutfitMenu.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void ResetOutfit");
+            Assert.Contains("editingSet.HairId.HasValue", body);
+            Assert.Contains("ApplyHair(preMenuHairId)", body);
+            Assert.Contains("changeHairColor(preMenuHairColor)", body);
+        }
+
+        [Fact]
+        // Expected: ResetOutfit also checks IncludeHairInOutfitSets config
+        public void EditOutfitMenu_ResetOutfit_ChecksHairConfig()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/EditOutfitMenu.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void ResetOutfit");
+            Assert.Contains("IncludeHairInOutfitSets", body);
+        }
+
+        //  EditOutfitMenu: Reset resets hair index and dye color
+
+        [Fact]
+        // Expected: ResetOutfit resets HairIndex after applying set
+        public void EditOutfitMenu_ResetOutfit_ResetsHairIndex()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/EditOutfitMenu.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void ResetOutfit");
+            Assert.Contains("state.HairIndex", body);
+            Assert.Contains("categoryManager.HairIds.IndexOf", body);
+        }
+
+        [Fact]
+        // Expected: ResetOutfit handles hair color in dye color manager
+        public void EditOutfitMenu_ResetOutfit_RestoresHairColor()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/EditOutfitMenu.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void ResetOutfit");
+            Assert.Contains("Category.Hair", body);
+            Assert.Contains("hairstyleColor", body);
+        }
+
+        //  EditOutfitMenu: SaveOutfit preserves invalid items
+
+        [Fact]
+        // Expected: EditOutfitMenu snapshots original set values before applying
+        public void EditOutfitMenu_SnapshotsOriginalSetValues()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/EditOutfitMenu.cs");
+            Assert.Contains("origSetShirtId", source);
+            Assert.Contains("origSetPantsId", source);
+            Assert.Contains("origSetHatId", source);
+            Assert.Contains("origSetHairId", source);
+            Assert.Contains("origSetShirtColor", source);
+            Assert.Contains("origSetPantsColor", source);
+            Assert.Contains("origSetHairColor", source);
+        }
+
+        [Fact]
+        // Expected: SaveOutfit compares current player state to applied state to detect changes
+        public void EditOutfitMenu_SaveOutfit_ComparesAgainstAppliedState()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/EditOutfitMenu.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void SaveOutfit");
+            Assert.Contains("state.AppliedShirt", body);
+            Assert.Contains("state.AppliedPants", body);
+            Assert.Contains("state.AppliedHat", body);
+            Assert.Contains("state.AppliedHair", body);
+        }
+
+        [Fact]
+        // Expected: SaveOutfit preserves original set values for unchanged slots
+        public void EditOutfitMenu_SaveOutfit_PreservesOrigSetForUnchangedSlots()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/EditOutfitMenu.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void SaveOutfit");
+            Assert.Contains("origSetShirtId", body);
+            Assert.Contains("origSetPantsId", body);
+            Assert.Contains("origSetHatId", body);
+            Assert.Contains("origSetHairId", body);
+        }
+
+        [Fact]
+        // Expected: SaveOutfit preserves original color for unchanged slots with invalid items
+        public void EditOutfitMenu_SaveOutfit_PreservesOrigColorForInvalidItems()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/EditOutfitMenu.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void SaveOutfit");
+            Assert.Contains("origSetShirtColor", body);
+            Assert.Contains("origSetPantsColor", body);
+            Assert.Contains("origSetHairColor", body);
+        }
+
+        //  SaveSetOverlay: Revert editingSet on close-without-save
+
+        [Fact]
+        // Expected: SaveSetOverlay snapshots initial set values for revert on close
+        public void SaveSetOverlay_SnapshotsInitialSetValues()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/SaveSetOverlay.cs");
+            Assert.Contains("initialSetShirtId", source);
+            Assert.Contains("initialSetPantsId", source);
+            Assert.Contains("initialSetHatId", source);
+            Assert.Contains("initialSetShirtColor", source);
+            Assert.Contains("initialSetPantsColor", source);
+            Assert.Contains("initialSetHairId", source);
+            Assert.Contains("initialSetHairColor", source);
+        }
+
+        [Fact]
+        // Expected: SaveSetOverlay CloseOverlay reverts editingSet when not saved
+        public void SaveSetOverlay_CloseOverlay_RevertsWhenNotSaved()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/SaveSetOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void CloseOverlay");
+            Assert.Contains("!didSave", body);
+            Assert.Contains("initialSetShirtId", body);
+            Assert.Contains("initialSetPantsId", body);
+            Assert.Contains("initialSetHatId", body);
+        }
+
+        [Fact]
+        // Expected: SaveSetOverlay sets didSave flag before CloseOverlay in save path
+        public void SaveSetOverlay_SavePath_SetsDidSaveFlag()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/SaveSetOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void HandleSave");
+            Assert.Contains("didSave = true", body);
+            Assert.Contains("CloseOverlay()", body);
+        }
+
+        //  OutfitInputHandler: Filter bar click closes dropdown
+
+        [Fact]
+        // Expected: Clicking filter bar when dropdown is open closes the dropdown
+        public void OutfitInputHandler_FilterBarClick_ClosesOpenDropdown()
+        {
+            string source = SourceScanner.ReadSourceFile("Input/OutfitInputHandler.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "bool HandleLeftClick");
+            // The dropdown-open block that handles filter bar click should close, not absorb
+            Assert.Contains("dropdownManager.Close()", body);
+            Assert.DoesNotContain("absorb click", body.ToLowerInvariant());
+        }
+
+        //  TagPickerManager: No add button
+
+        [Fact]
+        // Expected: TagPickerManager no longer has addCustomButton field
+        public void TagPickerManager_NoAddCustomButton()
+        {
+            string source = SourceScanner.ReadSourceFile("Managers/TagPickerManager.cs");
+            Assert.DoesNotContain("addCustomButton", source);
+        }
+
+        [Fact]
+        // Expected: TagPickerManager custom input bar has vertical padding for taller texture box
+        public void TagPickerManager_CustomInputBar_HasVerticalPadding()
+        {
+            string source = SourceScanner.ReadSourceFile("Managers/TagPickerManager.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void InitializeCustomTagInput");
+            Assert.Contains("boxPadding", body);
+            Assert.Contains("inputY - boxPadding", body);
+        }
+
+        // ----------------------------------------------------------------
+        //  WardrobeOverlay: Tags bar toggles dropdown closed
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: Clicking Tags bar when tags dropdown is open closes it (not absorbs click)
+        public void WardrobeOverlay_TagsBar_TogglesCloseWhenOpen()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/WardrobeOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "override void receiveLeftClick");
+            // The tags-bar-when-open block should close, not absorb
+            Assert.DoesNotContain("absorb click", body.ToLowerInvariant());
+            // Must call CloseAllDropdowns when tags bar is clicked while open
+            int tagsBarIdx = body.IndexOf("tagsDropdownOpen && uiBuilder.TagsDropdown.containsPoint");
+            Assert.True(tagsBarIdx >= 0, "Should have tags bar check in receiveLeftClick");
+            string afterTagsBar = body.Substring(tagsBarIdx, Math.Min(200, body.Length - tagsBarIdx));
+            Assert.Contains("CloseAllDropdowns()", afterTagsBar);
+        }
+
+        // ----------------------------------------------------------------
+        //  WardrobeUIBuilder: Hair slot uses dark overlay when disabled
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: Hair slot draws SaveSetExcludedItemSlotColor overlay when IncludeHair is disabled
+        public void WardrobeUIBuilder_HairSlot_DarkOverlayWhenDisabled()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/WardrobeUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void DrawPreviewPanel");
+            // Should NOT dim the texture box itself (no Color.White * 0.6f on hair slot box)
+            Assert.DoesNotContain("Color.White * 0.6f", body);
+            // Should use the same dark overlay as other item slots
+            Assert.Contains("SaveSetExcludedItemSlotColor", body);
+        }
+
+        // ----------------------------------------------------------------
+        //  OutfitState: Apply methods guard against null ItemRegistry results
+        // ----------------------------------------------------------------
+
+        [Theory]
+        [InlineData("ApplyShirt")]
+        [InlineData("ApplyPants")]
+        [InlineData("ApplyHat")]
+        // Expected: Apply methods null-check ItemRegistry.Create result before assigning to player equipment
+        public void OutfitState_ApplyMethods_GuardAgainstNullCreate(string methodName)
+        {
+            string source = SourceScanner.ReadSourceFile("Managers/OutfitState.cs");
+            string body = SourceScanner.ExtractMethodBody(source, $"void {methodName}");
+            // Must store Create result in a variable and check for null
+            Assert.Contains("var item = ItemRegistry.Create", body);
+            Assert.Contains("if (item != null)", body);
+        }
+
+        // ----------------------------------------------------------------
+        //  Hair ID validation
+        // ----------------------------------------------------------------
+
+        [Fact]
+        // Expected: OutfitSetStore has a static IsHairIdValid method
+        public void OutfitSetStore_HasIsHairIdValidMethod()
+        {
+            string source = SourceScanner.ReadSourceFile("Services/OutfitSetStore.cs");
+            Assert.Contains("public static bool IsHairIdValid(int? hairId)", source);
+        }
+
+        [Fact]
+        // Expected: ValidateSet includes hair validation in IsValid computation
+        public void OutfitSetStore_ValidateSet_IncludesHairValidation()
+        {
+            string source = SourceScanner.ReadSourceFile("Services/OutfitSetStore.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void ValidateSet");
+            Assert.Contains("IsHairIdValid", body);
+            Assert.Contains("hairValid", body);
+        }
+
+        [Fact]
+        // Expected: ApplySet guards hair application with IsHairIdValid
+        public void OutfitSetStore_ApplySet_ValidatesHairBeforeApply()
+        {
+            string source = SourceScanner.ReadSourceFile("Services/OutfitSetStore.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void ApplySet");
+            Assert.Contains("IsHairIdValid", body);
+        }
+
+        [Fact]
+        // Expected: Wardrobe caching nulls out invalid hair IDs so slot shows dark overlay
+        public void WardrobeOverlay_CacheItems_ValidatesHairId()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/WardrobeOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void CacheItemsForSet");
+            Assert.Contains("IsHairIdValid", body);
+        }
+
+        [Fact]
+        // Expected: Wardrobe hair slot overlay uses validated hair check, not just HasValue
+        public void WardrobeUIBuilder_HairSlot_UsesHairValidation()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/WardrobeUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void DrawPreviewPanel");
+            Assert.Contains("IsHairIdValid", body);
+        }
+
+        //  WardrobeUIBuilder: DrawItemSlot dark slot only for no-item
+
+        [Fact]
+        // Expected: DrawItemSlot does not check IsItemValid (no validity-based dark slot)
+        public void WardrobeUIBuilder_DrawItemSlot_NoValidityCheck()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/WardrobeUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void DrawItemSlot");
+            Assert.DoesNotContain("IsItemValid", body);
+            Assert.DoesNotContain("typePrefix", body);
+        }
+
+        [Fact]
+        // Expected: DrawItemSlot only darkens slot when no item is present
+        public void WardrobeUIBuilder_DrawItemSlot_DarkensOnlyForNoItem()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/WardrobeUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void DrawItemSlot");
+            Assert.Contains("noItem", body);
+            Assert.Contains("IsNullOrEmpty", body);
+            Assert.Contains("SaveSetExcludedItemSlotColor", body);
+        }
+
+        [Fact]
+        // Expected: WardrobeOverlay creates items without IsItemValid guard (lets ItemRegistry produce error items)
+        public void WardrobeOverlay_CacheItems_NoIsItemValidGuard()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/WardrobeOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void CacheItemsForSet");
+            Assert.DoesNotContain("IsItemValid", body);
+        }
+
+        [Fact]
+        // Expected: SaveSetOverlay HasHair checks IsHairIdValid so invalid hair IDs don't render
+        public void SaveSetOverlay_HasHair_ValidatesWithIsHairIdValid()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/SaveSetOverlay.cs");
+            Assert.Contains("IsHairIdValid", SourceScanner.ExtractMethodBody(source, "bool HasHair"));
+        }
+
+        [Fact]
+        // Expected: SaveSetOverlay preview rendering guards hair with IsHairIdValid to avoid hair #0 fallback
+        public void SaveSetOverlay_PreviewRender_ValidatesHairBeforeApply()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/SaveSetOverlay.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void RenderPreviewToTarget");
+            Assert.Contains("IsHairIdValid", body);
+        }
+
+        [Fact]
+        // Expected: DrawPreviewPanel does not pass store to DrawItemSlot
+        public void WardrobeUIBuilder_DrawPreviewPanel_NoStoreParam()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/WardrobeUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void DrawPreviewPanel");
+            Assert.DoesNotContain("store", body);
         }
     }
 }

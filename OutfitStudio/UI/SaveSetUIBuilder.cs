@@ -27,11 +27,12 @@ namespace OutfitStudio
         public ClickableComponent NameRandomButton { get; private set; } = null!;
         public ClickableComponent FavoriteCheckbox { get; private set; } = null!;
         public ClickableComponent? LocalOnlyCheckbox { get; private set; }
-        public ClickableComponent? AddTagsButton { get; private set; }
-        public Rectangle TagRowBounds { get; private set; }
+        public ClickableTextureComponent LeftArrowButton { get; private set; } = null!;
+        public ClickableTextureComponent RightArrowButton { get; private set; } = null!;
         public ClickableTextureComponent CloseButton { get; private set; } = null!;
         public ClickableComponent SaveButton { get; private set; } = null!;
         public ClickableComponent CancelButton { get; private set; } = null!;
+        public ClickableComponent? ScissorsButton { get; private set; }
 
         public int X { get; private set; }
         public int Y { get; private set; }
@@ -40,21 +41,21 @@ namespace OutfitStudio
 
         public int NameSectionHeight { get; private set; }
         public int PreviewSectionHeight { get; private set; }
-        public int TagSectionHeight { get; private set; }
         public int FavoriteSectionHeight { get; private set; }
         public int LocalOnlySectionHeight { get; private set; }
         public int ButtonSectionHeight { get; private set; }
 
         private int contentX;
         private int contentWidth;
-        private int tagsRowStartX;
         private int favoriteRowX;
         private int localOnlyRowX;
+        private readonly bool isEditMode;
 
-        public SaveSetUIBuilder(int width, int height)
+        public SaveSetUIBuilder(int width, int height, bool isEditMode = false)
         {
             Width = width;
             Height = height;
+            this.isEditMode = isEditMode;
 
             Recalculate();
         }
@@ -63,14 +64,13 @@ namespace OutfitStudio
         {
             int textRowHeight = (int)Game1.smallFont.MeasureString("A").Y + TextureBoxVerticalPadding;
             int itemSlotsHeight = (SaveSetItemSlotSize * 3) + (SaveSetItemSlotGap * 2);
-            int previewHeight = Math.Max(SaveSetPreviewHeight, itemSlotsHeight);
+            int arrowHeight = (int)(ArrowNativeHeight * SaveSetArrowScale);
+            int previewHeight = Math.Max(SaveSetPreviewHeight + ElementGap + arrowHeight, itemSlotsHeight);
 
             return SaveSetBorderPadding
                    + textRowHeight
                    + SaveSetSectionPadding * 2
                    + previewHeight
-                   + SaveSetSectionPadding * 2
-                   + SmallButtonHeight
                    + SaveSetSectionPadding * 2
                    + SaveSetCheckboxSize
                    + SaveSetSectionPadding
@@ -95,9 +95,10 @@ namespace OutfitStudio
             int textRowHeight = (int)Game1.smallFont.MeasureString("A").Y + TextureBoxVerticalPadding;
             int itemSlotsHeight = (SaveSetItemSlotSize * 3) + (SaveSetItemSlotGap * 2);
 
+            int arrowHeight = (int)(ArrowNativeHeight * SaveSetArrowScale);
+
             NameSectionHeight = textRowHeight;
-            PreviewSectionHeight = Math.Max(SaveSetPreviewHeight, itemSlotsHeight);
-            TagSectionHeight = SmallButtonHeight;
+            PreviewSectionHeight = Math.Max(SaveSetPreviewHeight + ElementGap + arrowHeight, itemSlotsHeight);
             FavoriteSectionHeight = SaveSetCheckboxSize;
             LocalOnlySectionHeight = LocalOnlyRowHeight;
             ButtonSectionHeight = textRowHeight;
@@ -142,8 +143,29 @@ namespace OutfitStudio
             int previewStartX = previewGroupX + SaveSetItemSlotSize + SaveSetPreviewToSlotsGap;
             int itemSlotsX = previewStartX + SaveSetPreviewWidth + SaveSetPreviewToSlotsGap;
 
-            int previewY = currentY + (PreviewSectionHeight - SaveSetPreviewHeight) / 2;
+            int arrowHeight = (int)(ArrowNativeHeight * SaveSetArrowScale);
+            int previewWithArrowsHeight = SaveSetPreviewHeight + ElementGap + arrowHeight;
+            int previewY = currentY + (PreviewSectionHeight - previewWithArrowsHeight) / 2;
             PreviewBox = new Rectangle(previewStartX, previewY, SaveSetPreviewWidth, SaveSetPreviewHeight);
+
+            int arrowWidth = (int)(ArrowNativeWidth * SaveSetArrowScale);
+            int arrowButtonY = PreviewBox.Bottom + ElementGap;
+            int totalArrowsWidth = arrowWidth * 2 + ArrowGap;
+            int arrowsCenterX = previewStartX + SaveSetPreviewWidth / 2;
+            int arrowsStartX = arrowsCenterX - totalArrowsWidth / 2;
+
+            LeftArrowButton = new ClickableTextureComponent(
+                new Rectangle(arrowsStartX, arrowButtonY, arrowWidth, arrowHeight),
+                Game1.mouseCursors,
+                new Rectangle(352, 495, ArrowNativeWidth, ArrowNativeHeight),
+                SaveSetArrowScale
+            );
+            RightArrowButton = new ClickableTextureComponent(
+                new Rectangle(arrowsStartX + arrowWidth + ArrowGap, arrowButtonY, arrowWidth, arrowHeight),
+                Game1.mouseCursors,
+                new Rectangle(365, 495, ArrowNativeWidth, ArrowNativeHeight),
+                SaveSetArrowScale
+            );
 
             int itemSlotsY = currentY + (PreviewSectionHeight - itemSlotsHeight) / 2;
 
@@ -154,20 +176,18 @@ namespace OutfitStudio
             int hairSlotY = PreviewBox.Y + (SaveSetPreviewHeight - SaveSetItemSlotSize) / 2;
             HairSlot = new Rectangle(hairSlotX, hairSlotY, SaveSetItemSlotSize, SaveSetItemSlotSize);
 
+            if (isEditMode)
+            {
+                int editBtnSize = (int)(CloseButtonSize * 1.1f);
+                int editBtnX = itemSlotsX + SaveSetItemSlotSize + 23;
+                int editBtnY = itemSlotsY + 15;
+                ScissorsButton = new ClickableComponent(
+                    new Rectangle(editBtnX, editBtnY, editBtnSize, editBtnSize),
+                    "editOutfit"
+                );
+            }
+
             currentY += PreviewSectionHeight;
-            currentY += SaveSetSectionPadding * 2;
-
-            TagRowBounds = new Rectangle(contentX, currentY, contentWidth, TagSectionHeight);
-            tagsRowStartX = contentX;
-
-            int addButtonWidth = UIHelpers.GetToggleButtonWidth();
-            int addButtonY = currentY;
-            AddTagsButton = new ClickableComponent(
-                new Rectangle(tagsRowStartX, addButtonY, addButtonWidth, SmallButtonHeight),
-                "addTags"
-            );
-
-            currentY += TagSectionHeight;
             currentY += SaveSetSectionPadding * 2;
 
             int iconSize = (int)(8 * FavoriteIconScale);
@@ -217,23 +237,6 @@ namespace OutfitStudio
             );
         }
 
-        public void UpdateTagsRowLayout()
-        {
-            int labelWidth = (int)Game1.smallFont.MeasureString(TranslationCache.SaveSetTagsLabel).X + 8;
-            int addButtonWidth = UIHelpers.GetToggleButtonWidth();
-
-            int totalWidth = labelWidth + addButtonWidth;
-            int startX = contentX + (contentWidth - totalWidth) / 2;
-            tagsRowStartX = startX;
-
-            int buttonX = startX + labelWidth;
-            int buttonY = TagRowBounds.Y;
-            AddTagsButton = new ClickableComponent(
-                new Rectangle(buttonX, buttonY, addButtonWidth, SmallButtonHeight),
-                "addTags"
-            );
-        }
-
         public void DrawDiceButton(SpriteBatch b)
         {
             Rectangle diceBounds = NameRandomButton.bounds;
@@ -272,17 +275,6 @@ namespace OutfitStudio
             {
                 b.Draw(Game1.staminaRect, slot, HoverEffectColor);
             }
-        }
-
-        public void DrawTagsRow(SpriteBatch b, bool isTagMenuOpen)
-        {
-            float textHeight = Game1.smallFont.MeasureString("A").Y;
-            int labelY = TagRowBounds.Y + (int)((SmallButtonHeight - textHeight) / 2);
-            Utility.drawTextWithShadow(b, TranslationCache.SaveSetTagsLabel, Game1.smallFont,
-                new Vector2(tagsRowStartX, labelY), Game1.textColor);
-
-            if (AddTagsButton != null)
-                UIHelpers.DrawToggleButton(b, AddTagsButton, isTagMenuOpen);
         }
 
         public void DrawFavoriteCheckbox(SpriteBatch b, bool isChecked, bool isHovered)
@@ -342,6 +334,40 @@ namespace OutfitStudio
         {
             UIHelpers.DrawTextButton(b, SaveButton, TranslationCache.CommonSave);
             UIHelpers.DrawTextButton(b, CancelButton, TranslationCache.CommonCancel);
+        }
+
+        public void DrawEditOutfitButton(SpriteBatch b)
+        {
+            if (ScissorsButton == null) return;
+
+            Rectangle bounds = ScissorsButton.bounds;
+            int mouseX = Game1.getMouseX();
+            int mouseY = Game1.getMouseY();
+            bool isHovered = ScissorsButton.containsPoint(mouseX, mouseY);
+
+            float buttonScale = isHovered ? 1.1f : 1f;
+            int bgSize = (int)(bounds.Width * buttonScale);
+            int bgX = bounds.X + (bounds.Width - bgSize) / 2;
+            int bgY = bounds.Y + (bounds.Height - bgSize) / 2;
+
+            UIHelpers.DrawTextureBox(b, bgX, bgY, bgSize, bgSize, Color.White);
+
+            Rectangle craftingSource = new Rectangle(268, 1436, 11, 13);
+            float iconScale = (bgSize / 11f) * 0.6f;
+            Vector2 iconCenter = new Vector2(
+                bounds.X + bounds.Width / 2,
+                bounds.Y + bounds.Height / 2
+            );
+            Vector2 origin = new Vector2(5.5f, 6.5f);
+
+            b.Draw(Game1.mouseCursors, iconCenter, craftingSource, Color.White, 0f,
+                origin, iconScale, SpriteEffects.None, 1f);
+        }
+
+        public void DrawArrows(SpriteBatch b)
+        {
+            UIHelpers.DrawTextureButton(b, LeftArrowButton);
+            UIHelpers.DrawTextureButton(b, RightArrowButton);
         }
 
         public void DrawCloseButton(SpriteBatch b)

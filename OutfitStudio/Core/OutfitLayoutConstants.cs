@@ -122,6 +122,7 @@ namespace OutfitStudio
         public const int SaveSetPreviewToSlotsGap = 25;
         public const int SaveSetCheckboxSize = 36;
         public const float WardrobeArrowScale = 2.75f;
+        public const float SaveSetArrowScale = 2.5f;
         public const int SaveSetButtonGap = 20;
         public const int SaveSetBorderPadding = 30;
         public static readonly Color SaveSetExcludedItemSlotColor = Color.Black * 0.3f;
@@ -129,14 +130,12 @@ namespace OutfitStudio
         public const int SaveSetTagsLeftPadding = 40;
         public const float SaveSetLocalOnlyCheckboxScale = 3.2f;
         public const int SaveSetLocalOnlyCheckboxSize = 29;
-
         // Menu texture (0,256,60,60) has asymmetric borders: top=36px, bottom=40px.
         // This 2px offset compensates for the visual center shift.
         public const int TextureBoxVisualOffsetY = 2;
         public static readonly Rectangle MenuBoxSourceRect = new Rectangle(0, 256, 60, 60);
 
         // Tag Editing
-        public const int EditModeButtonSize = 28;
         public const int TagDeleteButtonSize = 20;
         public const float DisabledSectionOpacity = 0.5f;
         public const float MarkedForDeletionOpacity = 0.2f;

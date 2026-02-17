@@ -23,7 +23,6 @@ namespace OutfitStudio
 
         public ClickableComponent ShowTooltipCheckbox { get; private set; } = null!;
         public ClickableComponent CloseOnClickOutsideCheckbox { get; private set; } = null!;
-        public ClickableComponent AutoOpenTagMenuCheckbox { get; private set; } = null!;
         public ClickableComponent AutoFocusSearchBarCheckbox { get; private set; } = null!;
         public ClickableComponent ArrowKeyScrollingCheckbox { get; private set; } = null!;
         public ClickableComponent IncludeHairInOutfitSetsCheckbox { get; private set; } = null!;
@@ -94,7 +93,7 @@ namespace OutfitStudio
 
         public void Recalculate()
         {
-            int totalRows = 24;
+            int totalRows = 23;
             int totalSections = 4;
 
             int scrollableContentNatural = (ConfigSectionHeaderHeight * totalSections)
@@ -197,12 +196,6 @@ namespace OutfitStudio
             labelsList.Add(TranslationCache.ConfigCloseOnClickOutsideName);
             tooltipsList.Add(TranslationCache.ConfigCloseOnClickOutsideTooltip);
             CloseOnClickOutsideCheckbox = CreateCheckbox(currentY, "CloseOnClickOutside");
-            currentY += ConfigRowHeight;
-
-            rowYList.Add(currentY);
-            labelsList.Add(TranslationCache.ConfigAutoOpenTagMenuName);
-            tooltipsList.Add(TranslationCache.ConfigAutoOpenTagMenuTooltip);
-            AutoOpenTagMenuCheckbox = CreateCheckbox(currentY, "AutoOpenTagMenu");
             currentY += ConfigRowHeight;
 
             rowYList.Add(currentY);

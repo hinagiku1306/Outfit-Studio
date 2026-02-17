@@ -1,5 +1,38 @@
+Hi everyone, thank you for checking out my mod! I wrote this guide to help you navigate through the mod features, as the menus can be a bit overwhelming haha :)
 
+1. Main Menu
+Here, you can try on all hairstyles and clothing items.
+[screenshot of menu]
 
+Legends:
+
+[Add] -- save the current set into your wardrobe (check #2. Save Outfit Menu)
+[Apply] -- apply the current set
+[Reset] -- reset to the previously saved set (either when you open the menu, or when you last apply the set)
+[!] -- open Schedule Debug Log (check #. Schedule Debug Log Menu)
+[Pickaxe] -- open Mod Config menu (check #. Config Menu)
+[Prismatic Shard] -- open Color Picker menu to change color for hair and dyeable items
+[?] -- hovering over it will show the info of the current set in preview. [+] indicates that the item isn't saved yet.
+[screenshot of hovering info for ?]
+
+2. Save/Edit Outfit Menu
+[screenshot of menu]
+
+Legends:
+[Item Slot] -- clicking on any slot to deselect it and not save it to the set
+[Bag] (only available in Edit mode) -- open a new menu to change your hair and items for the set
+[screenshot of edit outfit menu]
+[Favorite] -- Favorite sets will show up at top of the item list in Wardrobe, and there is a special filter to retrieve them.
+[Save to this farm only] -- Determine whether the set will be saved across all saves, or just the current save.
+
+Sub-menu: Tags
+Select tags for your outfit. You can filter with the tags to find your outfits quickly in other menu.
+Legends:
+[Input Box] -- Act as both a search bar and an input bar. Click Enter or [+] button to add a custom tag.
+[Pickaxe] -- Enter Edit mode for Tags menu. 
+[screenshot of edit mode, some selected tags]
+Select the tags you want to remove. 
+Selected tags for delete are semi-transparent.
 
 Schedules for Passive Festivals:
 SDS Valentine DisplayName

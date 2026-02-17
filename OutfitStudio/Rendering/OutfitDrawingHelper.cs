@@ -12,7 +12,7 @@ namespace OutfitStudio
     {
         private const int DropdownPanelYOffset = -4;
 
-        private readonly OutfitUIBuilder uiBuilder;
+        private readonly IOutfitUIBuilder uiBuilder;
         private readonly OutfitDropdownManager dropdownManager;
         private readonly OutfitState state;
         private readonly ModEntry mod;
@@ -20,7 +20,7 @@ namespace OutfitStudio
         public string? HoveredTruncatedFilterText { get; private set; }
 
         public OutfitDrawingHelper(
-            OutfitUIBuilder uiBuilder,
+            IOutfitUIBuilder uiBuilder,
             OutfitDropdownManager dropdownManager,
             OutfitState state,
             ModEntry mod)

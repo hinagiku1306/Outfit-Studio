@@ -14,7 +14,6 @@ namespace OutfitStudio
         public bool ResetFilterOnTabSwitch { get; set; } = false;
         public bool ResetSearchOnTabSwitch { get; set; } = false;
         public bool ShowTooltip { get; set; } = true;
-        public bool AutoOpenTagMenu { get; set; } = true;
         public bool AutoFocusSearchBar { get; set; } = true;
         public bool ArrowKeyScrolling { get; set; } = true;
         public bool IncludeHairInOutfitSets { get; set; } = true;

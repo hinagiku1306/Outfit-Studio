@@ -19,6 +19,7 @@ namespace OutfitStudio
         private readonly OutfitSetStore store;
         private readonly IClickableMenu? parentMenu;
         private readonly Action<OutfitSet>? onOutfitApplied;
+        private readonly ModEntry? mod;
 
         private List<OutfitSet> displayedSets = new();
         private int selectedIndex = -1;
@@ -66,11 +67,12 @@ namespace OutfitStudio
         private Color? cachedHairColor;
         private string? cachedSetId;
 
-        public WardrobeOverlay(OutfitSetStore store, IClickableMenu? parentMenu, Action<OutfitSet>? onOutfitApplied = null)
+        public WardrobeOverlay(OutfitSetStore store, IClickableMenu? parentMenu, Action<OutfitSet>? onOutfitApplied = null, ModEntry? mod = null)
         {
             this.store = store;
             this.parentMenu = parentMenu;
             this.onOutfitApplied = onOutfitApplied;
+            this.mod = mod;
 
             uiBuilder = new WardrobeUIBuilder();
             width = uiBuilder.Width;
@@ -180,22 +182,22 @@ namespace OutfitStudio
                 return;
             }
 
-            if (!string.IsNullOrEmpty(set.ShirtId) && store.IsItemValid(set.ShirtId, "(S)"))
+            if (!string.IsNullOrEmpty(set.ShirtId))
             {
                 cachedShirt = ItemRegistry.Create<Clothing>("(S)" + set.ShirtId);
                 ColorHelper.ApplyColor(cachedShirt, set.ShirtColor);
             }
 
-            if (!string.IsNullOrEmpty(set.PantsId) && store.IsItemValid(set.PantsId, "(P)"))
+            if (!string.IsNullOrEmpty(set.PantsId))
             {
                 cachedPants = ItemRegistry.Create<Clothing>("(P)" + set.PantsId);
                 ColorHelper.ApplyColor(cachedPants, set.PantsColor);
             }
 
-            if (!string.IsNullOrEmpty(set.HatId) && store.IsItemValid(set.HatId, "(H)"))
+            if (!string.IsNullOrEmpty(set.HatId))
                 cachedHat = ItemRegistry.Create<Hat>("(H)" + set.HatId);
 
-            cachedHairId = set.HairId;
+            cachedHairId = OutfitSetStore.IsHairIdValid(set.HairId) ? set.HairId : null;
             cachedHairColor = set.HairColor != null ? ColorHelper.ParseColor(set.HairColor) : null;
         }
 
@@ -313,9 +315,11 @@ namespace OutfitStudio
                 {
                     return;
                 }
-                // Tags bar when tags dropdown open = input bar — absorb click
+                // Tags bar when tags dropdown open = toggle close
                 else if (tagsDropdownOpen && uiBuilder.TagsDropdown.containsPoint(x, y))
                 {
+                    CloseAllDropdowns();
+                    if (playSound) Game1.playSound("smallSelect");
                     return;
                 }
                 // Other dropdown bars: close current and open new (fall through to HandleFilterBarClick)
@@ -674,7 +678,7 @@ namespace OutfitStudio
                 cachedSetId = null;
                 lastPreviewSetId = null;
                 RefreshDisplayedSets();
-            }, editingSet: SelectedSet, onClose: RefreshDisplayedSets);
+            }, editingSet: SelectedSet, onClose: RefreshDisplayedSets, mod: mod);
         }
 
         private void ShowDeleteConfirmation()
@@ -974,9 +978,9 @@ namespace OutfitStudio
                     else
                         Game1.player.hat.Value = null;
 
-                    if (ModEntry.Config.IncludeHairInOutfitSets && set.HairId.HasValue)
+                    if (ModEntry.Config.IncludeHairInOutfitSets && cachedHairId.HasValue)
                     {
-                        Game1.player.changeHairStyle(set.HairId.Value);
+                        Game1.player.changeHairStyle(cachedHairId.Value);
                         if (cachedHairColor.HasValue)
                             Game1.player.changeHairColor(cachedHairColor.Value);
                     }
@@ -1110,7 +1114,7 @@ namespace OutfitStudio
                 RenderPreviewToTarget(SelectedSet);
                 previewDirty = false;
             }
-            uiBuilder.DrawPreviewPanel(b, SelectedSet, store, previewRenderTarget, displayedSets.Count);
+            uiBuilder.DrawPreviewPanel(b, SelectedSet, previewRenderTarget, displayedSets.Count);
             uiBuilder.DrawArrows(b);
             DrawItemSprites(b);
 

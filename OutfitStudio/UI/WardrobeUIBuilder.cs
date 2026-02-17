@@ -792,7 +792,7 @@ namespace OutfitStudio
                 TranslationCache.WardrobeItemNone);
         }
 
-        public void DrawPreviewPanel(SpriteBatch b, OutfitSet? set, OutfitSetStore store, Texture2D? previewTexture, int displayedCount)
+        public void DrawPreviewPanel(SpriteBatch b, OutfitSet? set, Texture2D? previewTexture, int displayedCount)
         {
             string totalText = $"{TranslationCache.ScheduleEditTotalOutfits}: {displayedCount}";
             Vector2 totalSize = Game1.smallFont.MeasureString(totalText);
@@ -809,14 +809,14 @@ namespace OutfitStudio
 
             if (set != null)
             {
-                DrawItemSlot(b, HatSlot, set.HatId, "(H)", store);
-                DrawItemSlot(b, ShirtSlot, set.ShirtId, "(S)", store);
-                DrawItemSlot(b, PantsSlot, set.PantsId, "(P)", store);
+                DrawItemSlot(b, HatSlot, set.HatId);
+                DrawItemSlot(b, ShirtSlot, set.ShirtId);
+                DrawItemSlot(b, PantsSlot, set.PantsId);
 
                 bool hairActive = ModEntry.Config.IncludeHairInOutfitSets;
-                UIHelpers.DrawTextureBoxNoShadow(b, HairSlot.X - 4, HairSlot.Y - 4, HairSlot.Width + 8, HairSlot.Height + 8,
-                    hairActive ? Color.White : Color.White * 0.6f);
-                if (hairActive && !set.HairId.HasValue)
+                bool hairHasValidItem = set.HairId.HasValue && OutfitSetStore.IsHairIdValid(set.HairId);
+                UIHelpers.DrawTextureBoxNoShadow(b, HairSlot.X - 4, HairSlot.Y - 4, HairSlot.Width + 8, HairSlot.Height + 8, Color.White);
+                if (!hairActive || !hairHasValidItem)
                     b.Draw(Game1.staminaRect, HairSlot, SaveSetExcludedItemSlotColor);
             }
             else
@@ -824,8 +824,9 @@ namespace OutfitStudio
                 UIHelpers.DrawTextureBoxNoShadow(b, HatSlot.X - 4, HatSlot.Y - 4, HatSlot.Width + 8, HatSlot.Height + 8, Color.White);
                 UIHelpers.DrawTextureBoxNoShadow(b, ShirtSlot.X - 4, ShirtSlot.Y - 4, ShirtSlot.Width + 8, ShirtSlot.Height + 8, Color.White);
                 UIHelpers.DrawTextureBoxNoShadow(b, PantsSlot.X - 4, PantsSlot.Y - 4, PantsSlot.Width + 8, PantsSlot.Height + 8, Color.White);
-                UIHelpers.DrawTextureBoxNoShadow(b, HairSlot.X - 4, HairSlot.Y - 4, HairSlot.Width + 8, HairSlot.Height + 8,
-                    ModEntry.Config.IncludeHairInOutfitSets ? Color.White : Color.White * 0.6f);
+                UIHelpers.DrawTextureBoxNoShadow(b, HairSlot.X - 4, HairSlot.Y - 4, HairSlot.Width + 8, HairSlot.Height + 8, Color.White);
+                if (!ModEntry.Config.IncludeHairInOutfitSets)
+                    b.Draw(Game1.staminaRect, HairSlot, SaveSetExcludedItemSlotColor);
             }
 
             if (set == null)
@@ -886,14 +887,13 @@ namespace OutfitStudio
                 new Vector2(textLeftX, infoStartY + lineSpacing), Color.Gray);
         }
 
-        private void DrawItemSlot(SpriteBatch b, Rectangle slot, string? itemId, string typePrefix, OutfitSetStore store)
+        private void DrawItemSlot(SpriteBatch b, Rectangle slot, string? itemId)
         {
             UIHelpers.DrawTextureBoxNoShadow(b, slot.X - 4, slot.Y - 4, slot.Width + 8, slot.Height + 8, Color.White);
 
-            bool hasItem = !string.IsNullOrEmpty(itemId);
-            bool isValid = hasItem && store.IsItemValid(itemId!, typePrefix);
+            bool noItem = string.IsNullOrEmpty(itemId) || itemId == NoHatId;
 
-            if (!hasItem || !isValid)
+            if (noItem)
             {
                 b.Draw(Game1.staminaRect, slot, SaveSetExcludedItemSlotColor);
             }

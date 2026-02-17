@@ -13,7 +13,6 @@ namespace OutfitStudio
 {
     public class TagPickerManager
     {
-        private const int MaxTagsPerSet = 5;
         private const int MaxTagLength = 30;
         private const int PopupWidth = 300;
         private const int PopupPadding = 35;
@@ -40,9 +39,11 @@ namespace OutfitStudio
         private int firstVisibleIndex;
 
         private TextBox? customTagTextBox;
-        private ClickableComponent? addCustomButton;
+        private Rectangle customInputBarBounds;
+        private ClickableComponent? customInputClearButton;
         private ClickableComponent? upArrowButton;
         private ClickableComponent? downArrowButton;
+        private string lastSearchText = "";
         private int tagListStartY;
         private List<string> truncatedTagTexts = new();
         private List<string> fullTagTexts = new();
@@ -108,6 +109,7 @@ namespace OutfitStudio
             isOpen = false;
             isEditMode = false;
             customInputFocused = false;
+            lastSearchText = "";
             tagsMarkedForDeletion.Clear();
             customTagTextBox = null;
         }
@@ -167,10 +169,21 @@ namespace OutfitStudio
             fullTagTexts.Clear();
 
             var storeTags = store.GetAllTags();
+            string searchText = customTagTextBox?.Text?.Trim() ?? "";
             var allTags = new List<string>();
             if (showAllOption)
                 allTags.Add(AllOptionKey);
-            allTags.AddRange(storeTags);
+
+            if (string.IsNullOrEmpty(searchText))
+            {
+                allTags.AddRange(storeTags);
+            }
+            else
+            {
+                allTags.AddRange(storeTags.Where(t =>
+                    TranslationCache.GetTagDisplayName(t)
+                        .Contains(searchText, TranslationCache.TagComparison)));
+            }
 
             int titleHeight = (int)Game1.smallFont.MeasureString("A").Y;
             int optionsY = popupBounds.Y + PopupPadding + titleHeight + DividerPadding * 2;
@@ -263,12 +276,15 @@ namespace OutfitStudio
         private void InitializeCustomTagInput()
         {
             int customSectionY = tagListStartY + MaxVisibleOptions * OptionHeight + CustomSectionTopPadding;
-            int inputY = customSectionY + CustomLabelHeight;
-            int addButtonWidth = 50;
-            int addButtonHeight = CustomInputHeight + 4;
-            int inputX = popupBounds.X + PopupPadding - 10;
-            int inputWidth = popupBounds.Width - (PopupPadding * 2) - addButtonWidth - 8 + 10;
+            int inputY = customSectionY + CustomLabelHeight + 4;
+            int clearBtnSize = ClearButtonSize;
+            int clearBtnMargin = 4;
+            int inputIndent = 12;
+            int inputX = popupBounds.X + PopupPadding - 10 + inputIndent - 2;
+            int textBoxWidth = popupBounds.Width - (PopupPadding * 2) - clearBtnSize - clearBtnMargin + 10 - inputIndent * 2;
+            int inputBarWidth = textBoxWidth + clearBtnMargin + clearBtnSize + ClearButtonRightMargin;
 
+            string prevText = customTagTextBox?.Text ?? "";
             customTagTextBox = new TextBox(
                 Game1.content.Load<Texture2D>("LooseSprites\\textBox"),
                 null,
@@ -277,18 +293,18 @@ namespace OutfitStudio
             {
                 X = inputX,
                 Y = inputY,
-                Width = inputWidth,
-                Text = ""
+                Width = textBoxWidth,
+                Text = prevText
             };
 
-            addCustomButton = new ClickableComponent(
-                new Rectangle(
-                    inputX + inputWidth + 8,
-                    inputY - 2,
-                    addButtonWidth,
-                    addButtonHeight
-                ),
-                "addCustom"
+            int boxPadding = 8;
+            customInputBarBounds = new Rectangle(inputX, inputY - boxPadding, inputBarWidth, CustomInputHeight + boxPadding * 2);
+
+            int clearBtnX = inputX + inputBarWidth - ClearButtonRightMargin - clearBtnSize;
+            int clearBtnY = inputY + (CustomInputHeight - clearBtnSize) / 2;
+            customInputClearButton = new ClickableComponent(
+                new Rectangle(clearBtnX, clearBtnY, clearBtnSize, clearBtnSize),
+                "clearCustomInput"
             );
         }
 
@@ -360,7 +376,7 @@ namespace OutfitStudio
                     {
                         selectedTags.Remove(tag);
                     }
-                    else if (selectOnly || selectedTags.Count < MaxTagsPerSet)
+                    else
                     {
                         selectedTags.Add(tag);
                     }
@@ -371,22 +387,22 @@ namespace OutfitStudio
                 }
             }
 
-            if (!selectOnly && addCustomButton != null && addCustomButton.containsPoint(x, y) && !isEditMode)
+            if (!selectOnly && customInputClearButton != null && customInputClearButton.containsPoint(x, y) && !isEditMode)
             {
-                TryAddCustomTag();
+                if (customTagTextBox != null && !string.IsNullOrEmpty(customTagTextBox.Text))
+                {
+                    customTagTextBox.Text = "";
+                    lastSearchText = "";
+                    firstVisibleIndex = 0;
+                    BuildOptions();
+                    Game1.playSound("bigDeSelect");
+                }
                 return true;
             }
 
             if (!selectOnly && customTagTextBox != null && !isEditMode)
             {
-                Rectangle textBoxBounds = new Rectangle(
-                    customTagTextBox.X,
-                    customTagTextBox.Y,
-                    customTagTextBox.Width,
-                    CustomInputHeight
-                );
-
-                if (textBoxBounds.Contains(x, y))
+                if (customInputBarBounds.Contains(x, y))
                 {
                     customInputFocused = true;
                     customTagTextBox.Selected = true;
@@ -415,7 +431,7 @@ namespace OutfitStudio
 
             if (store.GetAllTags().Any(t => t.Equals(newTag, TranslationCache.TagComparison)))
             {
-                if (!selectedTags.Contains(newTag) && selectedTags.Count < MaxTagsPerSet)
+                if (!selectedTags.Contains(newTag))
                 {
                     var existingTag = store.GetAllTags().First(t => t.Equals(newTag, TranslationCache.TagComparison));
                     selectedTags.Add(existingTag);
@@ -426,11 +442,8 @@ namespace OutfitStudio
             {
                 string titleCased = TranslationCache.ToTitleCase(newTag);
                 store.AddTag(titleCased);
-                if (selectedTags.Count < MaxTagsPerSet)
-                {
-                    selectedTags.Add(titleCased);
-                    tagAdded = true;
-                }
+                selectedTags.Add(titleCased);
+                tagAdded = true;
                 BuildOptions();
             }
 
@@ -440,6 +453,9 @@ namespace OutfitStudio
             }
 
             customTagTextBox.Text = "";
+            lastSearchText = "";
+            firstVisibleIndex = 0;
+            BuildOptions();
             Game1.playSound("coin");
         }
 
@@ -507,7 +523,7 @@ namespace OutfitStudio
             BuildOptions();
         }
 
-        private int TotalOptionCount => store.GetAllTags().Count + (showAllOption ? 1 : 0);
+        private int TotalOptionCount => tagOptions.Count;
 
         public bool HandleScrollWheel(int direction)
         {
@@ -565,6 +581,14 @@ namespace OutfitStudio
             {
                 customTagTextBox.Update();
                 customTagTextBox.Selected = customInputFocused;
+
+                string currentText = customTagTextBox.Text?.Trim() ?? "";
+                if (!string.Equals(currentText, lastSearchText, TranslationCache.TagComparison))
+                {
+                    lastSearchText = currentText;
+                    firstVisibleIndex = 0;
+                    BuildOptions();
+                }
             }
         }
 
@@ -635,17 +659,6 @@ namespace OutfitStudio
             {
                 DrawCustomSection(b, mouseX, mouseY, MaxVisibleOptions * OptionHeight);
 
-                if (!isEditMode)
-                {
-                    string countText = $"{selectedTags.Count}/{MaxTagsPerSet}";
-                    Vector2 countSize = Game1.smallFont.MeasureString(countText);
-                    Vector2 countPos = new Vector2(
-                        popupBounds.Right - PopupPadding - EditModeButtonSize - 8 - countSize.X,
-                        popupBounds.Y + PopupPadding
-                    );
-                    Color countColor = selectedTags.Count >= MaxTagsPerSet ? Color.Orange : Color.Gray;
-                    Utility.drawTextWithShadow(b, countText, Game1.smallFont, countPos, countColor);
-                }
             }
 
             if (hoverTooltip != null && ModEntry.Config.ShowTooltip)
@@ -705,7 +718,6 @@ namespace OutfitStudio
                 string tag = option.name;
                 bool isSelected = selectedTags.Contains(tag);
                 bool isHovered = option.containsPoint(mouseX, mouseY);
-                bool atLimit = selectedTags.Count >= MaxTagsPerSet && !isSelected;
                 bool isMarkedForDeletion = tagsMarkedForDeletion.Contains(tag);
 
                 float rowOpacity = isMarkedForDeletion ? MarkedForDeletionOpacity : 1f;
@@ -736,7 +748,7 @@ namespace OutfitStudio
                     bool isChecked = isAllOption ? allSelected : isSelected;
                     bool isDimmed = allSelected && !isAllOption;
 
-                    if (isHovered && !atLimit && !isDimmed)
+                    if (isHovered && !isDimmed)
                     {
                         b.Draw(Game1.staminaRect, option.bounds, Color.Wheat * 0.3f);
                     }
@@ -757,7 +769,7 @@ namespace OutfitStudio
                         option.bounds.Y + (option.bounds.Height - textHeight) / 2
                     );
 
-                    Color textColor = isDimmed ? Game1.textColor * 0.4f : (atLimit ? Color.Gray : Game1.textColor);
+                    Color textColor = isDimmed ? Game1.textColor * 0.4f : Game1.textColor;
                     Utility.drawTextWithShadow(b, displayText, Game1.smallFont, textPos, textColor);
                 }
 
@@ -791,7 +803,7 @@ namespace OutfitStudio
                 return;
             }
 
-            if (customTagTextBox == null || addCustomButton == null)
+            if (customTagTextBox == null)
                 return;
 
             int customLabelY = tagListStartY + tagListHeight + CustomSectionTopPadding;
@@ -802,21 +814,9 @@ namespace OutfitStudio
             Utility.drawTextWithShadow(b, TranslationCache.TagsPopupCustom, Game1.smallFont,
                 labelPos, Game1.textColor);
 
-            customTagTextBox.Draw(b);
-
-            bool isAddButtonHovered = addCustomButton.containsPoint(mouseX, mouseY);
-            UIHelpers.DrawTextureBox(b, addCustomButton.bounds.X, addCustomButton.bounds.Y,
-                addCustomButton.bounds.Width, addCustomButton.bounds.Height,
-                Color.White, shadowOffset: 2, shadowOpacity: 0.3f);
-
-            if (isAddButtonHovered)
-            {
-                b.Draw(Game1.staminaRect, addCustomButton.bounds, HoverEffectColor);
-            }
-
-            Vector2 addTextSize = Game1.smallFont.MeasureString("+");
-            Vector2 addTextPos = UIHelpers.GetVisualCenter(addCustomButton.bounds, addTextSize);
-            Utility.drawTextWithShadow(b, "+", Game1.smallFont, addTextPos, Game1.textColor);
+            UIHelpers.DrawInputBar(b, customInputBarBounds,
+                customTagTextBox.Text ?? "", customInputFocused,
+                clearButton: !string.IsNullOrEmpty(customTagTextBox.Text) ? customInputClearButton : null);
         }
 
         private void DrawDeleteConfirmButton(SpriteBatch b, int mouseX, int mouseY, int tagListHeight)
