@@ -5089,5 +5089,37 @@ namespace OutfitStudio.Tests.UI
             string body = SourceScanner.ExtractMethodBody(source, "void DrawPreviewPanel");
             Assert.DoesNotContain("store", body);
         }
+
+        [Fact]
+        // Expected: Hair color change does not call MarkSpriteDirty (hair color is a draw-time tint)
+        public void DyeColorManager_ApplyToActiveItem_HairDoesNotMarkSpriteDirty()
+        {
+            string source = SourceScanner.ReadSourceFile("Managers/DyeColorManager.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void ApplyToActiveItem");
+            string hairCase = body.Substring(body.IndexOf("Category.Hair"));
+            string hairBlock = hairCase.Substring(0, hairCase.IndexOf("break;"));
+            Assert.DoesNotContain("MarkSpriteDirty", hairBlock);
+        }
+
+        [Fact]
+        // Expected: Shirt color change still calls MarkSpriteDirty (needed for sleeve pixel recolor)
+        public void DyeColorManager_ApplyToActiveItem_ShirtsMarksSpriteDirty()
+        {
+            string source = SourceScanner.ReadSourceFile("Managers/DyeColorManager.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void ApplyToActiveItem");
+            string shirtsCase = body.Substring(body.IndexOf("Category.Shirts"));
+            string shirtsBlock = shirtsCase.Substring(0, shirtsCase.IndexOf("break;"));
+            Assert.Contains("MarkSpriteDirty", shirtsBlock);
+        }
+
+        [Fact]
+        // Expected: EditOutfitUIBuilder.RenderFarmerToTarget does not unconditionally call MarkSpriteDirty before draw
+        public void EditOutfitUIBuilder_RenderFarmerToTarget_NoUnconditionalMarkSpriteDirty()
+        {
+            string source = SourceScanner.ReadSourceFile("UI/EditOutfitUIBuilder.cs");
+            string body = SourceScanner.ExtractMethodBody(source, "void RenderFarmerToTarget");
+            string beforeDraw = body.Substring(0, body.IndexOf("farmerSpriteBatch"));
+            Assert.DoesNotContain("MarkSpriteDirty", beforeDraw);
+        }
     }
 }

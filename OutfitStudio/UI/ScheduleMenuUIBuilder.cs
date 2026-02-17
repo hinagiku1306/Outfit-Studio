@@ -200,6 +200,7 @@ namespace OutfitStudio
             string[] priorityTexts =
             {
                 TranslationCache.SchedulePriorityPlaceholder,
+                TranslationCache.ScheduleEditPrioritySpecial,
                 TranslationCache.ScheduleEditPriorityHigh,
                 TranslationCache.ScheduleEditPriorityMedium,
                 TranslationCache.ScheduleEditPriorityLow
@@ -227,6 +228,7 @@ namespace OutfitStudio
             PriorityDropdownOptions.Clear();
             string[] labels =
             {
+                TranslationCache.ScheduleEditPrioritySpecial,
                 TranslationCache.ScheduleEditPriorityHigh,
                 TranslationCache.ScheduleEditPriorityMedium,
                 TranslationCache.ScheduleEditPriorityLow
@@ -362,7 +364,7 @@ namespace OutfitStudio
         public string? DrawPriorityDropdownOptions(SpriteBatch b, string? selectedPriorityLabel)
         {
             return UIHelpers.DrawDropdownOptions(b, PriorityDropdown.bounds,
-                PriorityDropdownOptions, 0, 3,
+                PriorityDropdownOptions, 0, PriorityDropdownOptions.Count,
                 isSelected: option => option.name == selectedPriorityLabel,
                 panelPaddingV: 4);
         }

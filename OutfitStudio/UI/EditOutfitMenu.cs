@@ -106,6 +106,8 @@ namespace OutfitStudio
 
             Game1.player.FarmerRenderer.MarkSpriteDirty();
 
+            Game1.keyboardDispatcher.Subscriber = null;
+
             categoryManager.CurrentCategory = OutfitCategoryManager.Category.All;
 
             itemRenderer = new OutfitItemRenderer(mod.Monitor, mod.Helper.ModRegistry);

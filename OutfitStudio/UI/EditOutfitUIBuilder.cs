@@ -430,7 +430,6 @@ namespace OutfitStudio
             int originalEyes = Game1.player.currentEyes;
             Game1.player.currentEyes = 0;
 
-            Game1.player.FarmerRenderer.MarkSpriteDirty();
             farmerSpriteBatch!.Begin(SpriteSortMode.FrontToBack, BlendState.AlphaBlend, SamplerState.PointClamp, null, null);
             FarmerRenderer.isDrawingForUI = true;
 

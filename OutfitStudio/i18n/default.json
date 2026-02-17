@@ -23,7 +23,7 @@
     "config.arrow-key-scrolling.name": "Arrow Key Scrolling",
     "config.arrow-key-scrolling.tooltip": "If enabled, use arrow keys to scroll through items and outfit lists. Up/Down scrolls by one row, Left/Right scrolls by one page.",
     "config.auto-open-dye-color-menu.name": "Auto-Open Color Picker Menu", // v2.0.0
-    "config.auto-open-dye-color-menu.tooltip": "If enabled, color picker menu automatically opens when the main menu opens.", // v2.0.0
+    "config.auto-open-dye-color-menu.tooltip": "If enabled, color picker menu automatically opens when the main menu opens.", // v2.0.0,
     "config.reset-match-all-on-open.name": "Reset Match All",
     "config.reset-match-all-on-open.tooltip": "Resets the \"Match All\" checkbox each time you open the Wardrobe. If disabled, it remembers your last choice.",
     "config.reset-show-invalid-on-open.name": "Reset Show Invalid",
