@@ -302,6 +302,23 @@ namespace OutfitStudio.Services
             return ItemRegistry.Exists(qualifiedId);
         }
 
+        public static bool IsHairIdValid(int? hairId)
+        {
+            if (!hairId.HasValue)
+                return true;
+
+            if (Farmer.GetHairStyleMetadata(hairId.Value) != null)
+                return true;
+
+            // Vanilla fallback: check if hairId is within the vanilla hair texture bounds
+            var texture = FarmerRenderer.hairStylesTexture;
+            if (texture == null)
+                return false;
+
+            int maxVanillaHairs = (texture.Width / 16) * (texture.Height / 96);
+            return hairId.Value >= 0 && hairId.Value < maxVanillaHairs;
+        }
+
         public OutfitSet CreateFromCurrentOutfit(string name, List<string> tags, bool isFavorite, bool isGlobal,
             string? shirtId = null, string? pantsId = null, string? hatId = null,
             string? shirtColor = null, string? pantsColor = null,
@@ -356,7 +373,7 @@ namespace OutfitStudio.Services
                 }
             }
 
-            if (ModEntry.Config.IncludeHairInOutfitSets && set.HairId.HasValue)
+            if (ModEntry.Config.IncludeHairInOutfitSets && set.HairId.HasValue && IsHairIdValid(set.HairId))
             {
                 OutfitState.ApplyHair(set.HairId.Value);
                 if (set.HairColor != null)
@@ -478,8 +495,9 @@ namespace OutfitStudio.Services
             bool shirtValid = ItemIdHelper.IsNoShirtId(set.ShirtId) || IsItemValid(set.ShirtId, "(S)");
             bool pantsValid = ItemIdHelper.IsNoPantsId(set.PantsId) || IsItemValid(set.PantsId, "(P)");
             bool hatValid = ItemIdHelper.IsNoHatId(set.HatId) || IsItemValid(set.HatId, "(H)");
+            bool hairValid = IsHairIdValid(set.HairId);
 
-            set.IsValid = shirtValid && pantsValid && hatValid;
+            set.IsValid = shirtValid && pantsValid && hatValid && hairValid;
 
             if (set.IsValid)
                 validIds.Add(set.Id);

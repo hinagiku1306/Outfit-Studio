@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using StardewValley;
@@ -6,7 +8,7 @@ using static OutfitStudio.OutfitLayoutConstants;
 
 namespace OutfitStudio
 {
-    public class OutfitUIBuilder : IOutfitUIBuilder
+    public class EditOutfitUIBuilder : IOutfitUIBuilder
     {
         private readonly int configuredRows;
         private readonly int configuredColumns;
@@ -23,8 +25,8 @@ namespace OutfitStudio
         public ClickableComponent PantsTab { get; private set; } = null!;
         public ClickableComponent HatsTab { get; private set; } = null!;
         private int tabDividerX;
-        public ClickableComponent ResetButton { get; private set; } = null!;
         public ClickableComponent ApplyButton { get; private set; } = null!;
+        public ClickableComponent ResetButton { get; private set; } = null!;
         public ClickableTextureComponent CloseButton { get; private set; } = null!;
         public List<ClickableComponent> ItemSlots { get; private set; } = new();
         public Rectangle PortraitBox { get; private set; }
@@ -32,17 +34,17 @@ namespace OutfitStudio
         public ClickableComponent? SearchBar { get; private set; } = null;
         public ClickableComponent? FilterClearButton { get; private set; } = null;
         public ClickableComponent? SearchClearButton { get; private set; } = null;
-        public ClickableComponent? LookupButton { get; private set; } = null;
-
-        public ClickableComponent SaveButton { get; private set; } = null!;
-        public ClickableComponent WardrobeButton { get; private set; } = null!;
 
         public ClickableTextureComponent DyeColorButton { get; private set; } = null!;
-
-        public ClickableTextureComponent GearButton { get; private set; } = null!;
-        public ClickableComponent ScheduleButton { get; private set; } = null!;
-        public ClickableComponent DebugLogButton { get; private set; } = null!;
         public ClickableComponent HideHatCheckbox { get; private set; } = null!;
+
+        // Not present in EditOutfitMenu (interface stubs)
+        public ClickableComponent? SaveButton => null;
+        public ClickableComponent? WardrobeButton => null;
+        public ClickableTextureComponent? GearButton => null;
+        public ClickableComponent? ScheduleButton => null;
+        public ClickableComponent? DebugLogButton => null;
+        public ClickableComponent? LookupButton => null;
 
         public ClickableTextureComponent LeftArrowButton { get; private set; } = null!;
         public ClickableTextureComponent RightArrowButton { get; private set; } = null!;
@@ -66,20 +68,19 @@ namespace OutfitStudio
         private bool previewDirty = true;
 
         private static readonly Rectangle FarmerSourceRect = new Rectangle(0, 0, 16, 32);
-        private static readonly Rectangle FarmerBathingSourceRect = new Rectangle(0, 576, 16, 32);
-        private static readonly Vector2 FarmerRenderPosition = new Vector2(32, 32);
 
         private static readonly FarmerSprite.AnimationFrame[] DirectionFrames = new[]
         {
-            new FarmerSprite.AnimationFrame(12, 0, secondaryArm: false, flip: false), // 0 = Up
-            new FarmerSprite.AnimationFrame(6, 0, secondaryArm: false, flip: false),  // 1 = Right
-            new FarmerSprite.AnimationFrame(0, 0, secondaryArm: false, flip: false),  // 2 = Down
-            new FarmerSprite.AnimationFrame(6, 0, secondaryArm: false, flip: true),   // 3 = Left
+            new FarmerSprite.AnimationFrame(12, 0, secondaryArm: false, flip: false),
+            new FarmerSprite.AnimationFrame(6, 0, secondaryArm: false, flip: false),
+            new FarmerSprite.AnimationFrame(0, 0, secondaryArm: false, flip: false),
+            new FarmerSprite.AnimationFrame(6, 0, secondaryArm: false, flip: true),
         };
-        private const int FarmerRenderWidth = BackgroundSourceWidth * 2;  // 128
-        private const int FarmerRenderHeight = BackgroundSourceHeight * 2; // 192
+        private static readonly Vector2 FarmerRenderPosition = new Vector2(32, 32);
+        private const int FarmerRenderWidth = BackgroundSourceWidth * 2;
+        private const int FarmerRenderHeight = BackgroundSourceHeight * 2;
 
-        public OutfitUIBuilder(ModConfig config)
+        public EditOutfitUIBuilder(ModConfig config)
         {
             configuredRows = Math.Clamp(config.VisibleRows, MinVisibleRows, MaxVisibleRows);
             configuredColumns = Math.Clamp(config.VisibleColumns, MinVisibleColumns, MaxVisibleColumns);
@@ -91,9 +92,7 @@ namespace OutfitStudio
         {
             int arrowHeight = (int)(ArrowNativeHeight * ArrowScale);
             return HideHatRowHeight + 8
-                + CharacterPreviewHeight + ElementGap + arrowHeight
-                + GapBetweenPortraitAndButtons
-                + TabAndButtonHeight + ElementGap + TabAndButtonHeight;
+                + CharacterPreviewHeight + ElementGap + arrowHeight;
         }
 
         private int CalculateRightPanelHeight()
@@ -125,7 +124,6 @@ namespace OutfitStudio
         {
             int gridWidth = COLUMNS * SLOT_SIZE + (COLUMNS - 1) * ItemSlotGap;
             int contentWidth = LeftPanelWidth + SectionGapH + gridWidth;
-
             return BorderPaddingH + contentWidth + BorderPaddingH + BorderPaddingRightExtra;
         }
 
@@ -151,13 +149,11 @@ namespace OutfitStudio
             PositionContentSection(contentSectionY, contentSectionHeight);
 
             PositionCloseButton();
-
             PositionFloatingButtons();
         }
 
         private void PositionTabs(int tabY)
         {
-            // 5 tabs: [Hair] | divider | [All] [Shirts] [Pants] [Hats]
             int maxTabWidth = (Width - TabAndButtonGap * 3 - TabDividerGap * 2 - TabDividerWidth) / 5;
             int hairTabWidth = UIHelpers.CalculateButtonWidth(TranslationCache.TabHair, maxTabWidth);
             int allTabWidth = UIHelpers.CalculateButtonWidth(TranslationCache.TabAll, maxTabWidth);
@@ -253,34 +249,6 @@ namespace OutfitStudio
                 new Rectangle(365, 495, ArrowNativeWidth, ArrowNativeHeight),
                 ArrowScale
             );
-
-            LookupButton = new ClickableComponent(
-                new Rectangle(
-                    PortraitBox.Right - LookupIconSize - LookupIconMargin,
-                    PortraitBox.Y + LookupIconMargin,
-                    LookupIconSize,
-                    LookupIconSize
-                ),
-                "Lookup"
-            );
-
-            int maxLeftButtonWidth = LeftPanelWidth;
-            int outfitsButtonWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ButtonOutfits, maxLeftButtonWidth);
-            int schedulesButtonWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ButtonSchedules, maxLeftButtonWidth);
-            int leftButtonWidth = Math.Max(outfitsButtonWidth, schedulesButtonWidth);
-
-            int leftButtonsStartX = centerX - leftButtonWidth / 2;
-            int wardrobeButtonY = arrowY + arrowHeight + GapBetweenPortraitAndButtons;
-            int scheduleButtonY = wardrobeButtonY + TabAndButtonHeight + ElementGap;
-
-            ScheduleButton = new ClickableComponent(
-                new Rectangle(leftButtonsStartX, wardrobeButtonY, leftButtonWidth, TabAndButtonHeight),
-                TranslationCache.ButtonSchedules
-            );
-            WardrobeButton = new ClickableComponent(
-                new Rectangle(leftButtonsStartX, scheduleButtonY, leftButtonWidth, TabAndButtonHeight),
-                TranslationCache.ButtonOutfits
-            );
         }
 
         private void PositionRightPanel(int panelX, int startY, int gridWidth)
@@ -335,29 +303,21 @@ namespace OutfitStudio
             }
 
             int gridHeight = VISIBLE_ROWS * SLOT_SIZE + (VISIBLE_ROWS - 1) * ItemSlotGap;
+
+            // Save + Reset right-aligned to grid
             int bottomButtonsY = gridY + gridHeight + GridToButtonGap;
-
-            int maxBottomButtonWidth = (gridWidth - ElementGap * 2) / 3;
-            int saveWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ButtonNewOutfit, maxBottomButtonWidth);
-            int applyWidth = UIHelpers.CalculateButtonWidth(TranslationCache.ButtonApply, maxBottomButtonWidth);
-            int resetWidth = UIHelpers.CalculateButtonWidth(TranslationCache.CommonReset, maxBottomButtonWidth);
-
-            int resetX = panelX + gridWidth - resetWidth;
-            int applyX = resetX - ElementGap - applyWidth;
-            int saveX = applyX - ElementGap - saveWidth;
-
-            SaveButton = new ClickableComponent(
-                new Rectangle(saveX, bottomButtonsY, saveWidth, TabAndButtonHeight),
-                TranslationCache.ButtonNewOutfit
-            );
+            int saveWidth = UIHelpers.CalculateButtonWidth(TranslationCache.CommonSave);
+            int resetWidth = UIHelpers.CalculateButtonWidth(TranslationCache.CommonReset);
+            int totalButtonsWidth = saveWidth + ElementGap + resetWidth;
+            int buttonsEndX = panelX + gridWidth;
 
             ApplyButton = new ClickableComponent(
-                new Rectangle(applyX, bottomButtonsY, applyWidth, TabAndButtonHeight),
-                TranslationCache.ButtonApply
+                new Rectangle(buttonsEndX - totalButtonsWidth, bottomButtonsY, saveWidth, TabAndButtonHeight),
+                TranslationCache.CommonSave
             );
 
             ResetButton = new ClickableComponent(
-                new Rectangle(resetX, bottomButtonsY, resetWidth, TabAndButtonHeight),
+                new Rectangle(buttonsEndX - resetWidth, bottomButtonsY, resetWidth, TabAndButtonHeight),
                 TranslationCache.CommonReset
             );
 
@@ -398,15 +358,6 @@ namespace OutfitStudio
 
             int buttonX = X + Width + 5;
             int dyeColorBtnY = dyePanelTopY - 5 - buttonSize;
-            int gearBtnY = dyeColorBtnY - 5 - buttonSize;
-            int debugLogBtnY = gearBtnY - 5 - buttonSize;
-
-            GearButton = new ClickableTextureComponent(
-                new Rectangle(buttonX, gearBtnY, buttonSize, buttonSize),
-                Game1.mouseCursors,
-                new Rectangle(30, 428, 10, 10),
-                buttonSize / 10f
-            );
 
             DyeColorButton = new ClickableTextureComponent(
                 new Rectangle(buttonX, dyeColorBtnY, buttonSize, buttonSize),
@@ -414,9 +365,6 @@ namespace OutfitStudio
                 new Rectangle(32, 48, 16, 16),
                 buttonSize / 16f
             );
-
-            DebugLogButton = new ClickableComponent(
-                new Rectangle(buttonX, debugLogBtnY, buttonSize, buttonSize), "DebugLog");
         }
 
         public void MarkPreviewDirty()
@@ -473,31 +421,43 @@ namespace OutfitStudio
             int baseY = Game1.player.bathingClothes.Value ? 576 : 0;
             int sourceX = (frameIndex * 16) % 96;
             int sourceY = baseY + (frameIndex * 16) / 96 * 32;
-            Rectangle sourceRect = new Rectangle(sourceX, sourceY, FarmerSpriteWidth, FarmerSpriteHeight);
+            Rectangle sourceRect = new Rectangle(sourceX, sourceY, 16, 32);
+
+            var originalHat = Game1.player.hat.Value;
+            if (hideHatInPreview)
+                Game1.player.hat.Value = null;
 
             int originalEyes = Game1.player.currentEyes;
             Game1.player.currentEyes = 0;
 
-            StardewValley.Objects.Hat? savedHat = null;
-            if (hideHatInPreview)
-            {
-                savedHat = Game1.player.hat.Value;
-                Game1.player.hat.Value = null;
-            }
-
+            Game1.player.FarmerRenderer.MarkSpriteDirty();
             farmerSpriteBatch!.Begin(SpriteSortMode.FrontToBack, BlendState.AlphaBlend, SamplerState.PointClamp, null, null);
-
             FarmerRenderer.isDrawingForUI = true;
-            DrawFarmerToRenderTarget(sourceRect, Color.White);
+
+            Game1.player.FarmerRenderer.draw(
+                farmerSpriteBatch,
+                DirectionFrames[previewDirection],
+                DirectionFrames[previewDirection].frame,
+                sourceRect,
+                FarmerRenderPosition,
+                Vector2.Zero,
+                FarmerSpriteLayerDepth,
+                previewDirection,
+                Color.White,
+                0f,
+                1f,
+                Game1.player
+            );
 
             FarmerRenderer.isDrawingForUI = false;
-
             farmerSpriteBatch.End();
 
-            if (hideHatInPreview)
-                Game1.player.hat.Value = savedHat;
-
             Game1.player.currentEyes = originalEyes;
+            if (hideHatInPreview)
+            {
+                Game1.player.hat.Value = originalHat;
+                Game1.player.FarmerRenderer.MarkSpriteDirty();
+            }
 
             Game1.graphics.GraphicsDevice.SetRenderTargets(renderTargets);
         }
@@ -524,24 +484,6 @@ namespace OutfitStudio
             }
         }
 
-        private void DrawFarmerToRenderTarget(Rectangle sourceRect, Color color)
-        {
-            Game1.player.FarmerRenderer.draw(
-                farmerSpriteBatch!,
-                DirectionFrames[previewDirection],
-                DirectionFrames[previewDirection].frame,
-                sourceRect,
-                FarmerRenderPosition,
-                Vector2.Zero,
-                FarmerSpriteLayerDepth,
-                previewDirection,
-                color,
-                0f,
-                1f,
-                Game1.player
-            );
-        }
-
         public void DrawItemList(SpriteBatch b, int scrollOffset, int totalItems)
         {
             if (ItemSlots.Count == 0)
@@ -559,63 +501,27 @@ namespace OutfitStudio
             int maxScroll = Math.Max(0, totalRows - VISIBLE_ROWS);
 
             if (scrollOffset > 0)
-            {
                 UIHelpers.DrawTextureButton(b, GridScrollUpButton);
-            }
 
             if (scrollOffset < maxScroll)
-            {
                 UIHelpers.DrawTextureButton(b, GridScrollDownButton);
-            }
         }
-
-        #region Button Drawing
 
         public void DrawLeftPanelButtons(SpriteBatch b)
         {
             UIHelpers.DrawTextureButton(b, LeftArrowButton);
             UIHelpers.DrawTextureButton(b, RightArrowButton);
-
-            UIHelpers.DrawTextButton(b, ScheduleButton, TranslationCache.ButtonSchedules);
-            UIHelpers.DrawTextButton(b, WardrobeButton, TranslationCache.ButtonOutfits);
         }
 
         public void DrawBottomButtons(SpriteBatch b)
         {
-            UIHelpers.DrawTextButton(b, SaveButton, TranslationCache.ButtonNewOutfit);
-            UIHelpers.DrawTextButton(b, ApplyButton, TranslationCache.ButtonApply);
+            UIHelpers.DrawTextButton(b, ApplyButton, TranslationCache.CommonSave);
             UIHelpers.DrawTextButton(b, ResetButton, TranslationCache.CommonReset);
         }
 
-        private static readonly Rectangle JournalIconSourceRect = new Rectangle(395, 497, 3, 8);
-
         public void DrawFloatingButtons(SpriteBatch b)
         {
-            if (ModEntry.Config.ShowScheduleDebugLog)
-                DrawDebugLogButton(b);
-            DrawGearButton(b);
             DrawDyeColorButton(b);
-        }
-
-        private void DrawDebugLogButton(SpriteBatch b)
-        {
-            var bounds = DebugLogButton.bounds;
-            bool isHovered = !UIHelpers.SuppressHover
-                && DebugLogButton.containsPoint(Game1.getMouseX(), Game1.getMouseY());
-
-            float buttonScale = isHovered ? ButtonHoveringScale : 1f;
-            int bgSize = (int)(bounds.Width * buttonScale);
-            int bgX = bounds.X + (bounds.Width - bgSize) / 2;
-            int bgY = bounds.Y + (bounds.Height - bgSize) / 2;
-            UIHelpers.DrawTextureBox(b, bgX, bgY, bgSize, bgSize, Color.White, 1f, 4, 0.6f);
-
-            Vector2 iconCenter = new Vector2(
-                bounds.X + bounds.Width / 2,
-                bounds.Y + bounds.Height / 2);
-            float iconScale = (bgSize / 10f) * 0.6f;
-            Vector2 origin = new Vector2(JournalIconSourceRect.Width / 2f, JournalIconSourceRect.Height / 2f);
-            b.Draw(Game1.mouseCursors, iconCenter, JournalIconSourceRect,
-                Color.White, 0f, origin, iconScale, SpriteEffects.None, 1f);
         }
 
         private void DrawDyeColorButton(SpriteBatch b)
@@ -639,8 +545,6 @@ namespace OutfitStudio
             b.Draw(Game1.objectSpriteSheet, iconCenter, sourceRect, Color.White, 0f,
                 origin, iconScale, SpriteEffects.None, 1f);
         }
-
-        #endregion
 
         public void RotatePreviewLeft()
         {
@@ -666,43 +570,6 @@ namespace OutfitStudio
                 Color.Gray * 0.5f);
         }
 
-        public void DrawGearButton(SpriteBatch b)
-        {
-            bool isHovered = !UIHelpers.SuppressHover && GearButton.containsPoint(Game1.getMouseX(), Game1.getMouseY());
-            float buttonScale = isHovered ? ButtonHoveringScale : 1f;
-
-            int bgSize = (int)(GearButton.bounds.Width * buttonScale);
-            int bgX = GearButton.bounds.X + (GearButton.bounds.Width - bgSize) / 2;
-            int bgY = GearButton.bounds.Y + (GearButton.bounds.Height - bgSize) / 2;
-
-            UIHelpers.DrawTextureBox(b, bgX, bgY, bgSize, bgSize, Color.White, 1f, 4, 0.6f);
-
-            Vector2 iconCenter = new Vector2(
-                GearButton.bounds.X + GearButton.bounds.Width / 2,
-                GearButton.bounds.Y + GearButton.bounds.Height / 2
-            );
-            Rectangle editSource = new Rectangle(30, 428, 10, 10);
-            float iconScale = (bgSize / 10f) * 0.6f;
-            Vector2 origin = new Vector2(5, 5);
-            b.Draw(Game1.mouseCursors, iconCenter, editSource, Color.White, 0f,
-                origin, iconScale, SpriteEffects.None, 1f);
-        }
-
-        public void DrawTitle(SpriteBatch b)
-        {
-            string title = TranslationCache.MenuTitle;
-            Vector2 titleSize = Game1.dialogueFont.MeasureString(title);
-            Utility.drawTextWithShadow(b, title, Game1.dialogueFont,
-                new Vector2(X + (Width - titleSize.X) / 2, Y + ContentBoxPadding),
-                Game1.textColor);
-        }
-
-        public void ShowAppliedMessage()
-        {
-            savedMessageTimer = SavedMessageDurationMs;
-            showingSavedMessage = false;
-        }
-
         public void ShowSavedMessage()
         {
             savedMessageTimer = SavedMessageDurationMs;
@@ -712,9 +579,7 @@ namespace OutfitStudio
         public void Update(float elapsedMilliseconds)
         {
             if (savedMessageTimer > 0)
-            {
                 savedMessageTimer -= elapsedMilliseconds;
-            }
         }
 
         public void DrawSavedMessage(SpriteBatch b)
@@ -731,17 +596,6 @@ namespace OutfitStudio
             }
         }
 
-        /// <summary>
-        /// Draws the semi-transparent background overlay.
-        /// </summary>
-        public static void DrawOverlay(SpriteBatch b)
-        {
-            b.Draw(Game1.fadeToBlackRect, Game1.graphics.GraphicsDevice.Viewport.Bounds, Color.Black * BackgroundOverlayOpacity);
-        }
-
-        /// <summary>
-        /// Draws the mod filter dropdown button.
-        /// </summary>
         public void DrawModFilterDropdown(SpriteBatch b, string? currentFilter, bool isOpen, string searchText = "")
         {
             if (ModFilterDropdown == null)
@@ -771,34 +625,6 @@ namespace OutfitStudio
             }
         }
 
-        /// <summary>Draws the lookup icon on the character preview.</summary>
-        public void DrawLookupIcon(SpriteBatch b)
-        {
-            if (LookupButton == null)
-                return;
-
-            int mouseX = Game1.getMouseX();
-            int mouseY = Game1.getMouseY();
-            bool isHovered = LookupButton.containsPoint(mouseX, mouseY);
-
-            Rectangle sourceRect = new Rectangle(240, 192, 16, 16);
-
-            b.Draw(
-                Game1.mouseCursors,
-                new Vector2(LookupButton.bounds.X, LookupButton.bounds.Y),
-                sourceRect,
-                Color.White,
-                0f,
-                Vector2.Zero,
-                2f,
-                SpriteEffects.None,
-                1f
-            );
-        }
-
-        /// <summary>
-        /// Checks if the mouse is hovering over any clickable UI element.
-        /// </summary>
         public bool IsHoveringClickable(int mouseX, int mouseY)
         {
             if (HairTab.containsPoint(mouseX, mouseY) ||
@@ -806,14 +632,10 @@ namespace OutfitStudio
                 ShirtsTab.containsPoint(mouseX, mouseY) ||
                 PantsTab.containsPoint(mouseX, mouseY) ||
                 HatsTab.containsPoint(mouseX, mouseY) ||
-                SaveButton.containsPoint(mouseX, mouseY) ||
                 ApplyButton.containsPoint(mouseX, mouseY) ||
                 ResetButton.containsPoint(mouseX, mouseY) ||
                 DyeColorButton.containsPoint(mouseX, mouseY) ||
                 CloseButton.containsPoint(mouseX, mouseY) ||
-                GearButton.containsPoint(mouseX, mouseY) ||
-                ScheduleButton.containsPoint(mouseX, mouseY) ||
-                (ModEntry.Config.ShowScheduleDebugLog && DebugLogButton.containsPoint(mouseX, mouseY)) ||
                 LeftArrowButton.containsPoint(mouseX, mouseY) ||
                 RightArrowButton.containsPoint(mouseX, mouseY) ||
                 GridScrollUpButton.containsPoint(mouseX, mouseY) ||
@@ -823,14 +645,10 @@ namespace OutfitStudio
             }
 
             if (ModFilterDropdown != null && ModFilterDropdown.containsPoint(mouseX, mouseY))
-            {
                 return true;
-            }
 
             if (SearchBar != null && SearchBar.containsPoint(mouseX, mouseY))
-            {
                 return true;
-            }
 
             foreach (var slot in ItemSlots)
             {
@@ -841,7 +659,7 @@ namespace OutfitStudio
             return false;
         }
 
-        public void Cleanup()
+        public void SafeDispose()
         {
             UIHelpers.SafeDispose(ref farmerRenderTarget, ref farmerSpriteBatch);
         }

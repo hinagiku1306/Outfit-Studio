@@ -19,6 +19,9 @@ namespace OutfitStudio
         private OutfitFilterManager? filterManager;
         private OutfitCategoryManager? categoryManager;
         private OutfitSetStore? outfitSetStore;
+
+        internal OutfitCategoryManager? GetCategoryManager() => categoryManager;
+        internal OutfitFilterManager? GetFilterManager() => filterManager;
         private ScheduleStore? scheduleStore;
         private ScheduleEngine? scheduleEngine;
         private ScheduleEvalLog? scheduleEvalLog;
@@ -140,14 +143,6 @@ namespace OutfitStudio
                     tooltip: () => TranslationCache.ConfigCloseOnClickOutsideTooltip,
                     getValue: () => config.CloseOnClickOutside,
                     setValue: value => config.CloseOnClickOutside = value
-                );
-
-                gmcmApi.AddBoolOption(
-                    mod: ModManifest,
-                    name: () => TranslationCache.ConfigAutoOpenTagMenuName,
-                    tooltip: () => TranslationCache.ConfigAutoOpenTagMenuTooltip,
-                    getValue: () => config.AutoOpenTagMenu,
-                    setValue: value => config.AutoOpenTagMenu = value
                 );
 
                 gmcmApi.AddBoolOption(
@@ -374,7 +369,7 @@ namespace OutfitStudio
                         return;
                     }
 
-                    menu = new OutfitMenu(this, categoryManager, filterManager, outfitSetStore, config.ShowItemInfo);
+                    menu = new OutfitMenu(this, categoryManager, filterManager, outfitSetStore);
                     Game1.activeClickableMenu = menu;
                 }
             }
@@ -403,7 +398,7 @@ namespace OutfitStudio
                                 bool includeHair = Config.IncludeHairInOutfitSets;
                                 scheduleEngine?.SetManualOutfit(ManualOutfitSnapshot.FromOutfitSet(set, includeHair));
                             }
-                        });
+                        }, mod: this);
                     Game1.playSound("bigSelect");
                 }
             }
@@ -442,15 +437,10 @@ namespace OutfitStudio
                 return;
 
             Game1.exitActiveMenu();
-            menu = new OutfitMenu(this, categoryManager, filterManager, outfitSetStore, config.ShowItemInfo);
+            menu = new OutfitMenu(this, categoryManager, filterManager, outfitSetStore);
             Game1.activeClickableMenu = menu;
         }
 
-        internal void SetShowItemInfoPreference(bool value)
-        {
-            config.ShowItemInfo = value;
-            Helper.WriteConfig(config);
-        }
 
         internal static void PersistConfig() => StaticHelper.WriteConfig(Config);
     }

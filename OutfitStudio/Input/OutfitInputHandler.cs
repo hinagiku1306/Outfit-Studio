@@ -12,7 +12,7 @@ namespace OutfitStudio
     {
         private readonly OutfitCategoryManager categoryManager;
         private readonly OutfitState state;
-        private readonly OutfitUIBuilder uiBuilder;
+        private readonly IOutfitUIBuilder uiBuilder;
         private readonly OutfitDropdownManager dropdownManager;
         private readonly OutfitSearchManager searchManager;
         private readonly ContinuousScrollHandler continuousScrollHandler;
@@ -37,7 +37,7 @@ namespace OutfitStudio
         public OutfitInputHandler(
             OutfitCategoryManager categoryManager,
             OutfitState state,
-            OutfitUIBuilder uiBuilder,
+            IOutfitUIBuilder uiBuilder,
             OutfitDropdownManager dropdownManager,
             OutfitSearchManager searchManager,
             ContinuousScrollHandler continuousScrollHandler,
@@ -126,9 +126,12 @@ namespace OutfitStudio
                     }
                 }
 
-                // Clicking the mod filter bar (now input bar) — absorb click, keep open
+                // Clicking the mod filter bar — toggle dropdown closed
                 if (uiBuilder.ModFilterDropdown != null && uiBuilder.ModFilterDropdown.containsPoint(x, y))
                 {
+                    dropdownManager.Close();
+                    continuousScrollHandler.Reset();
+                    if (playSound) Game1.playSound("smallSelect");
                     return true;
                 }
 
@@ -138,14 +141,14 @@ namespace OutfitStudio
                     uiBuilder.ShirtsTab.containsPoint(x, y) ||
                     uiBuilder.PantsTab.containsPoint(x, y) ||
                     uiBuilder.HatsTab.containsPoint(x, y) ||
-                    uiBuilder.ApplyButton.containsPoint(x, y) ||
+                    (uiBuilder.ApplyButton?.containsPoint(x, y) ?? false) ||
                     uiBuilder.ResetButton.containsPoint(x, y) ||
-                    uiBuilder.SaveButton.containsPoint(x, y) ||
-                    uiBuilder.WardrobeButton.containsPoint(x, y) ||
-                    uiBuilder.GearButton.containsPoint(x, y) ||
-                    uiBuilder.ScheduleButton.containsPoint(x, y) ||
+                    (uiBuilder.SaveButton?.containsPoint(x, y) ?? false) ||
+                    (uiBuilder.WardrobeButton?.containsPoint(x, y) ?? false) ||
+                    (uiBuilder.GearButton?.containsPoint(x, y) ?? false) ||
+                    (uiBuilder.ScheduleButton?.containsPoint(x, y) ?? false) ||
                     uiBuilder.DyeColorButton.containsPoint(x, y) ||
-                    uiBuilder.DebugLogButton.containsPoint(x, y))
+                    (uiBuilder.DebugLogButton?.containsPoint(x, y) ?? false))
                 {
                     dropdownManager.Close();
                     continuousScrollHandler.Reset();
@@ -229,7 +232,7 @@ namespace OutfitStudio
                 return true;
             }
 
-            if (uiBuilder.ApplyButton.containsPoint(x, y))
+            if (uiBuilder.ApplyButton != null && uiBuilder.ApplyButton.containsPoint(x, y))
             {
                 onApplyOutfit();
                 if (playSound) Game1.playSound("coin");
@@ -265,25 +268,25 @@ namespace OutfitStudio
             }
 
             // Type B swap: opens SaveSet overlay
-            if (uiBuilder.SaveButton.containsPoint(x, y))
+            if (uiBuilder.SaveButton != null && uiBuilder.SaveButton.containsPoint(x, y))
             {
                 Game1.activeClickableMenu = new SaveSetOverlay(Game1.activeClickableMenu, outfitSetStore, () => showSavedMessage(),
-                    revertHairId: state.AppliedHair, revertHairColor: state.AppliedHairColor);
+                    revertHairId: state.AppliedHair, revertHairColor: state.AppliedHairColor, mod: mod);
                 if (playSound) Game1.playSound("bigSelect");
                 return true;
             }
 
-            if (uiBuilder.WardrobeButton.containsPoint(x, y))
+            if (uiBuilder.WardrobeButton != null && uiBuilder.WardrobeButton.containsPoint(x, y))
             {
                 var outfitMenu = Game1.activeClickableMenu as OutfitMenu;
                 Game1.activeClickableMenu = new WardrobeOverlay(outfitSetStore, outfitMenu,
-                    onOutfitApplied: set => outfitMenu?.NotifyOutfitApplied(set));
+                    onOutfitApplied: set => outfitMenu?.NotifyOutfitApplied(set), mod: mod);
                 if (playSound) Game1.playSound("bigSelect");
                 return true;
             }
 
             // Type B swap: opens config overlay
-            if (uiBuilder.GearButton.containsPoint(x, y))
+            if (uiBuilder.GearButton != null && uiBuilder.GearButton.containsPoint(x, y))
             {
                 Game1.activeClickableMenu = new ConfigOverlay(Game1.activeClickableMenu, mod);
                 if (playSound) Game1.playSound("bigSelect");
@@ -291,7 +294,7 @@ namespace OutfitStudio
             }
 
             // Type B swap: opens schedule menu
-            if (uiBuilder.ScheduleButton.containsPoint(x, y))
+            if (uiBuilder.ScheduleButton != null && uiBuilder.ScheduleButton.containsPoint(x, y))
             {
                 var scheduleStore = mod.GetScheduleStore();
                 if (scheduleStore != null)
@@ -303,7 +306,7 @@ namespace OutfitStudio
             }
 
             // Type B swap: opens debug log overlay
-            if (ModEntry.Config.ShowScheduleDebugLog && uiBuilder.DebugLogButton.containsPoint(x, y))
+            if (ModEntry.Config.ShowScheduleDebugLog && uiBuilder.DebugLogButton != null && uiBuilder.DebugLogButton.containsPoint(x, y))
             {
                 var evalLog = mod.GetScheduleEvalLog();
                 if (evalLog != null)

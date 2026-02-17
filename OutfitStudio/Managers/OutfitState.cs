@@ -286,7 +286,11 @@ namespace OutfitStudio
             if (string.IsNullOrEmpty(shirtId) || shirtId == OutfitLayoutConstants.NoShirtId)
                 Game1.player.shirtItem.Value = null;
             else
-                Game1.player.shirtItem.Value = ItemRegistry.Create<Clothing>("(S)" + shirtId);
+            {
+                var item = ItemRegistry.Create<Clothing>("(S)" + shirtId);
+                if (item != null)
+                    Game1.player.shirtItem.Value = item;
+            }
             Game1.player.FarmerRenderer.MarkSpriteDirty();
         }
 
@@ -295,7 +299,11 @@ namespace OutfitStudio
             if (string.IsNullOrEmpty(pantsId) || pantsId == OutfitLayoutConstants.NoPantsId)
                 Game1.player.pantsItem.Value = null;
             else
-                Game1.player.pantsItem.Value = ItemRegistry.Create<Clothing>("(P)" + pantsId);
+            {
+                var item = ItemRegistry.Create<Clothing>("(P)" + pantsId);
+                if (item != null)
+                    Game1.player.pantsItem.Value = item;
+            }
             Game1.player.FarmerRenderer.MarkSpriteDirty();
         }
 
@@ -304,7 +312,11 @@ namespace OutfitStudio
             if (string.IsNullOrEmpty(hatId) || hatId == OutfitLayoutConstants.NoHatId)
                 Game1.player.hat.Value = null;
             else
-                Game1.player.hat.Value = ItemRegistry.Create<Hat>("(H)" + hatId);
+            {
+                var item = ItemRegistry.Create<Hat>("(H)" + hatId);
+                if (item != null)
+                    Game1.player.hat.Value = item;
+            }
             Game1.player.FarmerRenderer.MarkSpriteDirty();
         }
 

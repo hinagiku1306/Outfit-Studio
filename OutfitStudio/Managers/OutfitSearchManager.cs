@@ -8,7 +8,7 @@ namespace OutfitStudio
 {
     public class OutfitSearchManager
     {
-        private readonly OutfitUIBuilder uiBuilder;
+        private readonly IOutfitUIBuilder uiBuilder;
         private readonly TextBox searchBox;
         private string lastSearchText = "";
         private bool searchBarFocused;
@@ -17,7 +17,7 @@ namespace OutfitStudio
         public bool HasSearchTextChanged { get; private set; }
         public bool IsFocused => searchBox.Selected;
 
-        public OutfitSearchManager(OutfitUIBuilder uiBuilder, OutfitState state)
+        public OutfitSearchManager(IOutfitUIBuilder uiBuilder, OutfitState state)
         {
             this.uiBuilder = uiBuilder ?? throw new ArgumentNullException(nameof(uiBuilder));
             this.searchBarFocused = ModEntry.Config.AutoFocusSearchBar;

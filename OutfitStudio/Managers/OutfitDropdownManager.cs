@@ -14,7 +14,7 @@ namespace OutfitStudio
         private readonly OutfitFilterManager filterManager;
         private readonly OutfitCategoryManager categoryManager;
         private readonly OutfitState state;
-        private readonly OutfitUIBuilder uiBuilder;
+        private readonly IOutfitUIBuilder uiBuilder;
 
         private bool dropdownOpen = false;
         private List<ClickableComponent> dropdownOptions = new();
@@ -38,7 +38,7 @@ namespace OutfitStudio
             OutfitFilterManager filterManager,
             OutfitCategoryManager categoryManager,
             OutfitState state,
-            OutfitUIBuilder uiBuilder)
+            IOutfitUIBuilder uiBuilder)
         {
             this.filterManager = filterManager ?? throw new ArgumentNullException(nameof(filterManager));
             this.categoryManager = categoryManager ?? throw new ArgumentNullException(nameof(categoryManager));

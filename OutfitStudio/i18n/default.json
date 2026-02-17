@@ -18,8 +18,6 @@
     "config.show-tooltip.tooltip": "Show the full text in a tooltip when hovering over truncated text.",
     "config.close-on-click-outside.name": "Close Menu on Click Outside",
     "config.close-on-click-outside.tooltip": "If enabled, clicking outside the menu will close it.",
-    "config.auto-open-tag-menu.name": "Auto-Open Tag Menu",
-    "config.auto-open-tag-menu.tooltip": "If enabled, the tag selection menu will automatically open when saving an outfit.",
     "config.auto-focus-search-bar.name": "Auto-Focus Search Bar",
     "config.auto-focus-search-bar.tooltip": "If enabled, the search bar is automatically focused when the menu opens. Useful when your toggle key is a typeable character.",
     "config.arrow-key-scrolling.name": "Arrow Key Scrolling",
@@ -217,5 +215,8 @@
     "schedule.debug.priority-group-low": "Low Priority",
     "schedule.manual-items": "Custom",
     // Hair Tab
-    "menu.item.hair-id": "Hair #{{id}}"
+    "menu.item.hair-id": "Hair #{{id}}",
+
+    // Edit Outfit Menu
+    "editoutfit.title": "Edit Outfit"
 }
